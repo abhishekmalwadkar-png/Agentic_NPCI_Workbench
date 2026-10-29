@@ -2820,39 +2820,125 @@ export default function App() {
             {/* 4 Inbound Systems Status Grid */}
             <div className="source-grid">
               <div className="source-card">
-                <div className="source-icon">🗄️</div>
+                <div className="source-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                    <line x1="6" y1="6" x2="6.01" y2="6" />
+                    <line x1="6" y1="18" x2="6.01" y2="18" />
+                  </svg>
+                </div>
                 <div>
                   <div className="source-name">1. NPCI Settlement</div>
                   <div className="source-meta">Staging Vault: Validated</div>
                 </div>
                 <div className="source-status"><span className="source-status-dot" /> READY</div>
+                <a
+                  href={`${API}/api/recon/input-file/npci`}
+                  download="NPCI_UPI_Settlement_Master.csv"
+                  className="source-download-btn"
+                  title="Download NPCI Settlement Master Input CSV"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  <span>CSV</span>
+                </a>
               </div>
 
               <div className="source-card">
-                <div className="source-icon">🖥️</div>
+                <div className="source-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                    <line x1="8" y1="21" x2="16" y2="21" />
+                    <line x1="12" y1="17" x2="12" y2="21" />
+                  </svg>
+                </div>
                 <div>
                   <div className="source-name">2. Payment Switch</div>
                   <div className="source-meta">Base24 Gateway AUTHORIZED</div>
                 </div>
                 <div className="source-status"><span className="source-status-dot" /> ONLINE</div>
+                <a
+                  href={`${API}/api/recon/input-file/switch`}
+                  download="Switch_Base24_Logs.csv"
+                  className="source-download-btn"
+                  title="Download Switch Base24 Logs Input CSV"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  <span>CSV</span>
+                </a>
               </div>
 
               <div className="source-card">
-                <div className="source-icon">🏛️</div>
+                <div className="source-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="3" y1="21" x2="21" y2="21" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                    <polyline points="5 10 5 21" />
+                    <polyline points="19 10 19 21" />
+                    <polyline points="10 10 10 21" />
+                    <polyline points="14 10 14 21" />
+                    <polygon points="12 2 2 7 22 7 12 2" />
+                  </svg>
+                </div>
                 <div>
                   <div className="source-name">3. Core Banking (CBS)</div>
                   <div className="source-meta">Finacle 10.x DEBITED Log</div>
                 </div>
                 <div className="source-status"><span className="source-status-dot" /> SYNCED</div>
+                <a
+                  href={`${API}/api/recon/input-file/cbs`}
+                  download="Finacle_CBS_Dump.csv"
+                  className="source-download-btn"
+                  title="Download Finacle CBS Dump Input CSV"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  <span>CSV</span>
+                </a>
               </div>
 
               <div className="source-card">
-                <div className="source-icon">⚖️</div>
+                <div className="source-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 3v18" />
+                    <path d="m16 8 4 6H4l4-6" />
+                    <path d="M4 14a4 4 0 0 0 8 0" />
+                    <path d="M12 14a4 4 0 0 0 8 0" />
+                  </svg>
+                </div>
                 <div>
                   <div className="source-name">4. General Ledger (GL)</div>
                   <div className="source-meta">Clearing Pool Suspense A/C</div>
                 </div>
                 <div className="source-status"><span className="source-status-dot" /> ACTIVE</div>
+                <a
+                  href={`${API}/api/recon/input-file/gl`}
+                  download="GL_Suspense_Pool.csv"
+                  className="source-download-btn"
+                  title="Download General Ledger Suspense Input CSV"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  <span>CSV</span>
+                </a>
               </div>
             </div>
 

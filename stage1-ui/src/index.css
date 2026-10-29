@@ -908,7 +908,7 @@ tr:hover td { background: #f8fafc; }
   background: var(--card-bg);
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px 16px;
+  padding: 14px 85px 14px 16px;
   box-shadow: var(--shadow-sm);
   display: flex;
   align-items: center;
@@ -916,11 +916,41 @@ tr:hover td { background: #f8fafc; }
   position: relative;
   overflow: hidden;
   transition: all 0.25s ease;
+  min-height: 74px;
 }
 .source-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow);
   border-color: #cbd5e1;
+}
+.source-download-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #334155;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+.source-download-btn:hover {
+  background: #ea580c;
+  border-color: #ea580c;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(234, 88, 12, 0.25);
+}
+.source-download-btn svg {
+  flex-shrink: 0;
 }
 .source-icon {
   width: 42px;

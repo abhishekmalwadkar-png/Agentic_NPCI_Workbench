@@ -446,6 +446,34 @@ def download_registry_file(file_id: str):
     )
 
 
+@app.get("/api/recon/input-file/{leg_key}")
+def download_recon_input_file(leg_key: str):
+    """Download one of the 4 source feed input files (NPCI, Switch, CBS, GL)."""
+    leg_map = {
+        "npci": "NPCI_UPI_Settlement_Master.csv",
+        "switch": "Switch_Base24_Logs.csv",
+        "cbs": "Finacle_CBS_Dump.csv",
+        "gl": "GL_Suspense_Pool.csv",
+    }
+    fname = leg_map.get(leg_key.lower()) or leg_key
+    target = WORKSPACE_ROOT / "stage1" / fname
+    if not target.exists():
+        target = STAGING_DIR / fname
+    if not target.exists():
+        matches = list((WORKSPACE_ROOT / "stage1").glob(f"*{leg_key}*.csv"))
+        if matches:
+            target = matches[0]
+            fname = target.name
+    if not target.exists():
+        raise HTTPException(status_code=404, detail=f"Input file for leg '{leg_key}' not found.")
+    return FileResponse(
+        path=str(target),
+        filename=fname,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'}
+    )
+
+
 @app.get("/api/audit/download")
 def download_audit_logs():
     """Download audit logs as machine-readable JSON."""

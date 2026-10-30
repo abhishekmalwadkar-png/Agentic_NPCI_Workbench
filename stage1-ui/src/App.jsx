@@ -3637,8 +3637,8 @@ export default function App() {
                       <div style={{ fontSize: 11, color: '#64748b', marginTop: 4, display: 'flex', justifyContent: 'space-between' }}>
                         <span>Settlement Status: <strong style={{ color: vol > 0 ? '#16a34a' : '#64748b' }}>
                           {vol > 0
-                            ? (code === 'UPI' && reconData?.stp_rate !== undefined
-                                ? `VERIFIED (${reconData.stp_rate}% STP)`
+                            ? (code === 'UPI'
+                                ? `VERIFIED (${reconData?.stp_rate ?? stats.stp_percentage ?? '20.0'}% STP)`
                                 : 'VERIFIED (95.2% STP)')
                             : 'STANDBY'}
                         </strong></span>

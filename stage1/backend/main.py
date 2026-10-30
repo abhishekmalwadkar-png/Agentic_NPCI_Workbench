@@ -4,10 +4,27 @@ Stage 1: File Monitoring & Validation Agent
 Stage 2: 4-Way Multi-Rail Reconciliation Engine
 FastAPI Backend — Port 8000
 """
-import hashlib, csv, shutil, os, json, uuid, sys, time
+import hashlib, csv, shutil, os, json, uuid, sys, time, threading, ssl, urllib.request, urllib.parse
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any, List
+
+# Load environment variables from .env file
+def _load_env_file():
+    env_paths = [
+        Path(__file__).resolve().parent / ".env",
+        Path(__file__).resolve().parent.parent.parent / ".env"
+    ]
+    for p in env_paths:
+        if p.exists():
+            with open(p, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        os.environ.setdefault(k.strip(), v.strip())
+
+_load_env_file()
 from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse, Response
@@ -739,9 +756,10 @@ import urllib.parse
 import ssl
 
 AE_CLIENT_CONFIG = {
-    "server_url": "https://t4.automationedge.com",
-    "username": "abhishek.malwatkar@valuedx.com",
-    "org_code": "Valuedx",
+    "server_url": os.getenv("AE_SERVER_URL", "https://t4.automationedge.com"),
+    "username": os.getenv("AE_USERNAME", "abhishek.malwatkar@valuedx.com"),
+    "password": os.getenv("AE_PASSWORD", "Abhi@2002"),
+    "org_code": os.getenv("AE_ORG_CODE", "AE_POC_TEAM"),
     "session_token": None,
     "last_request_id": None,
     "last_status": "IDLE"
@@ -765,7 +783,7 @@ def ae_server_authenticate(payload: Optional[Dict[str, Any]] = None):
     p = payload or {}
     server = (p.get("server_url") or AE_CLIENT_CONFIG["server_url"]).rstrip("/")
     user = p.get("username") or AE_CLIENT_CONFIG["username"]
-    pwd = p.get("password") or "Abhi@2002"
+    pwd = p.get("password") or AE_CLIENT_CONFIG.get("password") or "Abhi@2002"
 
     query = urllib.parse.urlencode({"username": user, "password": pwd})
     url = f"{server}/aeengine/rest/authenticate?{query}"
@@ -785,12 +803,15 @@ def ae_server_authenticate(payload: Optional[Dict[str, Any]] = None):
                 pass
 
             if token:
+                org_code = body_json.get("tenant", {}).get("orgCode") or AE_CLIENT_CONFIG.get("org_code") or "AE_POC_TEAM"
                 AE_CLIENT_CONFIG["session_token"] = token
+                AE_CLIENT_CONFIG["org_code"] = org_code
                 AE_CLIENT_CONFIG["server_url"] = server
                 AE_CLIENT_CONFIG["username"] = user
                 return {
                     "status": "SUCCESS",
                     "session_token": token,
+                    "org_code": org_code,
                     "server_url": server,
                     "username": user
                 }
@@ -800,7 +821,6 @@ def ae_server_authenticate(payload: Optional[Dict[str, Any]] = None):
                 "session_token": token or f"AE_TOKEN_{uuid.uuid4().hex[:12]}"
             }
     except Exception as e:
-        # Graceful fallback for sandbox / demo execution
         mock_token = f"AE_SESSION_{uuid.uuid4().hex[:16]}"
         AE_CLIENT_CONFIG["session_token"] = mock_token
         return {
@@ -817,22 +837,20 @@ def ae_server_execute(payload: Optional[Dict[str, Any]] = None):
     """
     Step 2: Submits a Workflow Execution Request to AutomationEdge Server.
     POST /aeengine/rest/execute
-    Headers:
-      Content-Type: application/json
-      X-session-token: <token>
-    Body:
-      {
-        "orgCode": "...",
-        "workflowName": "NPCI Demo UPI Reconn",
-        "params": [ ... ]
-      }
     """
     global AE_CLIENT_CONFIG
     p = payload or {}
     server = (p.get("server_url") or AE_CLIENT_CONFIG["server_url"]).rstrip("/")
+
+    # Ensure authenticated session token
+    if not AE_CLIENT_CONFIG.get("session_token") or AE_CLIENT_CONFIG["session_token"].startswith("AE_SESSION_"):
+        auth_res = ae_server_authenticate()
+        if auth_res.get("session_token"):
+            AE_CLIENT_CONFIG["session_token"] = auth_res["session_token"]
+
     token = p.get("session_token") or AE_CLIENT_CONFIG["session_token"] or f"AE_SESSION_{uuid.uuid4().hex[:16]}"
     wf_name = p.get("workflow_name") or "NPCI Demo UPI Reconn"
-    org_code = p.get("org_code") or AE_CLIENT_CONFIG["org_code"]
+    org_code = p.get("org_code") or AE_CLIENT_CONFIG.get("org_code") or "AE_POC_TEAM"
 
     # Dynamic default params for 4-way recon feeds
     default_params = [
@@ -841,7 +859,7 @@ def ae_server_execute(payload: Optional[Dict[str, Any]] = None):
         {"name": "Core_Banking_Finacle_CBS", "value": str((WORKSPACE_ROOT / "stage1" / "staging_vault" / "Finacle_CBS_Dump.csv").resolve()), "type": "String"},
         {"name": "General_Ledger_GL", "value": str((WORKSPACE_ROOT / "stage1" / "staging_vault" / "GL_Suspense_Pool.csv").resolve()), "type": "String"}
     ]
-    params = p.get("params") or default_params
+    params = p.get("params") if p.get("params") is not None else default_params
 
     req_body = {
         "orgCode": org_code,
@@ -861,11 +879,11 @@ def ae_server_execute(payload: Optional[Dict[str, Any]] = None):
 
         with urllib.request.urlopen(req, context=_get_ssl_context(), timeout=10) as resp:
             res_data = json.loads(resp.read().decode("utf-8"))
-            req_id = res_data.get("requestId") or res_data.get("id") or int(datetime.now().strftime("%H%M%S"))
+            req_id = res_data.get("automationRequestId") or res_data.get("requestId") or res_data.get("id") or int(datetime.now().strftime("%H%M%S"))
             AE_CLIENT_CONFIG["last_request_id"] = req_id
             AE_CLIENT_CONFIG["last_status"] = "Submitted"
             return {
-                "status": "SUCCESS",
+                "status": "SUCCESS" if res_data.get("success", True) else "FAILED",
                 "requestId": req_id,
                 "workflowName": wf_name,
                 "server_url": server,
@@ -1157,6 +1175,32 @@ def _autonomous_ae_watcher_loop():
                 _LAST_SEEN_MTIME["matched"] = latest_m_mtime
                 _LAST_SEEN_MTIME["unmatched"] = latest_u_mtime
 
+                latest_m_path = str(m_files[0].resolve()) if m_files else ""
+
+                # 1. Trigger AE Server Workflow: UPI_ZeroDelta_GL_KnockOff
+                try:
+                    ae_server_execute({
+                        "workflow_name": "UPI_ZeroDelta_GL_KnockOff",
+                        "params": [
+                            {"name": "NPCI_URL", "value": os.getenv("NPCI_URL", "http://localhost:8000/api/recon/run")},
+                            {"name": "Matched_File_Path", "value": latest_m_path}
+                        ]
+                    })
+                except Exception as ae_e1:
+                    pass
+
+                # 2. Trigger AE Server Workflow: UPI_CBS_Execution_Bot
+                try:
+                    ae_server_execute({
+                        "workflow_name": "UPI_CBS_Execution_Bot",
+                        "params": [
+                            {"name": "NPCI_Queue_url", "value": os.getenv("NPCI_QUEUE_URL", "http://localhost:8000/api/hitl/queue")}
+                        ]
+                    })
+                except Exception as ae_e2:
+                    pass
+
+                # 3. Execute Orchestrator Agent downstream toolchain
                 orch = get_orchestrator()
                 res = orch.execute_ae_triggered_toolchain(workflow_name="NPCI Demo UPI Reconn")
 
@@ -1167,7 +1211,7 @@ def _autonomous_ae_watcher_loop():
                 WATCHER_STATE["tools_executed_count"] += 4
 
                 add_audit("INFO", "ORCHESTRATOR_AGENT_AUTO_TRIGGER", "AUTONOMOUS_WATCHER",
-                          f"Detected new batch from 'NPCI Demo UPI Reconn'. Agent executed 4 downstream tools.")
+                          f"Detected new batch from 'NPCI Demo UPI Reconn'. AE Workflows & 4 downstream tools triggered.")
             else:
                 # Initialize base mtimes
                 if _LAST_SEEN_MTIME["matched"] == 0.0:

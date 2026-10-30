@@ -3088,42 +3088,39 @@ export default function App() {
                   title="Click to view all 4-Way Matched STP Records"
                 >
                   <div className="bucket-header">
-                    <span className="bucket-tag">Bucket 1 &bull; Matched</span>
-                    <span style={{ fontSize: 18 }}>✅</span>
+                    <span className="bucket-tag">Bucket 1 &bull; Matched STP</span>
                   </div>
                   <div className="bucket-count">
                     {fmt(reconData.matched_count)}
                     <span className="bucket-pct">({reconData.stp_rate}%)</span>
                   </div>
                   <div className="bucket-desc">
-                    All 4 systems agree in status, timing, and financial amount. Eligible for straight-through settlement.
+                    All 4 systems agree in status, timing, and financial amount. Zero-delta balancing entry posted.
                   </div>
                   <div className="bucket-action">
-                    <span>⚡ Click to View Matched STP Records ({fmt(reconData.matched_count)}) &rarr;</span>
+                    <span>View Matched STP Records ({fmt(reconData.matched_count)}) &rarr;</span>
                   </div>
                 </div>
 
                 <div className="bucket-card amber">
                   <div className="bucket-header">
                     <span className="bucket-tag">Bucket 2 &bull; Timing Drift</span>
-                    <span style={{ fontSize: 18 }}>🕐</span>
                   </div>
                   <div className="bucket-count">
-                    {fmt(reconData.timing_count)}
-                    <span className="bucket-pct">({fmtPct(reconData.timing_count / (reconData.total_records || 1) * 100)})</span>
+                    {fmt(reconData.timing_count || 0)}
+                    <span className="bucket-pct">(0.0%)</span>
                   </div>
                   <div className="bucket-desc">
-                    Transactions in-flight across cycle cut-off windows. Zero financial break &mdash; automatically rechecked next cycle.
+                    Transactions in-flight across cycle cut-off windows. Zero financial break &mdash; checked next cycle.
                   </div>
                   <div className="bucket-action">
-                    <span>🔄 Auto-Deferred to Next Cycle Roll-Forward</span>
+                    <span>Next Cycle Roll-Forward</span>
                   </div>
                 </div>
 
                 <div className="bucket-card red">
                   <div className="bucket-header">
                     <span className="bucket-tag">Bucket 3 &bull; Recon Breaks</span>
-                    <span style={{ fontSize: 18 }}>💥</span>
                   </div>
                   <div className="bucket-count">
                     {fmt(reconData.break_count)}
@@ -3132,10 +3129,10 @@ export default function App() {
                     </span>
                   </div>
                   <div className="bucket-desc">
-                    Genuine mismatches: CBS timeouts, deemed failures, amount discrepancies, and unreversed debits.
+                    Discrepancies diagnosed: 3 low-value auto-refunded (&lt; ₹5k), 1 high-value routed to HITL Cockpit.
                   </div>
                   <div className="bucket-action" style={{ cursor: 'pointer' }} onClick={() => setActiveNav('investigate')}>
-                    <span>👉 Hand Over to Stage 3 AI Investigation Agent</span>
+                    <span>Hand Over to AI Investigation Agent &rarr;</span>
                   </div>
                 </div>
               </div>
@@ -3156,16 +3153,13 @@ export default function App() {
               {/* Filter Tabs */}
               <div className="filter-tabs">
                 {[
-                  ['MATCHED', `✅ Matched STP (${reconData?.matched_count || reconMatched.length || 0})`],
-                  ['ALL', `All Breaks (${reconData?.break_count || 0})`],
-                  ['P1', `🔴 P1 Critical (${reconData?.p1_count || 0})`],
-                  ['P2', `🟡 P2 Moderate (${reconData?.p2_count || 0})`],
-                  ['TIMEOUT', 'CBS Timeout (1,000)'],
-                  ['AMOUNT_MISMATCH', 'Amount Mismatch (500)'],
-                  ['REVERSAL_MISSING', 'Reversal Missing (400)'],
-                  ['DEEMED_FAIL', 'Deemed Fail (250)'],
-                  ['DUPLICATE', 'Duplicate Txn (250)'],
-                  ['BENEFICIARY_NOT_FOUND', 'Bene Invalid (200)'],
+                  ['MATCHED', `Matched STP (${reconData?.matched_count || reconMatched.length || 1})`],
+                  ['ALL', `All Breaks (${reconData?.break_count || 4})`],
+                  ['P1', `P1 Critical (${reconData?.p1_count || 4})`],
+                  ['CBS_TIMEOUT', 'CBS Timeout (1)'],
+                  ['AMOUNT_MISMATCH', 'Amount Mismatch (1)'],
+                  ['DEEMED_FAIL', 'Deemed Fail (1)'],
+                  ['REVERSAL_MISSING', 'Reversal Missing (1)'],
                 ].map(([val, label]) => (
                   <button
                     key={val}
@@ -3268,274 +3262,63 @@ export default function App() {
               </div>
             </div>
 
-            {/* Selected Catalogue Information Panel (shown when a catalogue is selected) */}
-            {isScoped && currentRailMeta && (
-              <div className="card" style={{
-                background: '#ffffff',
-                border: '1.5px solid #ea580c',
-                borderRadius: 14,
-                padding: '18px 22px',
-                marginBottom: 16,
-                boxShadow: '0 4px 18px rgba(234, 88, 12, 0.08)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <div style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 12,
-                      background: '#ffffff',
-                      border: '1.5px solid #fed7aa',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: 7,
-                      boxShadow: '0 2px 8px rgba(234, 88, 12, 0.15)',
-                      flexShrink: 0
-                    }}>
-                      <img src="/favicon.svg" alt="AutomationEdge" style={{ width: 32, height: 32, objectFit: 'contain' }} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>
-                        Catalogue Overview: {currentRailMeta.name} ({activeRailScope})
-                      </div>
-                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                        {currentRailMeta.tagline}
-                      </div>
-                    </div>
-                  </div>
+            {/* Executive Banking Overview Cards (Clean & Focused) */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+              gap: 16,
+              marginBottom: 20
+            }}>
+              {/* Card 1: Batch Intake */}
+              <div className="card" style={{ padding: '18px 20px', borderLeft: '4px solid #ea580c' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                  UPI 2.0 Ingested Batch
                 </div>
-
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                  gap: 12,
-                  background: '#fff7ed',
-                  border: '1px solid #fed7aa',
-                  borderRadius: 10,
-                  padding: '12px 16px'
-                }}>
-                  <div>
-                    <span style={{ fontSize: 10.5, color: '#9a3412', fontWeight: 700, textTransform: 'uppercase' }}>Domain / Category</span>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#7c2d12', marginTop: 2 }}>{currentRailMeta.category}</div>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: 10.5, color: '#9a3412', fontWeight: 700, textTransform: 'uppercase' }}>Clearing Window</span>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#7c2d12', marginTop: 2 }}>{currentRailMeta.clearingWindow}</div>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: 10.5, color: '#9a3412', fontWeight: 700, textTransform: 'uppercase' }}>Regulatory SLA</span>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#7c2d12', marginTop: 2 }}>{currentRailMeta.sla}</div>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: 10.5, color: '#9a3412', fontWeight: 700, textTransform: 'uppercase' }}>Connected Systems</span>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#7c2d12', marginTop: 2 }}>{currentRailMeta.systems}</div>
-                  </div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>
+                  {scopedRailVol} <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>Transactions</span>
                 </div>
-
-                {/* Live UPI Reconciliation & GL Settlement Engine Status in Catalogue View */}
-                {activeRailScope === 'UPI' && (
-                  <div style={{
-                    marginTop: 14,
-                    padding: '14px 18px',
-                    background: '#f8fafc',
-                    border: '1.5px solid #fed7aa',
-                    borderRadius: 10
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
-                        <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>
-                          AutomationEdge Workflow: NPCI Demo UPI Reconn
-                        </span>
-                        <span style={{
-                          background: '#dcfce7',
-                          border: '1px solid #86efac',
-                          color: '#15803d',
-                          fontSize: 10.5,
-                          fontWeight: 800,
-                          padding: '2px 8px',
-                          borderRadius: 99
-                        }}>
-                          Message : UPI Recon Completed
-                        </span>
-                      </div>
-                      <span style={{ fontSize: 11.5, color: '#64748b' }}>
-                        Cycle: <b style={{ color: '#0f172a' }}>UPI-20261029-CY01</b> &bull; Server: <a href="https://t4.automationedge.com/#/requests/list" target="_blank" rel="noopener noreferrer" style={{ color: '#ea580c', fontWeight: 600 }}>t4.automationedge.com</a>
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 12 }}>
-                      <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: 8, padding: '10px 12px' }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: '#15803d', textTransform: 'uppercase' }}>STP Matched &amp; Closed</div>
-                        <div style={{ fontSize: 16, fontWeight: 900, color: '#16a34a', marginTop: 2 }}>
-                          {reconData?.matched_count || 1} Record
-                        </div>
-                        <div style={{ fontSize: 11, color: '#059669', fontWeight: 600 }}>
-                          ₹{(reconData?.matched_amount || 840.04).toLocaleString()} (Zero-Delta GL Knocked-off)
-                        </div>
-                      </div>
-
-                      <div style={{ background: '#ffffff', border: '1px solid #fed7aa', borderRadius: 8, padding: '10px 12px' }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: '#c2410c', textTransform: 'uppercase' }}>AI Breaks Diagnosed</div>
-                        <div style={{ fontSize: 16, fontWeight: 900, color: '#ea580c', marginTop: 2 }}>
-                          {reconData?.break_count || 4} Breaks
-                        </div>
-                        <div style={{ fontSize: 11, color: '#b45309', fontWeight: 600 }}>
-                          ₹{(reconData?.break_amount || 7700).toLocaleString()} (RBI T+1 Clock Active)
-                        </div>
-                      </div>
-
-                      <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: '#0284c7', textTransform: 'uppercase' }}>Track A: Auto-Refunds</div>
-                        <div style={{ fontSize: 16, fontWeight: 900, color: '#0284c7', marginTop: 2 }}>
-                          3 Transactions
-                        </div>
-                        <div style={{ fontSize: 11, color: '#0369a1', fontWeight: 600 }}>
-                          &lt; ₹5,000 Deemed Fails (Posted)
-                        </div>
-                      </div>
-
-                      <div style={{ background: '#ffffff', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 12px' }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: '#dc2626', textTransform: 'uppercase' }}>Track B: HITL Cockpit</div>
-                        <div style={{ fontSize: 16, fontWeight: 900, color: '#dc2626', marginTop: 2 }}>
-                          1 Pending
-                        </div>
-                        <div style={{ fontSize: 11, color: '#b91c1c', fontWeight: 600 }}>
-                          Amount Mismatch (₹550 vs ₹500)
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: 10 }}>
-                      <button
-                        className="btn btn-primary"
-                        style={{ fontSize: 12, padding: '7px 14px', background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)', borderColor: '#ea580c' }}
-                        onClick={() => setActiveNav('recon')}
-                      >
-                        Open UPI 4-Way Reconciliation Engine &rarr;
-                      </button>
-                      <button
-                        className="btn btn-secondary"
-                        style={{ fontSize: 12, padding: '7px 14px' }}
-                        onClick={() => setActiveNav('hitl')}
-                      >
-                        Open Operations Manager HITL Cockpit &rarr;
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* PRODUCT-WISE TRANSACTION VOLUME STRIP */}
-            <div className="card" style={{ padding: '16px 20px', marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.4px', textTransform: 'uppercase' }}>
-                    {isScoped ? `${activeRailName || activeRailScope} Transaction Volume` : 'Product-Wise Transaction Volume'}
-                  </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>
-                    {isScoped
-                      ? `Verified transaction throughput and settlement metrics for ${activeRailName || activeRailScope}.`
-                      : 'Operational clearing volume across active NPCI payment rails.'}
-                  </div>
+                <div style={{ fontSize: 11.5, color: '#ea580c', fontWeight: 600, marginTop: 4 }}>
+                  Cycle: UPI-20261029-CY01 &bull; Active
                 </div>
               </div>
 
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: isScoped ? 'minmax(280px, 420px)' : 'repeat(auto-fit, minmax(115px, 1fr))',
-                gap: 12
-              }}>
-                {(isScoped
-                  ? Object.entries(railRecordCounts).filter(([code]) => code.toUpperCase() === activeRailScope.toUpperCase())
-                  : Object.entries(railRecordCounts)
-                ).map(([code, vol]) => {
-                  const isSelected = activeRailScope === code
-
-                  return (
-                    <div
-                      key={code}
-                      className="dashboard-rail-card"
-                      onClick={!isScoped ? () => {
-                        const meta = railMetadata[code]
-                        setActiveRailScope(code)
-                        setActiveRailName(meta?.name || code)
-                        setSelectedRailForOps(code)
-                      } : undefined}
-                      style={{
-                        padding: isScoped ? '16px 20px' : '12px 14px',
-                        borderRadius: 10,
-                        background: '#fff7ed',
-                        border: '1.5px solid #ea580c',
-                        cursor: isScoped ? 'default' : 'pointer',
-                        boxShadow: '0 4px 14px rgba(234, 88, 12, 0.15)'
-                      }}
-                      title={!isScoped ? `Click to view ${code} data on Home Dashboard` : undefined}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <span style={{ fontSize: isScoped ? 14 : 12, fontWeight: 800, color: '#ea580c' }}>
-                          {isScoped ? `${activeRailName || code} (${code})` : code}
-                        </span>
-                        <span style={{
-                          fontSize: 10,
-                          fontWeight: 700,
-                          padding: '2px 8px',
-                          borderRadius: 4,
-                          background: vol > 0 ? '#ea580c' : '#f1f5f9',
-                          color: vol > 0 ? '#ffffff' : '#64748b'
-                        }}>
-                          {vol > 0 ? 'ACTIVE RAIL' : 'STANDBY'}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: isScoped ? 22 : 15, fontWeight: 800, color: vol > 0 ? '#9a3412' : '#64748b' }}>
-                        {vol.toLocaleString('en-IN')} <span style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Records</span>
-                      </div>
-                      <div style={{ fontSize: 11, color: '#64748b', marginTop: 4, display: 'flex', justifyContent: 'space-between' }}>
-                        <span>Settlement Status: <strong style={{ color: vol > 0 ? '#16a34a' : '#64748b' }}>
-                          {vol > 0
-                            ? (code === 'UPI'
-                                ? `VERIFIED (${reconData?.stp_rate ?? stats.stp_percentage ?? '20.0'}% STP)`
-                                : 'VERIFIED (95.2% STP)')
-                            : 'STANDBY'}
-                        </strong></span>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
-            <Pipeline stage={pipeStage} agentText={agentText} isDuplicate={isDuplicate} isUploading={uploading} />
-
-            <div className="kpi-grid">
-              <KpiCard label="Files Received" value={isScoped ? 1 : stats.total_files_received} color="blue" sub={isScoped ? `NPCI_${activeRailScope}_Settlement_Cycle1.csv` : 'Total session intake'} />
-              <KpiCard label="Files Validated" value={isScoped ? 1 : stats.validated_files} color="green" sub={isScoped ? 'Staged in enclave' : 'Moved to staging vault'} />
-              <KpiCard label="Files Rejected" value={isScoped ? 0 : stats.rejected_files} color="red" sub="Schema / content quarantine" />
-              <KpiCard label="Duplicate Files" value={isScoped ? 0 : stats.duplicate_files} color="amber" sub="Identical hash prevented" />
-              <KpiCard label="Total Records" value={scopedRailVol} color="purple" sub={isScoped ? `${activeRailScope} isolated intake` : 'Across all clearing files'} />
-              <KpiCard label="P1 Exceptions" value={scopedP1Count} color="red" sub="RBI TAT clock running" />
-              <KpiCard label="P2 Exceptions" value={scopedP2Count} color="amber" sub="Moderate break priority" />
-              <KpiCard label="STP Rate" value={scopedStpPct} suffix="%" prefix="" color="green"
-                sub={`${fmt(scopedStpCount)} straight-through`} />
-            </div>
-
-            {/* STP Progress Bar */}
-            <div className="card" style={{ marginBottom: 16 }}>
-              <div className="card-title">
-                <div className="card-title-left">
-                  <div className="card-title-dot" />
-                  <span>Straight-Through Processing (STP) Efficiency {isScoped ? `(${activeRailScope})` : ''}</span>
+              {/* Card 2: Straight-Through Settle */}
+              <div className="card" style={{ padding: '18px 20px', borderLeft: '4px solid #16a34a' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                  Straight-Through (STP) Settled
                 </div>
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Regulatory Target: 95%</span>
+                <div style={{ fontSize: 24, fontWeight: 800, color: '#16a34a', marginTop: 4 }}>
+                  {reconData?.matched_count || 1} <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>Txn ({reconData?.stp_rate ?? '20.0'}%)</span>
+                </div>
+                <div style={{ fontSize: 11.5, color: '#15803d', fontWeight: 600, marginTop: 4 }}>
+                  Zero-Delta GL-14020 Knocked Off (₹{(reconData?.matched_amount || 840.04).toLocaleString()})
+                </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 8 }}>
-                <span>Auto-Matched (STP): <b style={{ color: 'var(--green)' }}>{fmtPct(scopedStpPct)}</b></span>
-                <span>Exception Rate: <b style={{ color: 'var(--red)' }}>{scopedExcPct}%</b></span>
+
+              {/* Card 3: AI Break Resolution */}
+              <div className="card" style={{ padding: '18px 20px', borderLeft: '4px solid #e11d48' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                  AI Exception Breaks (Dual-Track)
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: '#e11d48', marginTop: 4 }}>
+                  {reconData?.break_count || 4} <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>Breaks (₹{(reconData?.break_amount || 7700).toLocaleString()})</span>
+                </div>
+                <div style={{ fontSize: 11.5, color: '#be123c', fontWeight: 600, marginTop: 4 }}>
+                  3 Auto-Reversed (&lt; ₹5k) &bull; 1 HITL Cockpit
+                </div>
               </div>
-              <div className="progress-bar">
-                <div className="progress-fill" style={{ width: `${scopedStpPct}%`, background: `linear-gradient(90deg, #10b981, #34d399)` }} />
+
+              {/* Card 4: RBI Regulatory SLA */}
+              <div className="card" style={{ padding: '18px 20px', borderLeft: '4px solid #2563eb' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                  Regulatory Mandate SLA
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: '#2563eb', marginTop: 4 }}>
+                  100.0% <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>Compliant</span>
+                </div>
+                <div style={{ fontSize: 11.5, color: '#1d4ed8', fontWeight: 600, marginTop: 4 }}>
+                  RBI Circular DPSS.CO.PD No.629 (T+1 TAT)
+                </div>
               </div>
             </div>
 

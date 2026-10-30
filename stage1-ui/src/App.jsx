@@ -190,11 +190,17 @@ function KpiCard({ label, value, sub, color, prefix = '', suffix = '' }) {
 }
 
 // ── Scenario Bar ──────────────────────────────────────────────────────────────
-function ScenarioBreakdown({ files, scopedRail }) {
+function ScenarioBreakdown({ files, scopedRail, reconData }) {
   const totals = {}
-  if (files && files.length > 0) {
+  if (scopedRail === 'UPI' && reconData && reconData.total_records) {
+    totals['STP_MATCH_SUCCESS'] = reconData.matched_count || 1
+    const bb = reconData.break_breakdown || {}
+    Object.entries(bb).forEach(([k, v]) => {
+      totals[k] = v
+    })
+  } else if (files && files.length > 0) {
     if (scopedRail) {
-      const vol = { UPI: 29105, IMPS: 7431, NACH: 6524, AEPS: 1938, RUPAY: 1461, CTS: 1511, BBPS: 525, NETC: 1505 }[scopedRail] || 29105
+      const vol = { UPI: 5, IMPS: 7431, NACH: 6524, AEPS: 1938, RUPAY: 1461, CTS: 1511, BBPS: 525, NETC: 1505 }[scopedRail] || 5
       totals['STP_MATCH_SUCCESS'] = Math.round(vol * 0.945)
       totals['CBS_TIMEOUT_AUTO_REVERSAL'] = Math.round(vol * 0.028)
       totals['AMOUNT_MISMATCH_SUSPENSE'] = Math.round(vol * 0.015)
@@ -887,6 +893,24 @@ export default function App() {
     setMafRunning(false)
   }
 
+  // Trigger Autonomous Downstream Toolchain (Zero-Delta GL -> AI Dual-Track -> CBS Bot -> Audit Seal)
+  const handleTriggerAeChain = async () => {
+    setMafRunning(true)
+    try {
+      const res = await fetch(`${API}/api/orchestrator/trigger-ae-chain`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workflow_name: 'NPCI Demo UPI Reconn' })
+      })
+      const data = await res.json()
+      await sleep(700)
+      refresh()
+    } catch (e) {
+      alert("Error triggering Agent Toolchain: " + e)
+    }
+    setMafRunning(false)
+  }
+
   // MAF Reset Trigger
   const handleResetOrchestrator = async () => {
     try {
@@ -903,15 +927,19 @@ export default function App() {
     (staging && staging.length > 0)
   )
 
+  const upiRecordVolume = (reconData?.total_records && reconData.total_records > 0)
+    ? reconData.total_records
+    : (stats.rail_volumes?.UPI || (stats.total_records_ingested > 0 ? stats.total_records_ingested : 5))
+
   const railRecordCounts = {
-    UPI: hasData ? ((stats.rail_volumes && stats.rail_volumes.UPI) ?? 29105) : (activeRailScope === 'UPI' ? 29105 : 0),
-    IMPS: hasData ? ((stats.rail_volumes && stats.rail_volumes.IMPS) ?? 7431) : (activeRailScope === 'IMPS' ? 7431 : 0),
-    NACH: hasData ? ((stats.rail_volumes && stats.rail_volumes.NACH) ?? 6524) : (activeRailScope === 'NACH' ? 6524 : 0),
-    AEPS: hasData ? ((stats.rail_volumes && stats.rail_volumes.AEPS) ?? 1938) : (activeRailScope === 'AEPS' ? 1938 : 0),
-    RUPAY: hasData ? ((stats.rail_volumes && stats.rail_volumes.RUPAY) ?? 1461) : (activeRailScope === 'RUPAY' ? 1461 : 0),
-    CTS: hasData ? ((stats.rail_volumes && stats.rail_volumes.CTS) ?? 1511) : (activeRailScope === 'CTS' ? 1511 : 0),
-    BBPS: hasData ? ((stats.rail_volumes && stats.rail_volumes.BBPS) ?? 525) : (activeRailScope === 'BBPS' ? 525 : 0),
-    NETC: hasData ? ((stats.rail_volumes && stats.rail_volumes.NETC) ?? 1505) : (activeRailScope === 'NETC' ? 1505 : 0)
+    UPI: upiRecordVolume,
+    IMPS: (stats.rail_volumes?.IMPS) ?? (hasData ? 7431 : (activeRailScope === 'IMPS' ? 7431 : 0)),
+    NACH: (stats.rail_volumes?.NACH) ?? (hasData ? 6524 : (activeRailScope === 'NACH' ? 6524 : 0)),
+    AEPS: (stats.rail_volumes?.AEPS) ?? (hasData ? 1938 : (activeRailScope === 'AEPS' ? 1938 : 0)),
+    RUPAY: (stats.rail_volumes?.RUPAY) ?? (hasData ? 1461 : (activeRailScope === 'RUPAY' ? 1461 : 0)),
+    CTS: (stats.rail_volumes?.CTS) ?? (hasData ? 1511 : (activeRailScope === 'CTS' ? 1511 : 0)),
+    BBPS: (stats.rail_volumes?.BBPS) ?? (hasData ? 525 : (activeRailScope === 'BBPS' ? 525 : 0)),
+    NETC: (stats.rail_volumes?.NETC) ?? (hasData ? 1505 : (activeRailScope === 'NETC' ? 1505 : 0))
   }
 
   const railMetadata = {
@@ -922,8 +950,8 @@ export default function App() {
       clearingWindow: '6 Daily Settlement Cycles (00:00 - 24:00 IST)',
       sla: 'T+1 Calendar Day (RBI DPSS Circular No.629)',
       systems: 'NPCI Central Switch, Base24, Finacle 10.x CBS, GL 9901',
-      dailyVolume: '29,105 txns',
-      stpRate: '95.2%'
+      dailyVolume: `${upiRecordVolume} txns`,
+      stpRate: (reconData?.stp_rate !== undefined ? `${reconData.stp_rate}%` : '20.0%')
     },
     IMPS: {
       name: 'Immediate Payment Service (IMPS)',
@@ -1173,7 +1201,7 @@ export default function App() {
     setLastResult(null)
     setIsDuplicate(false)
 
-    const scopedVol = activeRailScope ? (railRecordCounts[activeRailScope] || 29105) : 50000
+    const scopedVol = activeRailScope ? (railRecordCounts[activeRailScope] || (reconData?.total_records || 5)) : (reconData?.total_records || 5)
     const scopedFileName = activeRailScope ? `NPCI_${activeRailScope}_Settlement_Cycle1.csv` : 'NPCI_UPI_Settlement_TestData_50K.csv'
 
     // Open AE Server RPA Execution Modal with blurred background
@@ -1354,17 +1382,29 @@ export default function App() {
   const currentRailMeta = isScoped ? railMetadata[activeRailScope] : null
   const scopedRailVol = isScoped
     ? (railRecordCounts[activeRailScope.toUpperCase()] || 0)
-    : (hasData ? (stats.total_records_ingested || 50000) : 0)
+    : (hasData ? (stats.total_records_ingested || 5) : 0)
   const scopedP1Count = isScoped
-    ? (scopedRailVol > 0 ? Math.round(scopedRailVol * 0.048) : 0)
-    : (hasData ? (stats.p1_count ?? 2400) : 0)
+    ? (activeRailScope.toUpperCase() === 'UPI' && reconData?.p1_count !== undefined
+        ? reconData.p1_count
+        : (scopedRailVol > 0 ? Math.round(scopedRailVol * 0.048) : 0))
+    : (hasData ? (stats.p1_count ?? 4) : 0)
   const scopedP2Count = isScoped
-    ? (scopedRailVol > 0 ? Math.round(scopedRailVol * 0.007) : 0)
-    : (hasData ? (stats.p2_count ?? 350) : 0)
-  const scopedExcCount = scopedP1Count + scopedP2Count
-  const scopedStpCount = scopedRailVol > 0 ? (scopedRailVol - scopedExcCount) : 0
-  const scopedStpPct = scopedRailVol > 0 ? ((scopedStpCount / scopedRailVol) * 100).toFixed(1) : 0
-  const scopedExcPct = scopedRailVol > 0 ? ((scopedExcCount / scopedRailVol) * 100).toFixed(1) : 0
+    ? (activeRailScope.toUpperCase() === 'UPI' && reconData?.p2_count !== undefined
+        ? reconData.p2_count
+        : (scopedRailVol > 0 ? Math.round(scopedRailVol * 0.007) : 0))
+    : (hasData ? (stats.p2_count ?? 0) : 0)
+  const scopedExcCount = isScoped && activeRailScope.toUpperCase() === 'UPI' && reconData?.break_count !== undefined
+    ? reconData.break_count
+    : (scopedP1Count + scopedP2Count)
+  const scopedStpCount = isScoped && activeRailScope.toUpperCase() === 'UPI' && reconData?.matched_count !== undefined
+    ? reconData.matched_count
+    : (scopedRailVol > 0 ? (scopedRailVol - scopedExcCount) : 0)
+  const scopedStpPct = isScoped && activeRailScope.toUpperCase() === 'UPI' && reconData?.stp_rate !== undefined
+    ? reconData.stp_rate
+    : (scopedRailVol > 0 ? ((scopedStpCount / scopedRailVol) * 100).toFixed(1) : 0)
+  const scopedExcPct = isScoped && activeRailScope.toUpperCase() === 'UPI' && reconData?.stp_rate !== undefined
+    ? (100 - reconData.stp_rate).toFixed(1)
+    : (scopedRailVol > 0 ? ((scopedExcCount / scopedRailVol) * 100).toFixed(1) : 0)
 
   const stp_pct = scopedStpPct
   const exc_pct = scopedExcPct
@@ -1790,20 +1830,112 @@ export default function App() {
               </div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                 <button
+                  className="btn btn-secondary"
+                  style={{ padding: '9px 16px', fontSize: 12.5, borderColor: '#ea580c', color: '#ea580c' }}
+                  disabled={mafRunning}
+                  onClick={handleTriggerAeChain}
+                >
+                  Trigger Downstream Toolchain (UPI Recon)
+                </button>
+                <button
                   className="btn btn-primary"
                   style={{ padding: '9px 18px', fontSize: 12.5, background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)', borderColor: '#ea580c' }}
                   disabled={mafRunning}
                   onClick={handleRunOrchestrator}
                 >
-                  {mafRunning ? '⚙️ MAF Graph Executing...' : '⚡ Run Autonomous MAF Flow'}
+                  {mafRunning ? 'MAF Graph Executing...' : 'Run Autonomous MAF Flow'}
                 </button>
                 <button
                   className="btn btn-secondary"
                   style={{ padding: '9px 14px', fontSize: 12.5 }}
                   onClick={handleResetOrchestrator}
                 >
-                  🔄 Reset Graph
+                  Reset Graph
                 </button>
+              </div>
+            </div>
+
+            {/* Autonomous AE Server Watcher & Downstream Toolchain Panel */}
+            <div className="card" style={{
+              background: '#ffffff',
+              border: '1.5px solid #86efac',
+              borderRadius: 14,
+              padding: '16px 20px',
+              marginBottom: 16,
+              boxShadow: '0 4px 14px rgba(22, 163, 74, 0.08)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{
+                    background: '#dcfce7',
+                    border: '1.5px solid #16a34a',
+                    color: '#15803d',
+                    fontSize: 11,
+                    fontWeight: 800,
+                    padding: '3px 10px',
+                    borderRadius: 99,
+                    letterSpacing: '0.4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
+                    AUTONOMOUS WATCHER ACTIVE
+                  </span>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>
+                    Monitoring Workflow: "NPCI Demo UPI Reconn"
+                  </span>
+                </div>
+                <div style={{ fontSize: 11.5, color: '#64748b' }}>
+                  Server: <a href="https://t4.automationedge.com/#/requests/list" target="_blank" rel="noopener noreferrer" style={{ color: '#ea580c', fontWeight: 600 }}>t4.automationedge.com</a> &bull; Continuous Result Polling: <b style={{ color: '#16a34a' }}>2.0s interval</b>
+                </div>
+              </div>
+
+              {/* Downstream Toolchain Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
+                {/* Tool 1 */}
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#0f172a' }}>Tool 1: Zero-Delta GL Knock-Off</span>
+                    <span style={{ background: '#dcfce7', color: '#15803d', fontSize: 9.5, fontWeight: 800, padding: '1px 6px', borderRadius: 4 }}>AUTO</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>
+                    Reads latest matched batch &bull; Posts zero-delta voucher (GL-14020 vs GL-11010) &bull; Closes settlement STP
+                  </div>
+                </div>
+
+                {/* Tool 2 */}
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#0f172a' }}>Tool 2: AI Dual-Track Dispatcher</span>
+                    <span style={{ background: '#ffedd5', color: '#c2410c', fontSize: 9.5, fontWeight: 800, padding: '1px 6px', borderRadius: 4 }}>REASONER</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>
+                    Evaluates break root causes &bull; Starts RBI T+1 penalty clock &bull; Calculates financial exposure
+                  </div>
+                </div>
+
+                {/* Tool 3 */}
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#0f172a' }}>Tool 3: CBS Reversal Bot</span>
+                    <span style={{ background: '#eff6ff', color: '#1d4ed8', fontSize: 9.5, fontWeight: 800, padding: '1px 6px', borderRadius: 4 }}>EXECUTION</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>
+                    Auto-credits &lt; ₹5,000 deemed fails via Finacle bot &bull; Enqueues high-value cases to HITL Cockpit
+                  </div>
+                </div>
+
+                {/* Tool 4 */}
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#0f172a' }}>Tool 4: Audit Crypt-Seal</span>
+                    <span style={{ background: '#f1f5f9', color: '#475569', fontSize: 9.5, fontWeight: 800, padding: '1px 6px', borderRadius: 4 }}>SHA-256</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>
+                    Bundles telemetry into immutable Merkle digest &bull; Generates 100% RBI compliance evidence pack
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -3503,7 +3635,13 @@ export default function App() {
                         {vol.toLocaleString('en-IN')} <span style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Records</span>
                       </div>
                       <div style={{ fontSize: 11, color: '#64748b', marginTop: 4, display: 'flex', justifyContent: 'space-between' }}>
-                        <span>Settlement Status: <strong style={{ color: vol > 0 ? '#16a34a' : '#64748b' }}>{vol > 0 ? 'VERIFIED (95.2% STP)' : 'STANDBY'}</strong></span>
+                        <span>Settlement Status: <strong style={{ color: vol > 0 ? '#16a34a' : '#64748b' }}>
+                          {vol > 0
+                            ? (code === 'UPI' && reconData?.stp_rate !== undefined
+                                ? `VERIFIED (${reconData.stp_rate}% STP)`
+                                : 'VERIFIED (95.2% STP)')
+                            : 'STANDBY'}
+                        </strong></span>
                       </div>
                     </div>
                   )
@@ -3548,7 +3686,7 @@ export default function App() {
                 <div className="card-title">
                   <div className="card-title-left"><div className="card-title-dot" /><span>Scenario Breakdown {isScoped ? `(${activeRailScope})` : ''}</span></div>
                 </div>
-                <ScenarioBreakdown files={files} scopedRail={activeRailScope} />
+                <ScenarioBreakdown files={files} scopedRail={activeRailScope} reconData={reconData} />
               </div>
               <div className="card">
                 <div className="card-title">

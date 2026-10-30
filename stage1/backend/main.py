@@ -21,6 +21,7 @@ if str(WORKSPACE_ROOT) not in sys.path:
 from stage2.backend.recon_engine import run_4way_reconciliation, get_recon_summary, get_breaks, get_matched, reset_recon_engine
 from stage3.backend.investigation_agent import run_ai_investigation, get_agent_summary, get_dossier_by_txn_id, reset_investigation_agent
 from stage4_5_6.backend.recovery_and_execution import (
+    initialize_recovery_pipeline,
     get_recovery_summary,
     get_hitl_queue,
     approve_transaction,
@@ -491,14 +492,164 @@ def health():
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  AUTOMATIONEDGE SERVER INTEGRATION & GL KNOCK-OFF ENGINE
+# ══════════════════════════════════════════════════════════════════════════════
+
+AE_SERVER_STATE: dict[str, Any] = {
+    "server_url": "https://t4.automationedge.com/#/requests/list",
+    "username": "abhishek.malwatkar@valuedx.com",
+    "workflow_name": "NPCI Demo UPI Reconn",
+    "status": "COMPLETED",
+    "message": "Message : UPI Recon Completed",
+    "last_sync": datetime.now().isoformat(),
+    "matched_count": 1,
+    "matched_amount": 840.04,
+    "breaks_count": 4,
+    "breaks_amount": 7700.0,
+    "gl_status": "KNOCKED_OFF_BALANCED",
+    "cycle_status": "STP_SETTLED_CLOSED",
+    "auto_refund_count": 3,
+    "auto_refund_amount": 5700.0,
+    "hitl_pending_count": 1,
+}
+
+GL_KNOCK_OFF_STATE: dict[str, Any] = {
+    "status": "KNOCKED_OFF_BALANCED",
+    "cycle_id": "UPI-20261029-CY01",
+    "timestamp": datetime.now().isoformat(),
+    "settlement_status": "STP_SETTLED_CLOSED",
+    "matched_count": 1,
+    "matched_amount": 840.04,
+    "debit_account": "GL-14020 UPI Outward Clearing Suspense",
+    "credit_account": "GL-11010 RBI Settlement Reserve Account",
+    "variance_delta": 0.00,
+    "journal_voucher_id": "JV-UPI-STP-20261030-001",
+    "description": "Zero-Delta GL knock-off entry closing settlement cycle straight-through for matched records",
+    "accounting_entries": [
+        {
+            "entry_id": "JE-001",
+            "account_number": "GL-14020",
+            "account_name": "UPI Outward Clearing Suspense",
+            "type": "DEBIT",
+            "amount": 840.04,
+            "status": "BALANCED_CLOSED"
+        },
+        {
+            "entry_id": "JE-002",
+            "account_number": "GL-11010",
+            "account_name": "RBI Settlement Reserve Account",
+            "type": "CREDIT",
+            "amount": 840.04,
+            "status": "BALANCED_CLOSED"
+        }
+    ]
+}
+
+
+def execute_post_recon_pipeline(recon_res: dict) -> dict:
+    """
+    Executes the post-reconciliation pipeline:
+    1. Matched Data: Posts zero-delta GL knock-off entries (GL-14020 vs GL-11010) and closes cycle STP.
+    2. Unmatched Data: AI diagnoses root causes, calculates RBI T+1 penalty clock, and applies
+       dual-track policy (auto-refunding low-value < Rs 5k, routing high-value > Rs 10k / mismatches to HITL Cockpit).
+    3. Records AE Server 'Message : UPI Recon Completed' completion audit.
+    """
+    global GL_KNOCK_OFF_STATE, AE_SERVER_STATE
+    matched_cnt = recon_res.get("matched_count", 0)
+    matched_amt = recon_res.get("matched_amount", 0.0)
+    break_cnt = recon_res.get("break_count", 0)
+    break_amt = recon_res.get("break_amount", 0.0)
+
+    # 1. Zero-Delta GL Knock-Off Entry
+    voucher_id = f"JV-UPI-STP-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:4].upper()}"
+    GL_KNOCK_OFF_STATE = {
+        "status": "KNOCKED_OFF_BALANCED",
+        "cycle_id": "UPI-20261029-CY01",
+        "timestamp": datetime.now().isoformat(),
+        "settlement_status": "STP_SETTLED_CLOSED",
+        "matched_count": matched_cnt,
+        "matched_amount": round(matched_amt, 2),
+        "debit_account": "GL-14020 UPI Outward Clearing Suspense",
+        "credit_account": "GL-11010 RBI Settlement Reserve Account",
+        "variance_delta": 0.00,
+        "journal_voucher_id": voucher_id,
+        "description": f"Zero-Delta GL knock-off entry closing settlement cycle for {matched_cnt} matched transaction(s)",
+        "accounting_entries": [
+            {
+                "entry_id": f"JE-{uuid.uuid4().hex[:6].upper()}",
+                "account_number": "GL-14020",
+                "account_name": "UPI Outward Clearing Suspense",
+                "type": "DEBIT",
+                "amount": round(matched_amt, 2),
+                "status": "BALANCED_CLOSED"
+            },
+            {
+                "entry_id": f"JE-{uuid.uuid4().hex[:6].upper()}",
+                "account_number": "GL-11010",
+                "account_name": "RBI Settlement Reserve Account",
+                "type": "CREDIT",
+                "amount": round(matched_amt, 2),
+                "status": "BALANCED_CLOSED"
+            }
+        ]
+    }
+    add_audit("INFO", "GL_KNOCKOFF_BALANCED", voucher_id,
+              f"Zero-Delta GL knock-off posted: GL-14020 vs GL-11010 (Delta: ₹0.00). {matched_cnt} matched record(s) closed STP.")
+
+    # 2. Run AI Break Investigation Agent
+    inv_res = run_ai_investigation()
+
+    # 3. Initialize Recovery Pipeline with Dual-Track Policy
+    initialize_recovery_pipeline()
+    rec_sum = get_recovery_summary()
+
+    # 4. Sync AutomationEdge Server State
+    AE_SERVER_STATE = {
+        "server_url": "https://t4.automationedge.com/#/requests/list",
+        "username": "abhishek.malwatkar@valuedx.com",
+        "workflow_name": "NPCI Demo UPI Reconn",
+        "status": "COMPLETED",
+        "message": "Message : UPI Recon Completed",
+        "last_sync": datetime.now().isoformat(),
+        "matched_count": matched_cnt,
+        "matched_amount": round(matched_amt, 2),
+        "breaks_count": break_cnt,
+        "breaks_amount": round(break_amt, 2),
+        "gl_status": "KNOCKED_OFF_BALANCED",
+        "cycle_status": "STP_SETTLED_CLOSED",
+        "auto_refund_count": rec_sum.get("auto_resolvable_count", 0),
+        "auto_refund_amount": rec_sum.get("auto_resolvable_amount", 0.0),
+        "hitl_pending_count": rec_sum.get("hitl_pending_count", 0),
+    }
+
+    add_audit("INFO", "AE_UPI_RECON_COMPLETED", "AE_SERVER",
+              'AutomationEdge Workflow "NPCI Demo UPI Reconn" returned "Message : UPI Recon Completed". Dual-Track AI executed.')
+
+    recon_res["gl_knock_off"] = GL_KNOCK_OFF_STATE
+    recon_res["ai_investigation"] = {
+        "total_breaks_analyzed": inv_res.get("total_breaks_analyzed", 0),
+        "auto_resolvable_count": inv_res.get("auto_resolvable_count", 0),
+        "hitl_required_count": inv_res.get("hitl_required_count", 0),
+    }
+    recon_res["dual_track"] = {
+        "auto_refund_count": rec_sum.get("auto_resolvable_count", 0),
+        "auto_refund_amount": rec_sum.get("auto_resolvable_amount", 0.0),
+        "hitl_pending_count": rec_sum.get("hitl_pending_count", 0),
+    }
+    recon_res["ae_server"] = AE_SERVER_STATE
+    return recon_res
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  STAGE 2: 4-WAY RECONCILIATION ROUTES
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.post("/api/recon/run")
 def trigger_recon(payload: Optional[Dict[str, Any]] = None):
-    """Trigger 4-Way Reconciliation across NPCI, Switch, CBS, and GL."""
+    """Trigger 4-Way Reconciliation across NPCI, Switch, CBS, and GL with immediate Post-Recon Chain."""
     try:
         res = run_4way_reconciliation()
+        res = execute_post_recon_pipeline(res)
         add_audit("INFO", "RECON_RUN_COMPLETED", res.get("run_id", "RECON"),
                   f"4-Way Matching: {res['matched_count']:,} Matched ({res['stp_rate']}%), {res['break_count']:,} Breaks ({res['p1_count']} P1)")
         return res
@@ -508,8 +659,49 @@ def trigger_recon(payload: Optional[Dict[str, Any]] = None):
 
 @app.get("/api/recon/summary")
 def recon_summary():
-    """Get latest 4-Way Reconciliation summary metrics."""
-    return get_recon_summary()
+    """Get latest 4-Way Reconciliation summary metrics with GL knock-off and dual-track data."""
+    res = get_recon_summary()
+    # Ensure GL knock-off and dual track are populated if records exist
+    if res.get("total_records", 0) > 0 and GL_KNOCK_OFF_STATE.get("matched_count", 0) == 0:
+        res = execute_post_recon_pipeline(res)
+    else:
+        res["gl_knock_off"] = GL_KNOCK_OFF_STATE
+        res["ae_server"] = AE_SERVER_STATE
+    return res
+
+
+@app.get("/api/recon/gl-knockoff")
+def get_gl_knockoff():
+    """Returns the zero-delta GL knock-off voucher and balanced ledger status."""
+    return GL_KNOCK_OFF_STATE
+
+
+@app.get("/api/ae/status")
+def get_ae_status():
+    """Returns the latest AutomationEdge Server sync status and completion message."""
+    return AE_SERVER_STATE
+
+
+@app.post("/api/ae/complete")
+def notify_ae_complete(payload: Optional[Dict[str, Any]] = None):
+    """
+    Webhook or Process Studio completion callback from AutomationEdge Server.
+    When WF 'NPCI Demo UPI Reconn' returns 'Message : UPI Recon Completed',
+    triggers zero-delta GL knock-off and dual-track AI exception resolution.
+    """
+    try:
+        res = run_4way_reconciliation()
+        res = execute_post_recon_pipeline(res)
+        return {
+            "status": "SUCCESS",
+            "server_url": "https://t4.automationedge.com/#/requests/list",
+            "username": "abhishek.malwatkar@valuedx.com",
+            "workflow_name": "NPCI Demo UPI Reconn",
+            "message": "Message : UPI Recon Completed",
+            "execution_result": res
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/recon/breaks")

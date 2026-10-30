@@ -6,7 +6,13 @@ export default function AeServerExecutionModal({
   currentStep = 0, // 0: Idle, 1: SFTP Courier, 2: Cryptkeeper, 3: 4-Way Recon, 4: AI Diagnostic, 5: Finacle Poster, 6: Audit Crypt-Seal, 7: All Complete
   executionStatus = 'RUNNING', // 'RUNNING' | 'COMPLETED' | 'DUPLICATE_HALTED' | 'REJECTED_HALTED'
   fileName = 'NPCI_UPI_Settlement_TestData_50K.csv',
-  totalRecords = 50000
+  totalRecords = 50000,
+  serverUrl = 'https://t4.automationedge.com/#/requests/list',
+  username = 'abhishek.malwatkar@valuedx.com',
+  workflowName = 'NPCI Demo UPI Reconn',
+  completionMessage = 'Message : UPI Recon Completed',
+  reconData = null,
+  recoverySummary = null
 }) {
   if (!isOpen) return null
 
@@ -531,7 +537,7 @@ export default function AeServerExecutionModal({
                 </span>
               </div>
               <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2 }}>
-                Server: <b style={{ color: '#0f172a' }}>AE-PROD-CLUSTER-01</b> &bull; Agent: <b style={{ color: '#0f172a' }}>AE-RUNNER-NODE-04</b> &bull; Payload: <b style={{ color: isHalted ? '#dc2626' : '#ea580c' }}>{fileName}</b> ({totalRecords.toLocaleString()} txns)
+                AE Server: <a href={serverUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#ea580c', fontWeight: 700, textDecoration: 'none' }}>{serverUrl}</a> &bull; User: <b style={{ color: '#0f172a' }}>{username}</b> &bull; WF: <b style={{ color: '#0f172a' }}>{workflowName}</b>
               </div>
             </div>
           </div>
@@ -595,6 +601,83 @@ export default function AeServerExecutionModal({
                 : `Pipeline Progress: ${progressPercent}% (${completedCount} of 6 Workflows Completed)`}
             </span>
           </div>
+
+          {/* AutomationEdge Server Message Banner & Post-Recon Next Steps */}
+          {isAllComplete && (
+            <div style={{
+              background: '#ffffff',
+              border: '1.5px solid #86efac',
+              borderRadius: 12,
+              padding: '14px 16px',
+              marginBottom: 10,
+              boxShadow: '0 4px 14px rgba(22, 163, 74, 0.08)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{
+                    background: '#dcfce7',
+                    border: '1px solid #16a34a',
+                    color: '#15803d',
+                    fontSize: 11,
+                    fontWeight: 800,
+                    padding: '3px 10px',
+                    borderRadius: 99,
+                    letterSpacing: '0.3px'
+                  }}>
+                    {completionMessage}
+                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#0f172a' }}>
+                    Workflow "{workflowName}" executed on AE Server
+                  </span>
+                </div>
+                <span style={{ fontSize: 11, color: '#64748b' }}>
+                  Target: <b style={{ color: '#0f172a' }}>NPCI UPI Multi-Rail Settlement</b>
+                </span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {/* Matched Data Track */}
+                <div style={{
+                  background: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: 8,
+                  padding: '10px 12px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#166534', textTransform: 'uppercase' }}>
+                      Matched Data &bull; Zero-Delta GL Knock-Off
+                    </span>
+                    <span style={{ background: '#dcfce7', color: '#15803d', fontSize: 9.5, fontWeight: 800, padding: '1px 6px', borderRadius: 4 }}>
+                      STP_SETTLED_CLOSED
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#14532d', lineHeight: 1.45 }}>
+                    Posted zero-delta GL knock-off voucher between <b>GL-14020 UPI Outward Suspense</b> and <b>GL-11010 RBI Settlement Reserve</b> (Delta: ₹0.00). Settlement cycle closed straight-through.
+                  </div>
+                </div>
+
+                {/* Unmatched Data Track */}
+                <div style={{
+                  background: '#fff7ed',
+                  border: '1px solid #fed7aa',
+                  borderRadius: 8,
+                  padding: '10px 12px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#9a3412', textTransform: 'uppercase' }}>
+                      Unmatched Data &bull; Dual-Track AI Execution
+                    </span>
+                    <span style={{ background: '#ffedd5', color: '#c2410c', fontSize: 9.5, fontWeight: 800, padding: '1px 6px', borderRadius: 4 }}>
+                      RBI T+1 ACTIVE
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#7c2d12', lineHeight: 1.45 }}>
+                    Root causes diagnosed &amp; penalty clocks started. <b>Low-value txns (&lt; ₹5k)</b> auto-refunded via Finacle CBS bot; <b>High-value txns (&gt; ₹10k / Mismatches)</b> routed to Operations Manager for 1-click approval.
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Row 1: Steps 1, 2, 3 */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 0, width: '100%' }}>

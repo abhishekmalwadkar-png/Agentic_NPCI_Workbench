@@ -47,8 +47,18 @@ def diagnose_break(b: Dict[str, Any]) -> Dict[str, Any]:
     priority = b.get("priority", "P2")
     resp_code = b.get("response_code", "91")
 
-    # Financial threshold: <= Rs 50,000 can be auto-resolved; > Rs 50,000 requires HITL
-    is_hitl = (cbs_amt >= 50000.0) or (scenario in ("AMOUNT_MISMATCH", "DUPLICATE"))
+    # Dual-Track Policy:
+    # 1. Under Rs 5,000 (Low-Value deemed failures / timeouts): Auto-approved STP refund via Finacle RPA bot
+    # 2. Over Rs 10,000 (High-Value) OR Amount Mismatches / Duplicates: Escalate to Operations Manager Cockpit for 1-click maker-checker execution
+    effective_amt = max(cbs_amt, npci_amt)
+    if scenario in ("AMOUNT_MISMATCH", "DUPLICATE", "GL_UNBALANCED"):
+        is_hitl = True
+    elif effective_amt >= 10000.0:
+        is_hitl = True
+    elif effective_amt <= 5000.0:
+        is_hitl = False
+    else:
+        is_hitl = (priority == "P1")
 
     # Root Cause Diagnostic Logic
     if scenario == "TIMEOUT":

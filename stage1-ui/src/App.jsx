@@ -1555,6 +1555,12 @@ export default function App() {
         logs={aeLogs}
         fileName={aeFileName}
         totalRecords={aeTotalRecords}
+        serverUrl="https://t4.automationedge.com/#/requests/list"
+        username="abhishek.malwatkar@valuedx.com"
+        workflowName="NPCI Demo UPI Reconn"
+        completionMessage="Message : UPI Recon Completed"
+        reconData={reconData}
+        recoverySummary={recoverySummary}
       />
 
       {/* Header */}
@@ -1757,6 +1763,12 @@ export default function App() {
                 setActiveNav('dashboard')
               }}
               onStartRailTrial={handleStartRailTrial}
+              reconData={reconData}
+              reconBreaks={reconBreaks}
+              reconMatched={reconMatched}
+              recoverySummary={recoverySummary}
+              onOpenRecon={() => setActiveNav('recon')}
+              onOpenHitl={() => setActiveNav('hitl')}
             />
           )}
 
@@ -2800,21 +2812,131 @@ export default function App() {
           {/* STAGE 2: 4-WAY RECONCILIATION ENGINE VIEW                        */}
           {/* ═════════════════════════════════════════════════════════════════ */}
           {activeNav === 'recon' && <>
-            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
               <div>
-                <div className="page-title">⚖️ Stage 2: 4-Way Multi-Rail Reconciliation Engine</div>
+                <div className="page-title">Stage 2: 4-Way Multi-Rail Reconciliation Engine</div>
                 <div className="page-sub">
                   Mathematical cross-reconciliation across NPCI Clearing, Payment Switch, Core Banking (Finacle/Flexcube), and General Ledger (GL)
                 </div>
               </div>
-              <button
-                className="btn btn-primary"
-                style={{ padding: '10px 20px', fontSize: 13 }}
-                disabled={reconRunning}
-                onClick={triggerReconRun}
-              >
-                {reconRunning ? '⚙️ Matching 50,000 Records…' : '⚡ Run 4-Way Reconciliation'}
-              </button>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <button
+                  className="btn btn-secondary"
+                  style={{ padding: '9px 16px', fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}
+                  onClick={async () => {
+                    setAeFileName('NPCI_UPI_Settlement_Master.csv')
+                    setAeTotalRecords(5)
+                    setAeModalOpen(true)
+                    setAeCurrentStep(1)
+                    setAeExecutionStatus('RUNNING')
+                    await sleep(600)
+                    setAeCurrentStep(2)
+                    await sleep(600)
+                    setAeCurrentStep(3)
+                    await triggerReconRun()
+                    setAeCurrentStep(4)
+                    await sleep(600)
+                    setAeCurrentStep(5)
+                    await sleep(600)
+                    setAeCurrentStep(6)
+                    await sleep(600)
+                    setAeCurrentStep(7)
+                    setAeExecutionStatus('COMPLETED')
+                  }}
+                >
+                  <img src="/favicon.svg" alt="AE" style={{ width: 16, height: 16 }} />
+                  AE Server Sync (NPCI Demo UPI Reconn)
+                </button>
+                <button
+                  className="btn btn-primary"
+                  style={{ padding: '9px 18px', fontSize: 12.5 }}
+                  disabled={reconRunning}
+                  onClick={triggerReconRun}
+                >
+                  {reconRunning ? 'Matching Records...' : 'Run 4-Way Reconciliation'}
+                </button>
+              </div>
+            </div>
+
+            {/* AutomationEdge Server & Post-Recon Next Steps Live Status Bar */}
+            <div style={{
+              background: '#ffffff',
+              border: '1.5px solid #86efac',
+              borderRadius: 12,
+              padding: '14px 18px',
+              marginBottom: 16,
+              boxShadow: '0 2px 10px rgba(22, 163, 74, 0.08)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{
+                    background: '#dcfce7',
+                    border: '1.5px solid #16a34a',
+                    color: '#15803d',
+                    fontSize: 11,
+                    fontWeight: 800,
+                    padding: '3px 10px',
+                    borderRadius: 99,
+                    letterSpacing: '0.4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
+                    Message : UPI Recon Completed
+                  </span>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>
+                    Workflow: "NPCI Demo UPI Reconn"
+                  </span>
+                </div>
+                <div style={{ fontSize: 11.5, color: '#64748b' }}>
+                  AE Server: <a href="https://t4.automationedge.com/#/requests/list" target="_blank" rel="noopener noreferrer" style={{ color: '#ea580c', fontWeight: 700 }}>https://t4.automationedge.com/#/requests/list</a> &bull; User: <b style={{ color: '#0f172a' }}>abhishek.malwatkar@valuedx.com</b>
+                </div>
+              </div>
+
+              {/* Matched vs Unmatched Dual-Track Execution Summary */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 10 }}>
+                {/* 1. Matched Data: Zero-Delta GL Knock-off */}
+                <div style={{
+                  background: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: 8,
+                  padding: '10px 14px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#166534', textTransform: 'uppercase' }}>
+                      Matched Data &bull; Zero-Delta GL Knock-Off
+                    </span>
+                    <span style={{ background: '#dcfce7', color: '#15803d', fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 4 }}>
+                      STP_SETTLED_CLOSED
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11.5, color: '#14532d', lineHeight: 1.45 }}>
+                    Zero-delta entry posted between <b>GL-14020 (UPI Outward Suspense)</b> and <b>GL-11010 (RBI Settlement Reserve A/C)</b> with <b>₹0.00 delta</b>. Settlement cycle closed straight-through for {reconData?.matched_count || 1} matched txn(s) (₹{(reconData?.matched_amount || 840.04).toLocaleString()}).
+                  </div>
+                </div>
+
+                {/* 2. Unmatched Data: AI Root-Cause & Dual-Track Policy */}
+                <div style={{
+                  background: '#fff7ed',
+                  border: '1px solid #fed7aa',
+                  borderRadius: 8,
+                  padding: '10px 14px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#9a3412', textTransform: 'uppercase' }}>
+                      Unmatched Data &bull; Agentic AI Dual-Track Policy
+                    </span>
+                    <span style={{ background: '#ffedd5', color: '#c2410c', fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 4 }}>
+                      RBI T+1 ACTIVE
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11.5, color: '#7c2d12', lineHeight: 1.45 }}>
+                    Agentic AI diagnosed root causes and calculated RBI T+1 penalty clock:
+                    <b> 3 low-value txns (&lt; ₹5,000)</b> auto-refunded via Finacle CBS bot &bull; <b>1 high-value / mismatch txn (TXN000000004)</b> routed to Operations Manager for 1-click maker-checker approval.
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* 4 Inbound Systems Status Grid */}
@@ -3220,6 +3342,99 @@ export default function App() {
                     <div style={{ fontSize: 12, fontWeight: 600, color: '#7c2d12', marginTop: 2 }}>{currentRailMeta.systems}</div>
                   </div>
                 </div>
+
+                {/* Live UPI Reconciliation & GL Settlement Engine Status in Catalogue View */}
+                {activeRailScope === 'UPI' && (
+                  <div style={{
+                    marginTop: 14,
+                    padding: '14px 18px',
+                    background: '#f8fafc',
+                    border: '1.5px solid #fed7aa',
+                    borderRadius: 10
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
+                        <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>
+                          AutomationEdge Workflow: NPCI Demo UPI Reconn
+                        </span>
+                        <span style={{
+                          background: '#dcfce7',
+                          border: '1px solid #86efac',
+                          color: '#15803d',
+                          fontSize: 10.5,
+                          fontWeight: 800,
+                          padding: '2px 8px',
+                          borderRadius: 99
+                        }}>
+                          Message : UPI Recon Completed
+                        </span>
+                      </div>
+                      <span style={{ fontSize: 11.5, color: '#64748b' }}>
+                        Cycle: <b style={{ color: '#0f172a' }}>UPI-20261029-CY01</b> &bull; Server: <a href="https://t4.automationedge.com/#/requests/list" target="_blank" rel="noopener noreferrer" style={{ color: '#ea580c', fontWeight: 600 }}>t4.automationedge.com</a>
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 12 }}>
+                      <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: 8, padding: '10px 12px' }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#15803d', textTransform: 'uppercase' }}>STP Matched &amp; Closed</div>
+                        <div style={{ fontSize: 16, fontWeight: 900, color: '#16a34a', marginTop: 2 }}>
+                          {reconData?.matched_count || 1} Record
+                        </div>
+                        <div style={{ fontSize: 11, color: '#059669', fontWeight: 600 }}>
+                          ₹{(reconData?.matched_amount || 840.04).toLocaleString()} (Zero-Delta GL Knocked-off)
+                        </div>
+                      </div>
+
+                      <div style={{ background: '#ffffff', border: '1px solid #fed7aa', borderRadius: 8, padding: '10px 12px' }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#c2410c', textTransform: 'uppercase' }}>AI Breaks Diagnosed</div>
+                        <div style={{ fontSize: 16, fontWeight: 900, color: '#ea580c', marginTop: 2 }}>
+                          {reconData?.break_count || 4} Breaks
+                        </div>
+                        <div style={{ fontSize: 11, color: '#b45309', fontWeight: 600 }}>
+                          ₹{(reconData?.break_amount || 7700).toLocaleString()} (RBI T+1 Clock Active)
+                        </div>
+                      </div>
+
+                      <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#0284c7', textTransform: 'uppercase' }}>Track A: Auto-Refunds</div>
+                        <div style={{ fontSize: 16, fontWeight: 900, color: '#0284c7', marginTop: 2 }}>
+                          3 Transactions
+                        </div>
+                        <div style={{ fontSize: 11, color: '#0369a1', fontWeight: 600 }}>
+                          &lt; ₹5,000 Deemed Fails (Posted)
+                        </div>
+                      </div>
+
+                      <div style={{ background: '#ffffff', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 12px' }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#dc2626', textTransform: 'uppercase' }}>Track B: HITL Cockpit</div>
+                        <div style={{ fontSize: 16, fontWeight: 900, color: '#dc2626', marginTop: 2 }}>
+                          1 Pending
+                        </div>
+                        <div style={{ fontSize: 11, color: '#b91c1c', fontWeight: 600 }}>
+                          Amount Mismatch (₹550 vs ₹500)
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <button
+                        className="btn btn-primary"
+                        style={{ fontSize: 12, padding: '7px 14px', background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)', borderColor: '#ea580c' }}
+                        onClick={() => setActiveNav('recon')}
+                      >
+                        Open UPI 4-Way Reconciliation Engine &rarr;
+                      </button>
+                      <button
+                        className="btn btn-secondary"
+                        style={{ fontSize: 12, padding: '7px 14px' }}
+                        onClick={() => setActiveNav('hitl')}
+                      >
+                        Open Operations Manager HITL Cockpit &rarr;
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

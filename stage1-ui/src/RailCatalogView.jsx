@@ -36,7 +36,18 @@ function RailSvgIcon({ code, color = '#0284c7' }) {
   }
 }
 
-export default function RailCatalogView({ onLaunchWorkflow, onOpenRailOps, onStartRailTrial, selectedRailCode }) {
+export default function RailCatalogView({
+  onLaunchWorkflow,
+  onOpenRailOps,
+  onStartRailTrial,
+  selectedRailCode,
+  reconData,
+  reconBreaks,
+  reconMatched,
+  recoverySummary,
+  onOpenRecon,
+  onOpenHitl
+}) {
   const [catalogs, setCatalogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState('ALL')
@@ -343,6 +354,108 @@ export default function RailCatalogView({ onLaunchWorkflow, onOpenRailOps, onSta
                     +{rail.automated_tasks?.length || 5} tasks
                   </span>
                 </div>
+
+                {/* Dedicated Live UPI Reconciliation & GL Settlement Panel */}
+                {rail.rail_code === 'UPI' && (
+                  <div style={{
+                    background: '#f8fafc',
+                    border: '1.5px solid #fed7aa',
+                    borderRadius: 12,
+                    padding: '12px 14px',
+                    marginBottom: 16,
+                    boxShadow: '0 2px 8px rgba(234, 88, 12, 0.06)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
+                        <span style={{ fontSize: 11, fontWeight: 800, color: '#0f172a' }}>
+                          AE Workflow: NPCI Demo UPI Reconn
+                        </span>
+                      </div>
+                      <span style={{
+                        background: '#dcfce7',
+                        border: '1px solid #86efac',
+                        color: '#15803d',
+                        fontSize: 10,
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: 99,
+                        letterSpacing: '0.3px'
+                      }}>
+                        Message : UPI Recon Completed
+                      </span>
+                    </div>
+
+                    {/* Metric Counters */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 11, marginBottom: 10 }}>
+                      <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: 8, padding: '7px 10px' }}>
+                        <div style={{ color: '#15803d', fontSize: 9.5, fontWeight: 800, textTransform: 'uppercase' }}>STP MATCHED &amp; CLOSED</div>
+                        <div style={{ fontWeight: 900, color: '#16a34a', fontSize: 13, marginTop: 2 }}>
+                          {reconData?.matched_count || 1} Record (₹{(reconData?.matched_amount || 840.04).toLocaleString()})
+                        </div>
+                        <div style={{ color: '#059669', fontSize: 9.5, marginTop: 2, fontWeight: 600 }}>Zero-Delta GL Knocked-off Balanced</div>
+                      </div>
+
+                      <div style={{ background: '#ffffff', border: '1px solid #fed7aa', borderRadius: 8, padding: '7px 10px' }}>
+                        <div style={{ color: '#c2410c', fontSize: 9.5, fontWeight: 800, textTransform: 'uppercase' }}>AI BREAKS (DUAL-TRACK)</div>
+                        <div style={{ fontWeight: 900, color: '#ea580c', fontSize: 13, marginTop: 2 }}>
+                          {reconData?.break_count || 4} Breaks (₹{(reconData?.break_amount || 7700).toLocaleString()})
+                        </div>
+                        <div style={{ color: '#b45309', fontSize: 9.5, marginTop: 2, fontWeight: 600 }}>
+                          3 Auto-Refunded | 1 HITL Cockpit
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Navigation Buttons */}
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {onOpenRecon && (
+                        <button
+                          onClick={() => onOpenRecon()}
+                          style={{
+                            flex: 1,
+                            background: '#ffffff',
+                            border: '1px solid #ea580c',
+                            color: '#ea580c',
+                            borderRadius: 6,
+                            padding: '6px 8px',
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 4
+                          }}
+                        >
+                          View 4-Way Recon &rarr;
+                        </button>
+                      )}
+                      {onOpenHitl && (
+                        <button
+                          onClick={() => onOpenHitl()}
+                          style={{
+                            flex: 1,
+                            background: '#fff7ed',
+                            border: '1px solid #fed7aa',
+                            color: '#9a3412',
+                            borderRadius: 6,
+                            padding: '6px 8px',
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 4
+                          }}
+                        >
+                          HITL Cockpit (1) &rarr;
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Bottom Action Area: Preserving Try Now & Subscribe buttons */}

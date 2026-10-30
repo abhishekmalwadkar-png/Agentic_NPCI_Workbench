@@ -47,6 +47,7 @@ def initialize_recovery_pipeline():
     auto_amt = 0.0
 
     for tid, d in dossiers.items():
+        effective_amt = float(d.get("cbs_amount") or d.get("npci_amount") or 0.0)
         if d.get("is_hitl_required"):
             if tid not in STAGE_STATE["cbs_postings"]:
                 HITL_PENDING_QUEUE.append({
@@ -54,7 +55,7 @@ def initialize_recovery_pipeline():
                     "rrn": d["rrn"],
                     "rail": d["rail"],
                     "cycle_id": d["cycle_id"],
-                    "amount": d["cbs_amount"],
+                    "amount": effective_amt,
                     "scenario": d["scenario"],
                     "category": d["category"],
                     "priority": d["priority"],
@@ -65,14 +66,14 @@ def initialize_recovery_pipeline():
                 })
         else:
             auto_count += 1
-            auto_amt += d.get("cbs_amount", 0)
+            auto_amt += effective_amt
             if tid not in STAGE_STATE["cbs_postings"]:
                 STAGE_STATE["cbs_postings"][tid] = {
                     "posting_ref": f"FIN_AUTO_{d['rrn'][-6:]}_{tid[-4:]}",
                     "status": "POSTED_SUCCESS",
                     "cbs_type": "AUTONOMOUS_REVERSAL_BOT",
-                    "amount": d["cbs_amount"],
-                    "approver": "AI Recovery Agent (Threshold < ₹50k)",
+                    "amount": effective_amt,
+                    "approver": "AI Recovery Agent (Dual-Track Auto-Refund < ₹5,000)",
                     "timestamp": datetime.now().isoformat()
                 }
 

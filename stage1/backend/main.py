@@ -1176,11 +1176,12 @@ def _autonomous_ae_watcher_loop():
                 _LAST_SEEN_MTIME["unmatched"] = latest_u_mtime
 
                 latest_m_path = str(m_files[0].resolve()) if m_files else ""
+                latest_u_path = str(u_files[0].resolve()) if u_files else ""
 
-                # 1. Trigger AE Server Workflow: UPI_ZeroDelta_GL_KnockOff
+                # 1. Trigger AE Server Workflow: NPCI Demo GL-KnockOff
                 try:
                     ae_server_execute({
-                        "workflow_name": "UPI_ZeroDelta_GL_KnockOff",
+                        "workflow_name": "NPCI Demo GL-KnockOff",
                         "params": [
                             {"name": "NPCI_URL", "value": os.getenv("NPCI_URL", "http://localhost:8000/api/recon/run")},
                             {"name": "Matched_File_Path", "value": latest_m_path}
@@ -1189,18 +1190,27 @@ def _autonomous_ae_watcher_loop():
                 except Exception as ae_e1:
                     pass
 
-                # 2. Trigger AE Server Workflow: UPI_CBS_Execution_Bot
+                # 2. Trigger AE Server Workflow: NPCI Demo UPI AI Dispatcher
                 try:
                     ae_server_execute({
-                        "workflow_name": "UPI_CBS_Execution_Bot",
+                        "workflow_name": "NPCI Demo UPI AI Dispatcher",
                         "params": [
-                            {"name": "NPCI_Queue_url", "value": os.getenv("NPCI_QUEUE_URL", "http://localhost:8000/api/hitl/queue")}
+                            {"name": "UnMatched_File_Path", "value": latest_u_path}
                         ]
                     })
                 except Exception as ae_e2:
                     pass
 
-                # 3. Execute Orchestrator Agent downstream toolchain
+                # 3. Trigger AE Server Workflow: NPCI Demo UPI-CBS
+                try:
+                    ae_server_execute({
+                        "workflow_name": "NPCI Demo UPI-CBS",
+                        "params": []
+                    })
+                except Exception as ae_e3:
+                    pass
+
+                # 4. Execute Orchestrator Agent downstream toolchain
                 orch = get_orchestrator()
                 res = orch.execute_ae_triggered_toolchain(workflow_name="NPCI Demo UPI Reconn")
 
@@ -1211,7 +1221,7 @@ def _autonomous_ae_watcher_loop():
                 WATCHER_STATE["tools_executed_count"] += 4
 
                 add_audit("INFO", "ORCHESTRATOR_AGENT_AUTO_TRIGGER", "AUTONOMOUS_WATCHER",
-                          f"Detected new batch from 'NPCI Demo UPI Reconn'. AE Workflows & 4 downstream tools triggered.")
+                          f"Detected new batch from 'NPCI Demo UPI Reconn'. AE Server Workflows & 4 downstream tools triggered.")
             else:
                 # Initialize base mtimes
                 if _LAST_SEEN_MTIME["matched"] == 0.0:

@@ -842,15 +842,12 @@ def ae_server_execute(payload: Optional[Dict[str, Any]] = None):
     p = payload or {}
     server = (p.get("server_url") or AE_CLIENT_CONFIG["server_url"]).rstrip("/")
 
-    # Ensure authenticated session token
-    if not AE_CLIENT_CONFIG.get("session_token") or AE_CLIENT_CONFIG["session_token"].startswith("AE_SESSION_"):
-        auth_res = ae_server_authenticate()
-        if auth_res.get("session_token"):
-            AE_CLIENT_CONFIG["session_token"] = auth_res["session_token"]
+    # Always ensure a fresh, active session token from AE Server
+    auth_res = ae_server_authenticate()
+    token = auth_res.get("session_token") or AE_CLIENT_CONFIG.get("session_token")
+    org_code = auth_res.get("org_code") or AE_CLIENT_CONFIG.get("org_code") or "AE_POC_TEAM"
 
-    token = p.get("session_token") or AE_CLIENT_CONFIG["session_token"] or f"AE_SESSION_{uuid.uuid4().hex[:16]}"
     wf_name = p.get("workflow_name") or "NPCI Demo UPI Reconn"
-    org_code = p.get("org_code") or AE_CLIENT_CONFIG.get("org_code") or "AE_POC_TEAM"
 
     # Dynamic default params for 4-way recon feeds
     default_params = [
@@ -864,21 +861,22 @@ def ae_server_execute(payload: Optional[Dict[str, Any]] = None):
     req_body = {
         "orgCode": org_code,
         "workflowName": wf_name,
-        "userId": p.get("user_id") or AE_CLIENT_CONFIG["username"],
-        "source": "NPCI-Workbench",
         "params": params
     }
 
     url = f"{server}/aeengine/rest/execute"
     try:
         data_bytes = json.dumps(req_body).encode("utf-8")
+        print(f"[AE-EXEC-DEBUG] URL: {url} | Token: {token[:20] if token else 'NONE'} | Body: {req_body}")
         req = urllib.request.Request(url, data=data_bytes, method="POST")
         req.add_header("Content-Type", "application/json")
         req.add_header("X-session-token", token)
         req.add_header("User-Agent", "NPCI-Workbench-Agent/1.0")
 
         with urllib.request.urlopen(req, context=_get_ssl_context(), timeout=10) as resp:
-            res_data = json.loads(resp.read().decode("utf-8"))
+            raw_resp = resp.read().decode("utf-8")
+            print(f"[AE-EXEC-DEBUG] Raw AE Resp: {raw_resp}")
+            res_data = json.loads(raw_resp)
             req_id = res_data.get("automationRequestId") or res_data.get("requestId") or res_data.get("id") or int(datetime.now().strftime("%H%M%S"))
             AE_CLIENT_CONFIG["last_request_id"] = req_id
             AE_CLIENT_CONFIG["last_status"] = "Submitted"
@@ -1134,18 +1132,25 @@ WATCHER_STATE = {
 }
 
 _LAST_SEEN_MTIME = {"matched": 0.0, "unmatched": 0.0}
+_PROCESSED_BATCHES = set()
 
 
 def _autonomous_ae_watcher_loop():
     """
-    Continuous Autonomous Agent Watcher:
+    Continuous Autonomous Agent Watcher with Batch Deduplication & Debounce:
     Monitors stage1/Matched_Records and stage1/Unmatched_Records every 2 seconds.
     When 'NPCI Demo UPI Reconn' writes new output files, the agent autonomously
-    calls the downstream tools (Zero-Delta GL Knock-Off -> AI Diagnosis -> CBS Reversal -> Audit Seal).
+    calls the downstream tools exactly once per batch.
     """
-    global _LAST_SEEN_MTIME, WATCHER_STATE
+    global _LAST_SEEN_MTIME, _PROCESSED_BATCHES, WATCHER_STATE
     matched_dir = WORKSPACE_ROOT / "stage1" / "Matched_Records"
     unmatched_dir = WORKSPACE_ROOT / "stage1" / "Unmatched_Records"
+
+    # Pre-populate already existing batches on startup so old files don't re-trigger
+    if matched_dir.exists():
+        for f in matched_dir.iterdir():
+            if f.is_file() and not f.name.startswith(".") and f.name != ".gitkeep":
+                _PROCESSED_BATCHES.add(f.stem.replace("Matched_Records_", ""))
 
     while True:
         try:
@@ -1165,50 +1170,71 @@ def _autonomous_ae_watcher_loop():
                 reverse=True
             ) if unmatched_dir.exists() else []
 
-            latest_m_mtime = m_files[0].stat().st_mtime if m_files else 0.0
-            latest_u_mtime = u_files[0].stat().st_mtime if u_files else 0.0
+            if not m_files:
+                continue
 
-            # If new files are detected after startup
-            if (_LAST_SEEN_MTIME["matched"] > 0 and latest_m_mtime > _LAST_SEEN_MTIME["matched"]) or \
-               (_LAST_SEEN_MTIME["unmatched"] > 0 and latest_u_mtime > _LAST_SEEN_MTIME["unmatched"]):
-                
-                _LAST_SEEN_MTIME["matched"] = latest_m_mtime
-                _LAST_SEEN_MTIME["unmatched"] = latest_u_mtime
+            # Extract batch ID e.g. 20261030_154536
+            latest_batch_key = m_files[0].stem.replace("Matched_Records_", "")
+
+            # If this batch has not been processed yet
+            if latest_batch_key not in _PROCESSED_BATCHES:
+                # Settle debounce: wait 1.5s for both matched & unmatched files to finish flushing to disk
+                time.sleep(1.5)
+
+                # Immediately register batch key to prevent any duplicate triggering
+                _PROCESSED_BATCHES.add(latest_batch_key)
+
+                # Re-fetch file list after settle
+                m_files = sorted(
+                    [f for f in matched_dir.iterdir() if f.is_file() and not f.name.startswith(".") and f.name != ".gitkeep"],
+                    key=lambda f: f.stat().st_mtime,
+                    reverse=True
+                )
+                u_files = sorted(
+                    [f for f in unmatched_dir.iterdir() if f.is_file() and not f.name.startswith(".") and f.name != ".gitkeep"],
+                    key=lambda f: f.stat().st_mtime,
+                    reverse=True
+                )
 
                 latest_m_path = str(m_files[0].resolve()) if m_files else ""
                 latest_u_path = str(u_files[0].resolve()) if u_files else ""
 
+                print(f"[AE-WATCHER] Detected new batch: {latest_batch_key}. Triggering downstream workflows...")
+
                 # 1. Trigger AE Server Workflow: NPCI Demo GL-KnockOff
                 try:
-                    ae_server_execute({
+                    gl_res = ae_server_execute({
                         "workflow_name": "NPCI Demo GL-KnockOff",
                         "params": [
                             {"name": "NPCI_URL", "value": os.getenv("NPCI_URL", "http://localhost:8000/api/recon/run")},
                             {"name": "Matched_File_Path", "value": latest_m_path}
                         ]
                     })
+                    print(f"[AE-WATCHER] Triggered NPCI Demo GL-KnockOff: Req {gl_res.get('requestId')}")
                 except Exception as ae_e1:
-                    pass
+                    print(f"[AE-WATCHER] GL-KnockOff Error: {ae_e1}")
 
                 # 2. Trigger AE Server Workflow: NPCI Demo UPI AI Dispatcher
                 try:
-                    ae_server_execute({
+                    ai_res = ae_server_execute({
                         "workflow_name": "NPCI Demo UPI AI Dispatcher",
                         "params": [
                             {"name": "UnMatched_File_Path", "value": latest_u_path}
                         ]
                     })
+                    print(f"[AE-WATCHER] Triggered NPCI Demo UPI AI Dispatcher: Req {ai_res.get('requestId')}")
                 except Exception as ae_e2:
-                    pass
+                    print(f"[AE-WATCHER] AI Dispatcher Error: {ae_e2}")
 
                 # 3. Trigger AE Server Workflow: NPCI Demo UPI-CBS
                 try:
-                    ae_server_execute({
+                    cbs_res = ae_server_execute({
                         "workflow_name": "NPCI Demo UPI-CBS",
                         "params": []
                     })
+                    print(f"[AE-WATCHER] Triggered NPCI Demo UPI-CBS: Req {cbs_res.get('requestId')}")
                 except Exception as ae_e3:
-                    pass
+                    print(f"[AE-WATCHER] UPI-CBS Error: {ae_e3}")
 
                 # 4. Execute Orchestrator Agent downstream toolchain
                 orch = get_orchestrator()
@@ -1221,14 +1247,7 @@ def _autonomous_ae_watcher_loop():
                 WATCHER_STATE["tools_executed_count"] += 4
 
                 add_audit("INFO", "ORCHESTRATOR_AGENT_AUTO_TRIGGER", "AUTONOMOUS_WATCHER",
-                          f"Detected new batch from 'NPCI Demo UPI Reconn'. AE Server Workflows & 4 downstream tools triggered.")
-            else:
-                # Initialize base mtimes
-                if _LAST_SEEN_MTIME["matched"] == 0.0:
-                    _LAST_SEEN_MTIME["matched"] = latest_m_mtime
-                if _LAST_SEEN_MTIME["unmatched"] == 0.0:
-                    _LAST_SEEN_MTIME["unmatched"] = latest_u_mtime
-
+                          f"Detected new batch {latest_batch_key} from 'NPCI Demo UPI Reconn'. AE Server Workflows & downstream tools triggered exactly once.")
         except Exception as e:
             time.sleep(3.0)
 

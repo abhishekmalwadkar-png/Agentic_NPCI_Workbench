@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import RailCatalogView from './RailCatalogView'
 import ProductOperationsView from './ProductOperationsView'
 import AeServerExecutionModal from './AeServerExecutionModal'
+import AgenticFlowView from './AgenticFlowView'
 import './index.css'
 
 const API = 'http://localhost:8000'
@@ -169,7 +170,7 @@ function Pipeline({ stage, agentText, isDuplicate, isUploading }) {
 
       <div className="agent-ticker">
         <div className="agent-ticker-left">
-          <span className="agent-ticker-tag">AutomationEdge</span>
+          <span className="agent-ticker-tag">ABC Bank</span>
           <span className="agent-ticker-text">{agentText}</span>
         </div>
         <span className="agent-ticker-pct">{Math.round(trackPct)}%</span>
@@ -665,7 +666,7 @@ export default function App() {
   const [files, setFiles] = useState([])
   const [audit, setAudit] = useState([])
   const [staging, setStaging] = useState([])
-  const [activeNav, setActiveNav] = useState('dashboard')
+  const [activeNav, setActiveNav] = useState('ae_agentic_flow')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [activeRailScope, setActiveRailScope] = useState(null)
   const [activeRailName, setActiveRailName] = useState('')
@@ -1411,6 +1412,17 @@ export default function App() {
 
   const navItems = [
     {
+      id: 'ae_agentic_flow',
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#f97316' }}>
+          <polygon points="12 2 2 7 12 12 22 7 12 2" />
+          <polyline points="2 17 12 22 22 17" />
+          <polyline points="2 12 12 17 22 12" />
+        </svg>
+      ),
+      label: 'Agentic Flow'
+    },
+    {
       id: 'dashboard',
       icon: (
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1639,17 +1651,18 @@ export default function App() {
             width: 32,
             height: 32,
             borderRadius: 8,
-            background: '#ffffff',
+            background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             padding: 4,
-            boxShadow: '0 2px 6px rgba(0,0,0,0.18)',
-            flexShrink: 0
+            boxShadow: '0 2px 6px rgba(234,88,12,0.3)',
+            flexShrink: 0,
+            fontSize: 17
           }}>
-            <img src="/favicon.svg" alt="AutomationEdge" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+            🏦
           </div>
-          <div className="header-title">AutomationEdge &nbsp;|&nbsp; <span>NPCI Unified Operations Workbench</span></div>
+          <div className="header-title"><span>ABC Bank</span></div>
           <div className="header-badge" style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', borderColor: 'rgba(16,185,129,0.3)' }}>
             All 6 Stages Operational &bull; Production Ready
           </div>
@@ -1708,9 +1721,7 @@ export default function App() {
           >
             Clear All Data &amp; Logs
           </button>
-          <button className="btn btn-primary" style={{ padding: '6px 14px', fontSize: 12 }} onClick={triggerDemo}>
-            Run End-to-End Simulation
-          </button>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: backendOk === true ? '#10b981' : backendOk === false ? '#ef4444' : '#f59e0b', display: 'inline-block' }} />
             <span style={{ color: 'rgba(255,255,255,.6)' }}>{backendOk === true ? 'Backend Connected' : backendOk === false ? 'Backend Offline' : 'Connecting…'}</span>
@@ -1777,6 +1788,18 @@ export default function App() {
           {/* ═════════════════════════════════════════════════════════════════ */}
           {/* NPCI PRODUCT OPERATIONS (RAIL-SPECIFIC WORKBENCH: SCREEN #2)      */}
           {/* ═════════════════════════════════════════════════════════════════ */}
+          {/* ======================================================== */}
+          {/* AE AGENTIC AUTOMATION FLOW ARCHITECTURE DIAGRAM         */}
+          {/* ======================================================== */}
+          {activeNav === 'ae_agentic_flow' && (
+            <AgenticFlowView
+              reconSummary={reconData}
+              aeState={aeExecutionStatus}
+              sidebarCollapsed={sidebarCollapsed}
+              onTriggerAe={() => setAeModalOpen(true)}
+            />
+          )}
+
           {activeNav === 'product_ops' && (
             <ProductOperationsView
               initialRail={activeRailScope || selectedRailForOps || 'UPI'}

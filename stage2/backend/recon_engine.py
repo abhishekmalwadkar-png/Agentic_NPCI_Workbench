@@ -77,10 +77,10 @@ def run_4way_reconciliation(file_path: Optional[Path] = None) -> Dict[str, Any]:
     if file_matched or file_breaks:
         ALL_MATCHED_CACHE = file_matched
         ALL_BREAKS_CACHE = file_breaks
-        total_records = len(file_matched) + len(file_breaks)
-        matched_records = len(file_matched)
+        matched_records = _MATCHED_META.get("total_count", len(file_matched))
         break_records = len(file_breaks)
-        matched_amt = sum(m.get("npci_amount", 0) for m in file_matched)
+        total_records = matched_records + break_records
+        matched_amt = _MATCHED_META.get("total_amt", sum(m.get("npci_amount", 0) for m in file_matched))
         break_amt = sum(max(b.get("npci_amount", 0), b.get("cbs_amount", 0)) for b in file_breaks)
         total_npci = matched_amt + sum(b.get("npci_amount", 0) for b in file_breaks)
         total_cbs = matched_amt + sum(b.get("cbs_amount", 0) for b in file_breaks)
@@ -116,7 +116,7 @@ def run_4way_reconciliation(file_path: Optional[Path] = None) -> Dict[str, Any]:
             "p1_count": p1_c,
             "p2_count": p2_c,
             "p1_financial_risk": round(p1_risk, 2),
-            "breaks_sample": file_breaks
+            "breaks_sample": file_breaks[:50]
         }
         return LAST_RECON_RUN
 
@@ -292,10 +292,10 @@ def get_recon_summary() -> Dict[str, Any]:
     if file_matched or file_breaks:
         ALL_MATCHED_CACHE = file_matched
         ALL_BREAKS_CACHE = file_breaks
-        total_records = len(file_matched) + len(file_breaks)
-        matched_records = len(file_matched)
+        matched_records = _MATCHED_META.get("total_count", len(file_matched))
         break_records = len(file_breaks)
-        matched_amt = sum(m.get("npci_amount", 0) for m in file_matched)
+        total_records = matched_records + break_records
+        matched_amt = _MATCHED_META.get("total_amt", sum(m.get("npci_amount", 0) for m in file_matched))
         break_amt = sum(max(b.get("npci_amount", 0), b.get("cbs_amount", 0)) for b in file_breaks)
         total_npci = matched_amt + sum(b.get("npci_amount", 0) for b in file_breaks)
         total_cbs = matched_amt + sum(b.get("cbs_amount", 0) for b in file_breaks)
@@ -338,14 +338,18 @@ def get_recon_summary() -> Dict[str, Any]:
             "p1_count": p1_c,
             "p2_count": p2_c,
             "p1_financial_risk": round(p1_risk, 2),
-            "breaks_sample": file_breaks
+            "breaks_sample": file_breaks[:50]
         }
 
     return LAST_RECON_RUN
 
 
+_FOLDER_CACHE: Dict[str, Tuple[str, float, List[Dict[str, Any]]]] = {}
+_MATCHED_META: Dict[str, Any] = {}
+
 def _parse_folder_records(dir_path: Path, is_matched: bool) -> List[Dict[str, Any]]:
-    """Robustly reads all batch files (*.txt, *.csv, *.tsv, *.dat, *.xlsx, *.xls) from a directory."""
+    """Ultra-fast reads the latest batch file (*.xlsx, *.xls, *.csv) with caching and vectorization."""
+    global _FOLDER_CACHE, _MATCHED_META
     records = []
     if not dir_path.exists():
         return records
@@ -355,130 +359,168 @@ def _parse_folder_records(dir_path: Path, is_matched: bool) -> List[Dict[str, An
         f for f in dir_path.iterdir()
         if f.is_file() and not f.name.startswith(".") and f.name != ".gitkeep"
     ]
-    # Sort files by modification time descending
+    if not files:
+        return records
+
+    # Sort files by modification time descending and pick only the latest batch file
     files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+    latest_file = files[0]
+    mtime = latest_file.stat().st_mtime
+    cache_key = f"{dir_path.resolve()}_{is_matched}"
+
+    cached = _FOLDER_CACHE.get(cache_key)
+    if cached and cached[0] == latest_file.name and cached[1] == mtime:
+        return cached[2]
 
     seen_rrns = set()
-    for f in files:
-        try:
-            raw_rows = []
-            ext = f.suffix.lower()
+    f = latest_file
+    try:
+        raw_rows = []
+        ext = f.suffix.lower()
 
-            if ext in [".xlsx", ".xls"]:
-                try:
-                    with open(f, "rb") as bf:
-                        magic = bf.read(4)
-                    if magic == b"\xd0\xcf\x11\xe0":
-                        import xlrd
-                        book = xlrd.open_workbook(f)
-                        sheet = book.sheet_by_index(0)
-                        if sheet.nrows > 0:
-                            header = [str(sheet.cell_value(0, c)).strip() for c in range(sheet.ncols)]
-                            for r in range(1, sheet.nrows):
-                                row_dict = {}
-                                for c in range(sheet.ncols):
-                                    val = sheet.cell_value(r, c)
-                                    if isinstance(val, float) and val.is_integer():
-                                        val = int(val)
-                                    row_dict[header[c]] = str(val).strip()
-                                raw_rows.append(row_dict)
-                    else:
-                        import pandas as pd
-                        df = pd.read_excel(f)
-                        for item in df.to_dict(orient="records"):
-                            raw_rows.append({
-                                str(k).strip(): str(v).strip()
-                                for k, v in item.items()
-                                if k is not None and str(v).strip().lower() not in ["nan", "nat", "none"]
-                            })
-                except Exception:
-                    continue
-            else:
-                with open(f, "r", encoding="utf-8", errors="ignore") as fp:
-                    lines = [line.strip() for line in fp if line.strip() and not line.startswith("===") and not line.startswith("---")]
-                if not lines:
-                    continue
+        if ext in [".xlsx", ".xls"]:
+            try:
+                with open(f, "rb") as bf:
+                    magic = bf.read(4)
+                if magic == b"\xd0\xcf\x11\xe0":
+                    import xlrd
+                    book = xlrd.open_workbook(f)
+                    sheet = book.sheet_by_index(0)
+                    if sheet.nrows > 0:
+                        header = [str(sheet.cell_value(0, c)).strip() for c in range(sheet.ncols)]
+                        if is_matched:
+                            amt_col = -1
+                            for c, h in enumerate(header):
+                                if h.upper() in ["NPCI_AMOUNT", "NPCI_AMT", "AMOUNT"]:
+                                    amt_col = c
+                                    break
+                            tot_amt = sum(sheet.col_values(amt_col)[1:]) if amt_col >= 0 else 0.0
+                            _MATCHED_META = {
+                                "total_count": sheet.nrows - 1,
+                                "total_amt": tot_amt
+                            }
+                            max_rows = min(sheet.nrows, 501)
+                        else:
+                            max_rows = sheet.nrows
 
+                        for r in range(1, max_rows):
+                            vals = sheet.row_values(r)
+                            row_dict = {}
+                            for c in range(min(len(vals), len(header))):
+                                val = vals[c]
+                                if isinstance(val, float) and val.is_integer():
+                                    val = int(val)
+                                row_dict[header[c]] = str(val).strip()
+                            raw_rows.append(row_dict)
+                else:
+                    import pandas as pd
+                    df = pd.read_excel(f)
+                    if is_matched:
+                        amt_col = None
+                        for c in df.columns:
+                            if str(c).upper() in ["NPCI_AMOUNT", "NPCI_AMT", "AMOUNT"]:
+                                amt_col = c
+                                break
+                        tot_amt = float(df[amt_col].sum()) if amt_col else 0.0
+                        _MATCHED_META = {
+                            "total_count": len(df),
+                            "total_amt": tot_amt
+                        }
+                        if len(df) > 500:
+                            df = df.head(500)
+                    for item in df.to_dict(orient="records"):
+                        raw_rows.append({
+                            str(k).strip(): str(v).strip()
+                            for k, v in item.items()
+                            if k is not None and str(v).strip().lower() not in ["nan", "nat", "none"]
+                        })
+            except Exception as e:
+                print(f"[_parse_folder_records] Excel read error: {e}")
+        else:
+            with open(f, "r", encoding="utf-8", errors="ignore") as fp:
+                lines = [line.strip() for line in fp if line.strip() and not line.startswith("===") and not line.startswith("---")]
+            if lines:
                 header = lines[0]
                 delim = ";" if ";" in header else ("\t" if "\t" in header else ",")
                 reader = csv.DictReader(lines, delimiter=delim)
                 for r in reader:
                     raw_rows.append({str(k).strip(): str(v).strip() for k, v in r.items() if k is not None})
+                    if is_matched and len(raw_rows) >= 500:
+                        break
 
-            for cleaned in raw_rows:
-                rrn = cleaned.get("RRN") or cleaned.get("rrn") or cleaned.get("RRN_1") or cleaned.get("RRN_2") or ""
-                # Skip invalid rows or repeated header lines
-                if not rrn or rrn == "RRN" or not any(ch.isdigit() for ch in str(rrn)):
-                    continue
+        for cleaned in raw_rows:
+            rrn = cleaned.get("RRN") or cleaned.get("rrn") or cleaned.get("RRN_1") or cleaned.get("RRN_2") or ""
+            if not rrn or rrn == "RRN" or not any(ch.isdigit() for ch in str(rrn)):
+                continue
 
-                # Normalise RRN as clean digit string (handles float formatting like 901818109561.0 from excel)
-                if isinstance(rrn, str) and "." in rrn:
-                    try:
-                        rrn = str(int(float(rrn)))
-                    except Exception:
-                        pass
+            if isinstance(rrn, str) and "." in rrn:
+                try:
+                    rrn = str(int(float(rrn)))
+                except Exception:
+                    pass
 
-                if rrn in seen_rrns:
-                    continue
-                seen_rrns.add(rrn)
+            if rrn in seen_rrns:
+                continue
+            seen_rrns.add(rrn)
 
-                def _to_float(v, default=0.0):
-                    if not v:
-                        return default
-                    try:
-                        return float(str(v).replace(",", "").strip())
-                    except Exception:
-                        return default
+            def _to_float(v, default=0.0):
+                if not v:
+                    return default
+                try:
+                    return float(str(v).replace(",", "").strip())
+                except Exception:
+                    return default
 
-                npci_amt = _to_float(cleaned.get("NPCI_AMOUNT") or cleaned.get("npci_amt") or cleaned.get("NPCI_AMT"))
-                cbs_amt = _to_float(cleaned.get("CBS_AMOUNT") or cleaned.get("cbs_amt") or cleaned.get("CBS_AMT"))
-                gl_amt = _to_float(cleaned.get("GL_AMOUNT") or cleaned.get("gl_amt") or cleaned.get("GL_AMT"))
+            npci_amt = _to_float(cleaned.get("NPCI_AMOUNT") or cleaned.get("npci_amt") or cleaned.get("NPCI_AMT"))
+            cbs_amt = _to_float(cleaned.get("CBS_AMOUNT") or cleaned.get("cbs_amt") or cleaned.get("CBS_AMT"))
+            gl_amt = _to_float(cleaned.get("GL_AMOUNT") or cleaned.get("gl_amt") or cleaned.get("GL_AMT"))
 
-                txn_id = cleaned.get("TXN_ID") or cleaned.get("txn_id") or f"TXN_{rrn}"
-                utr = cleaned.get("UTR") or cleaned.get("utr") or txn_id
-                rail = cleaned.get("RAIL") or cleaned.get("rail") or "UPI"
-                cycle_id = cleaned.get("CYCLE_ID") or cleaned.get("cycle_id") or "UPI-CY01"
-                txn_datetime = cleaned.get("TXN_DATETIME") or cleaned.get("txn_datetime") or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            txn_id = cleaned.get("TXN_ID") or cleaned.get("txn_id") or f"TXN_{rrn}"
+            utr = cleaned.get("UTR") or cleaned.get("utr") or txn_id
+            rail = cleaned.get("RAIL") or cleaned.get("rail") or "UPI"
+            cycle_id = cleaned.get("CYCLE_ID") or cleaned.get("cycle_id") or "UPI-CY01"
+            txn_datetime = cleaned.get("TXN_DATETIME") or cleaned.get("txn_datetime") or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-                npci_status = cleaned.get("NPCI_STATUS") or cleaned.get("npci_status") or ("SUCCESS" if is_matched else "FAILURE")
-                cbs_status = cleaned.get("CBS_STATUS") or cleaned.get("cbs_status") or ("DEBITED" if is_matched else "PENDING")
-                switch_status = cleaned.get("SWITCH_STATUS") or cleaned.get("switch_status") or ("AUTHORIZED" if is_matched else "DECLINED")
-                gl_status = cleaned.get("GL_STATUS") or cleaned.get("gl_status") or ("POSTED" if is_matched else "UNBALANCED")
-                resp_code = cleaned.get("SWITCH_RESP_CODE") or cleaned.get("switch_resp_code") or ("00" if is_matched else "91")
+            npci_status = cleaned.get("NPCI_STATUS") or cleaned.get("npci_status") or ("SUCCESS" if is_matched else "FAILURE")
+            cbs_status = cleaned.get("CBS_STATUS") or cleaned.get("cbs_status") or ("DEBITED" if is_matched else "PENDING")
+            switch_status = cleaned.get("SWITCH_STATUS") or cleaned.get("switch_status") or ("AUTHORIZED" if is_matched else "DECLINED")
+            gl_status = cleaned.get("GL_STATUS") or cleaned.get("gl_status") or ("POSTED" if is_matched else "UNBALANCED")
+            resp_code = cleaned.get("SWITCH_RESP_CODE") or cleaned.get("switch_resp_code") or ("00" if is_matched else "91")
 
-                scenario = cleaned.get("scenario") or ("SUCCESS" if is_matched else "CBS_DEBIT_NPCI_FAIL")
-                priority = cleaned.get("priority") or ("STP" if is_matched else ("P1" if abs(cbs_amt - npci_amt) > 0 or scenario != "SUCCESS" else "P2"))
-                variance = _to_float(cleaned.get("variance"), default=0.0 if is_matched else round(cbs_amt - npci_amt, 2))
+            scenario = cleaned.get("scenario") or ("SUCCESS" if is_matched else "CBS_DEBIT_NPCI_FAIL")
+            priority = cleaned.get("priority") or ("STP" if is_matched else ("P1" if abs(cbs_amt - npci_amt) > 0 or scenario != "SUCCESS" else "P2"))
+            variance = _to_float(cleaned.get("variance"), default=0.0 if is_matched else round(cbs_amt - npci_amt, 2))
 
-                records.append({
-                    "txn_id": txn_id,
-                    "rrn": rrn,
-                    "utr": utr,
-                    "rail": rail,
-                    "cycle_id": cycle_id,
-                    "txn_datetime": txn_datetime,
-                    "npci_amount": npci_amt,
-                    "cbs_amount": cbs_amt,
-                    "gl_amount": gl_amt,
-                    "variance": variance,
-                    "npci_status": npci_status,
-                    "cbs_status": cbs_status,
-                    "switch_status": switch_status,
-                    "gl_status": gl_status,
-                    "response_code": resp_code,
-                    "response_desc": "Transaction Successful" if is_matched else ("Invalid Amount" if scenario == "AMOUNT_MISMATCH" else "Bank / switch timeout or deemed break"),
-                    "status": "MATCHED" if is_matched else "BREAK",
-                    "scenario": scenario,
-                    "priority": priority,
-                    "sla_breach_risk": "None" if is_matched else ("High" if priority == "P1" else "Medium"),
-                    "penalty_clock_started": "No" if is_matched else (cleaned.get("sla_clock_started") or ("Yes" if priority == "P1" else "No")),
-                    "reversal_status": "N/A" if is_matched else "PENDING_APPROVAL",
-                    "source_file": f.name,
-                    "notes": f"Batch File: {f.name} ({'Matched' if is_matched else f'Break: {scenario}'})"
-                })
-        except Exception:
-            continue
+            records.append({
+                "txn_id": txn_id,
+                "rrn": rrn,
+                "utr": utr,
+                "rail": rail,
+                "cycle_id": cycle_id,
+                "txn_datetime": txn_datetime,
+                "npci_amount": npci_amt,
+                "cbs_amount": cbs_amt,
+                "gl_amount": gl_amt,
+                "variance": variance,
+                "npci_status": npci_status,
+                "cbs_status": cbs_status,
+                "switch_status": switch_status,
+                "gl_status": gl_status,
+                "response_code": resp_code,
+                "response_desc": "Transaction Successful" if is_matched else ("Invalid Amount" if scenario == "AMOUNT_MISMATCH" else "Bank / switch timeout or deemed break"),
+                "status": "MATCHED" if is_matched else "BREAK",
+                "scenario": scenario,
+                "priority": priority,
+                "sla_breach_risk": "None" if is_matched else ("High" if priority == "P1" else "Medium"),
+                "penalty_clock_started": "No" if is_matched else (cleaned.get("sla_clock_started") or ("Yes" if priority == "P1" else "No")),
+                "reversal_status": "N/A" if is_matched else "PENDING_APPROVAL",
+                "source_file": f.name,
+                "notes": f"Batch File: {f.name} ({'Matched' if is_matched else f'Break: {scenario}'})"
+            })
+    except Exception as e:
+        print(f"[_parse_folder_records] Error parsing {f}: {e}")
 
+    _FOLDER_CACHE[cache_key] = (latest_file.name, mtime, records)
     return records
 
 

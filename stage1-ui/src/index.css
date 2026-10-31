@@ -2,9 +2,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 :root {
-  --navy:         #0b1526;
-  --navy-mid:     #132238;
-  --navy-light:   #1e3352;
+  --navy:         #0f172a;
+  --navy-mid:     #1e293b;
+  --navy-light:   #334155;
   --orange:       #f97316;
   --orange-d:     #ea580c;
   --orange-glow:  rgba(249, 115, 22, 0.35);
@@ -48,7 +48,7 @@ body {
 /* ── App Shell ───────────────────────────────────────────────────────────── */
 .app-container { display: flex; flex-direction: column; height: 100vh; }
 .header {
-  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   color: #fff;
   height: 58px;
   padding: 0 24px;
@@ -2126,6 +2126,8 @@ tr:hover td { background: #f8fafc; }
 .tel-ts { color: #64748b; }
 .tel-src { color: #f59e0b; font-weight: 600; min-width: 140px; }
 .tel-msg { color: #e2e8f0; }
+
+
 
 
 

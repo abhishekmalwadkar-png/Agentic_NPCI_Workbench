@@ -25,14 +25,14 @@ timeout /t 4 /nobreak >nul
 
 :: 5. Open Default Browser directly to AE_AgenticFlow Dashboard
 echo Launching Dashboard in browser...
-start http://localhost:5173
+start http://automationedgeagentic:5173 2>nul || start http://localhost:5173
 
 echo.
 echo ======================================================================
 echo    ALL SERVICES STARTED SUCCESSFULLY!
 echo.
-echo    * React Dashboard:     http://localhost:5173
-echo    * AE Agentic Flow:     http://localhost:5173 (Default Tab)
+echo    * Custom Brand URL:    http://automationedgeagentic:5173
+echo    * Fallback Localhost:  http://localhost:5173
 echo    * FastAPI REST Docs:   http://localhost:8000/docs
 echo    * AE Server Watcher:   Active (t4.automationedge.com)
 echo ======================================================================

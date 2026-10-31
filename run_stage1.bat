@@ -20,13 +20,14 @@ echo Waiting for services to initialize...
 timeout /t 4 /nobreak >nul
 
 echo Launching Dashboard in browser...
-start http://localhost:5173
+start http://automationedgeagentic:5173 2>nul || start http://localhost:5173
 
 echo.
 echo ======================================================================
 echo    ALL SERVICES STARTED SUCCESSFULLY!
-echo    * React Dashboard:     http://localhost:5173
-echo    * AE Agentic Flow:     http://localhost:5173 (Default Tab)
+echo    * Custom Brand URL:    http://automationedgeagentic:5173
+echo    * Fallback URL:        http://localhost:5173
+echo    * AE Agentic Flow:     Default View
 echo    * FastAPI REST Docs:   http://localhost:8000/docs
 echo ======================================================================
 echo.

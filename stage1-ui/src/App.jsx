@@ -5,7 +5,7 @@ import AeServerExecutionModal from './AeServerExecutionModal'
 import AgenticFlowView from './AgenticFlowView'
 import './index.css'
 
-const API = 'http://localhost:8000'
+const API = import.meta.env.VITE_API_URL || ''
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = n => Number(n ?? 0).toLocaleString('en-IN')

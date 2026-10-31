@@ -122,19 +122,7 @@ export default function AgenticFlowView({ onTriggerAe, reconSummary, aeState, si
         fontFamily: "'Inter', -apple-system, sans-serif"
       }}
     >
-      {/* Background subtle blueprint / grid dots (matching light UI theme) */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        backgroundImage: `
-          radial-gradient(circle at 50% 30%, rgba(234, 88, 12, 0.04) 0%, transparent 65%),
-          linear-gradient(#f1f5f9 1px, transparent 1px),
-          linear-gradient(90deg, #f1f5f9 1px, transparent 1px)
-        `,
-        backgroundSize: '100% 100%, 24px 24px, 24px 24px',
-        pointerEvents: 'none',
-        zIndex: 0
-      }} />
+      
 
       {/* TOP HEADER BAR */}
       <div style={{
@@ -331,7 +319,7 @@ export default function AgenticFlowView({ onTriggerAe, reconSummary, aeState, si
             gap: 5,
             marginBottom: 2
           }}>
-            <span>◇</span> 4 INBOUND FEEDS (50K RECORDS EACH)
+            <span>◇</span> 4 INBOUND FEEDS
           </div>
 
           {/* Feed 1: UPI Settlement Master */}
@@ -533,34 +521,7 @@ export default function AgenticFlowView({ onTriggerAe, reconSummary, aeState, si
               Autonomous Orchestration &amp; 4-Way Matching Core
             </div>
 
-            {/* Bottom Stat Badges */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 8,
-              paddingTop: 10,
-              borderTop: '1px solid #e2e8f0'
-            }}>
-              <div style={{
-                background: '#ecfdf5',
-                border: '1px solid #a7f3d0',
-                borderRadius: 6,
-                padding: '6px 4px'
-              }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: '#065f46' }}>STRAIGHT THROUGH RATE</div>
-                <div style={{ fontSize: 14.5, fontWeight: 800, color: '#059669', marginTop: 1 }}>~{stpRate} STP</div>
-              </div>
-
-              <div style={{
-                background: '#fff7ed',
-                border: '1px solid #fed7aa',
-                borderRadius: 6,
-                padding: '6px 4px'
-              }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: '#9a3412' }}>AGENTIC BREAK POLICY</div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: '#ea580c', marginTop: 1 }}>Dual-Track Policy</div>
-              </div>
-            </div>
+            
           </div>
         </div>
 

@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AutomationEdge - NPCI UPI Reconciliation Banker's Master Guide</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 14mm 18mm 14mm;
+      @bottom-right {
+        content: counter(page);
+      }
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #0f172a;
+      background: #ffffff;
+      line-height: 1.5;
+      font-size: 10.5pt;
+      margin: 0;
+      padding: 0;
+    }
+    .header-bar {
+      border-bottom: 2.5px solid #ea580c;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand-title {
+      font-size: 20pt;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+    .brand-title span {
+      color: #ea580c;
+    }
+    .doc-subtitle {
+      font-size: 11pt;
+      color: #64748b;
+      font-weight: 600;
+      margin-top: 3px;
+    }
+    .badge-pill {
+      display: inline-block;
+      padding: 3px 9px;
+      font-size: 8.5pt;
+      font-weight: 700;
+      border-radius: 12px;
+      background: #fff7ed;
+      color: #c2410c;
+      border: 1px solid #fed7aa;
+      margin-right: 6px;
+    }
+    .badge-green {
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+    }
+    h2 {
+      font-size: 13pt;
+      font-weight: 800;
+      color: #0f172a;
+      border-left: 4px solid #ea580c;
+      padding-left: 8px;
+      margin-top: 24px;
+      margin-bottom: 10px;
+      page-break-after: avoid;
+    }
+    h3 {
+      font-size: 11pt;
+      font-weight: 700;
+      color: #ea580c;
+      margin-top: 14px;
+      margin-bottom: 6px;
+      page-break-after: avoid;
+    }
+    p {
+      margin: 0 0 8px 0;
+      color: #334155;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 18px 0;
+      font-size: 9pt;
+      page-break-inside: avoid;
+    }
+    th {
+      background: #f8fafc;
+      color: #0f172a;
+      font-weight: 700;
+      text-align: left;
+      padding: 7px 9px;
+      border: 1px solid #cbd5e1;
+      font-size: 9pt;
+    }
+    td {
+      padding: 6.5px 9px;
+      border: 1px solid #e2e8f0;
+      color: #334155;
+      vertical-align: top;
+    }
+    tr:nth-child(even) {
+      background: #fcfcfd;
+    }
+    .callout-box {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-left: 4px solid #ea580c;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin: 14px 0;
+      font-size: 9.5pt;
+    }
+    .callout-green {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      border-left: 4px solid #059669;
+    }
+    .code-term {
+      font-family: Consolas, monospace;
+      font-size: 8.5pt;
+      background: #f1f5f9;
+      padding: 1px 4px;
+      border-radius: 3px;
+      color: #0f172a;
+    }
+    .page-break {
+      page-break-before: always;
+    }
+    .footer-note {
+      margin-top: 30px;
+      padding-top: 8px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 8pt;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header-bar">
+    <div>
+      <div class="brand-title">Automation<span>Edge</span></div>
+      <div class="doc-subtitle">NPCI UPI Reconciliation – Banker's Master Guide & Demo Cheat Sheet</div>
+    </div>
+    <div style="text-align: right;">
+      <span class="badge-pill">50,000 RECORDS / BATCH</span>
+      <span class="badge-pill badge-green">✓ RBI T+1 READY</span>
+      <div style="font-size: 8pt; color: #94a3b8; margin-top: 4px;">Unified Operations Workbench</div>
+    </div>
+  </div>
+
+  <!-- SECTION 1 -->
+  <h2>1. Executive Summary & The Problem Statement</h2>
+  <p>
+    In high-volume digital banking, <strong>UPI (Unified Payments Interface)</strong> processes hundreds of millions of transactions every day. Because transactions travel across national clearing rails, bank network switches, customer account ledgers, and accounting pools, data drifts, network timeouts, and settlement breaks inevitably occur.
+  </p>
+  <div class="callout-box">
+    <strong>The Core Problem for Bank Operations:</strong>
+    Manual or batch reconciliation takes between <strong>6 to 18 hours</strong> per cycle. Unresolved deemed failure breaks violate <strong>RBI's T+1 Harmonization Circular</strong>, which mandates an automatic penalty of <strong>₹100 per day</strong> payable directly to the customer for delayed reversals.
+  </div>
+  <p>
+    <strong>The AutomationEdge Solution:</strong> Autonomously ingests all 4 settlement legs, performs in-memory cross-leg correlation of 50,000 records in <strong>under 2 seconds</strong>, automatically liquidates <strong>99.95% Straight-Through matches</strong>, auto-refunds deemed failures before the RBI penalty clock expires, and packages high-risk breaks for maker-checker signoff.
+  </p>
+
+  <!-- SECTION 2 -->
+  <h2>2. Banking Acronyms & Terminology Glossary</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 15%;">Term / Acronym</th>
+        <th style="width: 25%;">Full Name</th>
+        <th style="width: 60%;">Meaning & Role in Reconciliation</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>NPCI</strong></td>
+        <td>National Payments Corporation of India</td>
+        <td>The central umbrella organization governed by RBI operating UPI, IMPS, NACH, and RuPay rails.</td>
+      </tr>
+      <tr>
+        <td><strong>STP</strong></td>
+        <td>Straight-Through Processing</td>
+        <td>Transactions that reconcile and settle 100% automatically without any manual intervention. Target: >99%.</td>
+      </tr>
+      <tr>
+        <td><strong>HITL</strong></td>
+        <td>Human-in-the-Loop</td>
+        <td>Dual-control operational cockpit where high-risk breaks (> ₹10k or amount mismatches) are reviewed by bank officers before posting.</td>
+      </tr>
+      <tr>
+        <td><strong>CBS</strong></td>
+        <td>Core Banking System</td>
+        <td>Central database managing customer accounts and ledgers (e.g., Infosys Finacle, TCS BaNCS).</td>
+      </tr>
+      <tr>
+        <td><strong>Base24</strong></td>
+        <td>ACI Base24 Payment Switch</td>
+        <td>The bank's high-speed transaction gateway switch handling real-time authorization (<span class="code-term">00</span>=Approved, <span class="code-term">91</span>=Timeout, <span class="code-term">96</span>=Error).</td>
+      </tr>
+      <tr>
+        <td><strong>GL Suspense</strong></td>
+        <td>General Ledger Pool (GL-14020)</td>
+        <td>Temporary holding ledger where funds are parked during the inter-bank clearing cycle until settlement is certified.</td>
+      </tr>
+      <tr>
+        <td><strong>RRN</strong></td>
+        <td>Retrieval Reference Number</td>
+        <td>Unique 12-digit numeric identifier generated by the switch. Serves as the primary correlation key across all 4 files.</td>
+      </tr>
+      <tr>
+        <td><strong>UTR</strong></td>
+        <td>Unique Transaction Reference</td>
+        <td>Alphanumeric identifier generated for successful inter-bank funds clearance. Secondary matching key.</td>
+      </tr>
+      <tr>
+        <td><strong>P2P / P2M</strong></td>
+        <td>Peer-to-Peer / Peer-to-Merchant</td>
+        <td><strong>P2P:</strong> Individual-to-individual transfers (Google Pay to friend).<br><strong>P2M:</strong> Customer paying a registered shop/merchant via QR code.</td>
+      </tr>
+      <tr>
+        <td><strong>Deemed Failure</strong></td>
+        <td>Deemed Failed Transaction</td>
+        <td>Customer account debited, but switch timed out or beneficiary credit failed. Must be auto-refunded within T+1 day under RBI rules.</td>
+      </tr>
+      <tr>
+        <td><strong>Zero-Delta</strong></td>
+        <td>Zero Accounting Variance</td>
+        <td>The state where Total Debits equal Total Credits in the suspense ledger, leaving an exact ₹0.00 variance.</td>
+      </tr>
+      <tr>
+        <td><strong>Knock-Off</strong></td>
+        <td>Ledger Liquidation</td>
+        <td>Clearing paired balancing entries between GL-14020 (Suspense) and GL-11010 (Settlement) upon verified reconciliation.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- PAGE BREAK -->
+  <div class="page-break"></div>
+
+  <!-- SECTION 3 -->
+  <h2>3. The 4 Inbound Settlement Feeds: Source & Direction</h2>
+  <p>
+    Reconciliation is performed <strong>inside the Bank</strong>. To prove complete transaction integrity, the bank correlates <strong>1 external file from NPCI</strong> against <strong>3 internal banking systems</strong>:
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 25%;">File Name</th>
+        <th style="width: 20%;">Source & Direction</th>
+        <th style="width: 25%;">Schema Fields</th>
+        <th style="width: 30%;">Operational Role</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>NPCI_UPI_Settlement_Master.csv</strong></td>
+        <td><strong>NPCI ➔ Bank</strong><br><em>(External via SFTP / Portal)</em></td>
+        <td><span class="code-term">RRN, TXN_ID, UTR, RAIL, CYCLE_ID, AMOUNT, STATUS</span></td>
+        <td>Official central rail clearing file. Represents NPCI's net settlement record for the cycle.</td>
+      </tr>
+      <tr>
+        <td><strong>Switch_Base24_Logs.csv</strong></td>
+        <td><strong>Bank Payment Switch</strong><br><em>(Internal Gateway)</em></td>
+        <td><span class="code-term">RRN, SWITCH_STATUS, SWITCH_RESP_CODE</span></td>
+        <td>Real-time gateway authorization states (<span class="code-term">00</span>=Approved, <span class="code-term">91</span>=Timeout, <span class="code-term">96</span>=Error).</td>
+      </tr>
+      <tr>
+        <td><strong>Finacle_CBS_Dump.csv</strong></td>
+        <td><strong>Core Banking System</strong><br><em>(Internal Finacle)</em></td>
+        <td><span class="code-term">RRN, CBS_AMOUNT, CBS_STATUS, ACCOUNT_NO</span></td>
+        <td>Customer ledger postings. Verifies whether customer balance was debited or credited.</td>
+      </tr>
+      <tr>
+        <td><strong>GL_Suspense_Pool.csv</strong></td>
+        <td><strong>Bank General Ledger</strong><br><em>(Internal Accounting)</em></td>
+        <td><span class="code-term">RRN, GL_AMOUNT, GL_STATUS</span></td>
+        <td>Inter-bank suspense balance (<span class="code-term">GL-14020</span>). Must be cleared to ₹0.00 variance.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- SECTION 4 -->
+  <h2>4. Reconciliation Matching Logic & Decision Matrix</h2>
+  <p>
+    AutomationEdge evaluates transactions on <span class="code-term">RRN</span> and <span class="code-term">UTR</span> keys across all 4 legs using a dual-track decision engine:
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 20%;">Recon Category</th>
+        <th style="width: 35%;">Condition Across the 4 Legs</th>
+        <th style="width: 25%;">Automated Action</th>
+        <th style="width: 20%;">Business Impact</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="background: #f0fdf4;">
+        <td><strong>1. STP Match (99.95%)</strong><br><em>(49,975 of 50k txns)</em></td>
+        <td>
+          • NPCI = SUCCESS<br>
+          • Switch = 00 (Approved)<br>
+          • CBS = DEBITED / POSTED<br>
+          • GL = PARKED<br>
+          • Amounts Equal across all legs
+        </td>
+        <td>Dispatched to <strong>Zero-Delta GL Knock-Off</strong> tool (<span class="code-term">UPI_ZeroDelta_GL_KnockOff.psw</span>)</td>
+        <td>Posts balancing journal between GL-14020 &amp; GL-11010. <strong>₹0.00 ledger variance</strong>. Instant cycle closure.</td>
+      </tr>
+      <tr style="background: #fffbeb;">
+        <td><strong>2. Deemed Failure Auto-Refund</strong><br><em>(Timeout &lt; ₹5,000)</em></td>
+        <td>
+          • Switch = 91 (Timeout) / 96<br>
+          • CBS = DEBITED (Customer charged)<br>
+          • NPCI = No clearance / Failed<br>
+          • Amount &lt; ₹5,000
+        </td>
+        <td>Dispatched to <strong>CBS Auto-Refund Execution</strong> tool (<span class="code-term">UPI_CBS_Execution_Bot.psw</span>)</td>
+        <td>Calls Finacle reversal API to credit customer account immediately. <strong>100% compliance with RBI T+1 TAT</strong>.</td>
+      </tr>
+      <tr style="background: #fef2f2;">
+        <td><strong>3. High Value / Mismatch Break</strong><br><em>(&gt; ₹10k or Amount Divergence)</em></td>
+        <td>
+          • NPCI Amount ≠ CBS Amount, or<br>
+          • High-value exception &gt; ₹10,000
+        </td>
+        <td>Dispatched to <strong>AI Exception &amp; HITL Dispatcher</strong> (<span class="code-term">UPI_AI_DualTrack_Dispatcher.psw</span>)</td>
+        <td>Compiles forensic dossier with 94% AI confidence score for Operations Manager 1-click maker-checker signoff.</td>
+      </tr>
+      <tr>
+        <td><strong>4. Orphan GL / Reversal Missing</strong></td>
+        <td>
+          • Funds parked in GL-14020<br>
+          • No matching CBS debit or NPCI clearance
+        </td>
+        <td>Flagged for treasury clearance</td>
+        <td>Prevents unbacked balances from rolling over to next clearing day.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- SECTION 5 -->
+  <h2>5. Regulatory Compliance: The RBI T+1 Mandate</h2>
+  <div class="callout-box callout-green">
+    <strong>RBI Circular DPSS.CO.PD No.629/02.01.014/2019-20 Mandate:</strong><br>
+    For failed UPI transactions where the customer's account is debited, banks are mandated to reverse the funds within <strong>T + 1 calendar day</strong>. If delayed beyond T+1, the bank must pay a mandatory compensation of <strong>₹100 per day</strong> directly into the customer's account.
+  </div>
+  <p>
+    <strong>How AutomationEdge Protects the Bank:</strong> By identifying deemed failures in real-time and triggering automated CBS reversal workflows within minutes of cycle ingest, the bank operates well inside the T+1 window, completely eliminating regulatory fines.
+  </p>
+
+  <!-- PAGE BREAK -->
+  <div class="page-break"></div>
+
+  <!-- SECTION 6 -->
+  <h2>6. Execution Tools (Process Studio Workflows)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 25%;">Workflow Name</th>
+        <th style="width: 25%;">File Identifier</th>
+        <th style="width: 25%;">Trigger Condition</th>
+        <th style="width: 25%;">Automated Outcome</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Zero-Delta GL Knock-Off</strong></td>
+        <td><span class="code-term">UPI_ZeroDelta_GL_KnockOff.psw</span></td>
+        <td>Triggered for 99.95% Straight-Through matches</td>
+        <td>Posts balancing journal between GL-14020 and GL-11010; zeroes suspense pool.</td>
+      </tr>
+      <tr>
+        <td><strong>CBS Auto-Refund Execution</strong></td>
+        <td><span class="code-term">UPI_CBS_Execution_Bot.psw</span></td>
+        <td>Deemed failure timeouts under ₹5,000</td>
+        <td>Executes automated Finacle customer account credit reversal.</td>
+      </tr>
+      <tr>
+        <td><strong>AI Exception &amp; HITL Dispatcher</strong></td>
+        <td><span class="code-term">UPI_AI_DualTrack_Dispatcher.psw</span></td>
+        <td>High-value (&gt; ₹10k) and amount variance breaks</td>
+        <td>Packages evidence dossiers with cryptographic audit seals for maker-checker signoff.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- SECTION 7 -->
+  <h2>7. Demo Script & Banker Q&A Cheat Sheet</h2>
+  
+  <h3>30-Second Opening Pitch to Use in the Demo:</h3>
+  <div class="callout-box">
+    <em>"In everyday bank operations, teams spend hours manually cross-checking NPCI raw settlement dumps against Base24 switch logs, Finacle customer accounts, and GL suspense pools to find broken transactions.<br><br>
+    AutomationEdge ingests all 4 settlement feeds, correlates 50,000 records in less than two seconds, automatically liquidates 99.95% straight-through matches to zero-delta balance, and triggers instant CBS auto-refunds for deemed failures—ensuring 100% compliance with the RBI T+1 circular with zero manual effort."</em>
+  </div>
+
+  <h3>Top Anticipated Banker Questions & Answers:</h3>
+  <p><strong>Q1: Why does our dataset have exactly 25 breaks in 50,000 records?</strong><br>
+  <em>Answer:</em> In real Indian banks, UPI Straight-Through Processing operates between 99.9% and 99.95%. A batch of 50,000 records with 25 breaks accurately mirrors production conditions, showing both high-volume throughput and edge-case handling.</p>
+
+  <p><strong>Q2: How does AutomationEdge connect to Finacle CBS and Base24?</strong><br>
+  <em>Answer:</em> Through secure REST APIs, direct database connectors, or batch SFTP drops. Process Studio workflows can call Finacle reversal APIs directly or generate pre-formatted journal upload files.</p>
+
+  <p><strong>Q3: What if an amount mismatch occurs? Does the bot auto-refund it?</strong><br>
+  <em>Answer:</em> No. If money values disagree across systems, automated posting is immediately suspended. The transaction is escalated to the Human-in-the-Loop Cockpit with an AI evidence dossier showing the exact rupee divergence for maker-checker review.</p>
+
+  <p><strong>Q4: Can we audit the decisions made by the agent?</strong><br>
+  <em>Answer:</em> Yes. Every single transaction decision, matching step, and reversal execution generates an immutable, timestamped JSON audit trail stamped with SHA-256 cryptographic verification for RBI and statutory auditor review.</p>
+
+  <!-- FOOTER -->
+  <div class="footer-note">
+    <span>AutomationEdge Unified Operations Workbench</span>
+    <span>Confidential — Banking Operations Architecture</span>
+    <span>October 2026</span>
+  </div>
+
+</body>
+</html>
+

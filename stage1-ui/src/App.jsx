@@ -1663,9 +1663,6 @@ export default function App() {
             🏦
           </div>
           <div className="header-title"><span>ABC Bank</span></div>
-          <div className="header-badge" style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', borderColor: 'rgba(16,185,129,0.3)' }}>
-            All 6 Stages Operational &bull; Production Ready
-          </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button

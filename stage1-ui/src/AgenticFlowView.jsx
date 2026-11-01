@@ -137,35 +137,12 @@ export default function AgenticFlowView({ onTriggerAe, reconSummary, aeState, si
         paddingBottom: 14,
         marginBottom: 18
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{
-            background: '#fff7ed',
-            border: '1.5px solid #fdba74',
-            borderRadius: 8,
-            width: 36,
-            height: 36,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 2px 6px rgba(234, 88, 12, 0.15)',
-            flexShrink: 0,
-            fontSize: 18
-          }}>
-            🏦
+        <div>
+          <div style={{ fontSize: 16.5, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.01em' }}>
+            UPI Reconciliation – Agentic Automation Flow
           </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.02em', color: '#0f172a' }}>
-                ABC <span style={{ color: '#ea580c' }}>Bank</span>
-              </span>
-              <span style={{ color: '#cbd5e1', fontSize: 16 }}>|</span>
-              <span style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em' }}>
-                UPI Reconciliation – Agentic Automation Flow
-              </span>
-            </div>
-            <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2 }}>
-              End-to-End Orchestration: 4 Inbound Settlement Feeds → AI Reconciler Agent → 3 Execution Tools
-            </div>
+          <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2 }}>
+            End-to-End Orchestration: 4 Inbound Settlement Feeds → AI Reconciler Agent → 3 Execution Tools
           </div>
         </div>
 

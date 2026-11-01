@@ -1423,16 +1423,6 @@ export default function App() {
       label: 'Agentic Flow'
     },
     {
-      id: 'dashboard',
-      icon: (
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-          <polyline points="9 22 9 12 15 12 15 22" />
-        </svg>
-      ),
-      label: 'Home Dashboard'
-    },
-    {
       id: 'catalog',
       icon: (
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1441,6 +1431,16 @@ export default function App() {
         </svg>
       ),
       label: 'Rail Solution Catalog'
+    },
+    {
+      id: 'dashboard',
+      icon: (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+      ),
+      label: 'Home Dashboard'
     },
     {
       id: 'upload',
@@ -1718,11 +1718,6 @@ export default function App() {
           >
             Clear All Data &amp; Logs
           </button>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: backendOk === true ? '#10b981' : backendOk === false ? '#ef4444' : '#f59e0b', display: 'inline-block' }} />
-            <span style={{ color: 'rgba(255,255,255,.6)' }}>{backendOk === true ? 'Backend Connected' : backendOk === false ? 'Backend Offline' : 'Connecting…'}</span>
-          </div>
           <div className="header-time">{time.toLocaleTimeString('en-IN', { hour12: false })}</div>
         </div>
       </div>

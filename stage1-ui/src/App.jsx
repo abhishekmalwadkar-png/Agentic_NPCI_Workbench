@@ -1463,17 +1463,6 @@ export default function App() {
       label: activeRailScope ? `NPCI Product Operations (${activeRailScope})` : 'NPCI Product Operations'
     },
     {
-      id: 'orchestrator',
-      icon: (
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="2" y="3" width="20" height="14" rx="2" />
-          <line x1="8" y1="21" x2="16" y2="21" />
-          <line x1="12" y1="17" x2="12" y2="21" />
-        </svg>
-      ),
-      label: 'AI Agents Console'
-    },
-    {
       id: 'recon',
       icon: (
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1809,7 +1798,7 @@ export default function App() {
           {activeNav === 'catalog' && (
             <RailCatalogView
               selectedRailCode={activeRailScope}
-              onLaunchWorkflow={() => setActiveNav('orchestrator')}
+              onLaunchWorkflow={() => setActiveNav('ae_agentic_flow')}
               onOpenRailOps={(rail) => {
                 const meta = railMetadata[rail]
                 setSelectedRailForOps(rail)

@@ -1695,40 +1695,11 @@ export default function App() {
       <div className="layout">
         {/* Sidebar with Open / Close Toggle and Floating Tabs */}
         <div className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: sidebarCollapsed ? 'center' : 'space-between',
-            padding: sidebarCollapsed ? '4px 0 10px' : '4px 8px 8px',
-            borderBottom: '1px solid #f1f5f9',
-            marginBottom: 6
-          }}>
-            {!sidebarCollapsed && <span className="nav-section" style={{ padding: 0 }}>Navigation</span>}
-            <button
-              onClick={() => setSidebarCollapsed(prev => !prev)}
-              style={{
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: 6,
-                width: 26,
-                height: 26,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#64748b',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#ea580c'; e.currentTarget.style.borderColor = '#ea580c'; e.currentTarget.style.background = '#fff7ed' }}
-              onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc' }}
-              title={sidebarCollapsed ? "Expand Sidebar Menu" : "Collapse Sidebar Menu"}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"
-                style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }}>
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </button>
-          </div>
+          {!sidebarCollapsed && (
+            <div style={{ padding: '0 4px 6px', borderBottom: '1px solid #f1f5f9', marginBottom: 6 }}>
+              <span className="nav-section" style={{ padding: 0 }}>Navigation</span>
+            </div>
+          )}
 
           {navItems.map(n => (
             <div

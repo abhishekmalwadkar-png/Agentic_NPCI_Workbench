@@ -169,75 +169,7 @@ export default function AgenticFlowView({ onTriggerAe, reconSummary, aeState, si
           </div>
         </div>
 
-        {/* Top Badges & Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <div style={{
-            background: '#fff7ed',
-            border: '1px solid #fdba74',
-            borderRadius: 16,
-            padding: '4px 11px',
-            fontSize: 10.5,
-            fontWeight: 700,
-            color: '#c2410c',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5
-          }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ea580c' }} />
-            50,000 RECORDS / BATCH
-          </div>
-
-          <div style={{
-            background: '#ecfdf5',
-            border: '1px solid #a7f3d0',
-            borderRadius: 16,
-            padding: '4px 11px',
-            fontSize: 10.5,
-            fontWeight: 700,
-            color: '#047857',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5
-          }}>
-            <span>✓</span> RBI T+1 READY
-          </div>
-
-          <div style={{
-            background: '#fff7ed',
-            border: '1px solid #fed7aa',
-            borderRadius: 16,
-            padding: '4px 11px',
-            fontSize: 10.5,
-            fontWeight: 700,
-            color: '#ea580c',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5
-          }}>
-            <span>⚙</span> AGENTIC AI + RPA
-          </div>
-
-          <button
-            onClick={() => setSimulating(s => !s)}
-            style={{
-              background: simulating ? '#fff7ed' : '#f8fafc',
-              border: `1px solid ${simulating ? '#ea580c' : '#cbd5e1'}`,
-              borderRadius: 6,
-              padding: '4px 10px',
-              fontSize: 11,
-              fontWeight: 600,
-              color: simulating ? '#ea580c' : '#475569',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-              boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-            }}
-          >
-            <span>{simulating ? '⏸' : '▶'}</span>
-            {simulating ? 'Pause' : 'Stream'}
-          </button>
-        </div>
+        
       </div>
 
       {/* DYNAMIC SVG CONNECTOR OVERLAY */}

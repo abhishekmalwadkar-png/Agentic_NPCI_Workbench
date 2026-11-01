@@ -649,36 +649,7 @@ export default function AgenticFlowView({ onTriggerAe, reconSummary, aeState, si
         </div>
       </div>
 
-      {/* BOTTOM FOOTER BAR */}
-      <div style={{
-        position: 'relative',
-        zIndex: 2,
-        marginTop: 18,
-        paddingTop: 12,
-        borderTop: '1px solid #e2e8f0',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: 10,
-        fontSize: 10.5,
-        color: '#64748b'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ea580c' }} />
-            <span>Protocol: <strong style={{ color: '#0f172a' }}>AE Server REST Engine (POST /aeengine/rest/execute)</strong></span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ea580c' }} />
-            <span>Pattern: <strong style={{ color: '#0f172a' }}>Agent-to-Tools (Agentic Orchestrator → Execution Workflows)</strong></span>
-          </div>
-        </div>
-
-        <div>
-          Enterprise Solutions Consulting • Banking Operations Architecture
-        </div>
-      </div>
+      
 
       <style>{`
         @keyframes aeAgentPulse {

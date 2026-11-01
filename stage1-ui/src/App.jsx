@@ -1454,15 +1454,6 @@ export default function App() {
       label: 'Upload File'
     },
     {
-      id: 'product_ops',
-      icon: (
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-        </svg>
-      ),
-      label: activeRailScope ? `NPCI Product Operations (${activeRailScope})` : 'NPCI Product Operations'
-    },
-    {
       id: 'recon',
       icon: (
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -3258,11 +3249,8 @@ export default function App() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <button className="btn btn-secondary" style={{ fontSize: 12 }} onClick={() => setActiveNav('product_ops')}>
-                    Open NPCI Product Operations &rarr;
-                  </button>
                   <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={() => setActiveNav('catalog')}>
-                    Rail Solutions Catalog
+                    Rail Solutions Catalog &rarr;
                   </button>
                 </div>
               </div>

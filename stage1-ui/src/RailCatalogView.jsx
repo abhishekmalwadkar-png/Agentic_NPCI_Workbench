@@ -184,32 +184,7 @@ export default function RailCatalogView({
         </div>
       </div>
 
-      {/* ── 2. Category Filter Bar ────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>Filter Rail Domain:</span>
-          {[
-            { id: 'ALL', label: 'All 8 Rails' },
-            { id: 'Instant & Mobile', label: 'Instant & Mobile (UPI, IMPS)' },
-            { id: 'Bulk & Mandates', label: 'Bulk & Mandates (NACH, CTS)' },
-            { id: 'Cards & Biometrics', label: 'Cards & Biometrics (RuPay, AePS)' },
-            { id: 'Utility & Transit', label: 'Utility & Transit (BBPS, NETC)' },
-          ].map(cat => (
-            <button
-              key={cat.id}
-              className={`filter-tab ${activeCategory === cat.id ? 'active' : ''}`}
-              style={{ fontSize: 11.5, padding: '5px 12px' }}
-              onClick={() => setActiveCategory(cat.id)}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
 
-        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          Showing <b>{filteredCatalogs.length}</b> Rail Solution Suites
-        </span>
-      </div>
 
       {/* ── 3. Rail Solution Catalog Grid ─────────────────────────────────── */}
       <div style={{

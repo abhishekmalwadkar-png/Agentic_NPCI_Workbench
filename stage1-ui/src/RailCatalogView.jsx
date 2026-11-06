@@ -299,7 +299,7 @@ export default function RailCatalogView({
 
               {/* Bottom Action Area: Preserving Try Now & Subscribe buttons */}
               <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 14 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   {/* TRY NOW BUTTON - UI Theme Orange without emojis */}
                   <button
                     className="btn btn-primary"
@@ -339,37 +339,6 @@ export default function RailCatalogView({
                     {isSubscribed ? 'Subscribed' : 'Subscribe'}
                   </button>
                 </div>
-
-                {/* VIEW AGENTIC FLOW BUTTON */}
-                <button
-                  onClick={() => onLaunchWorkflow && onLaunchWorkflow(rail.rail_code)}
-                  style={{
-                    width: '100%',
-                    fontSize: 11.5,
-                    fontWeight: 700,
-                    padding: '7px 10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
-                    background: '#fff7ed',
-                    color: '#ea580c',
-                    border: '1px dashed #fdba74',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#ffedd5'
-                    e.currentTarget.style.borderColor = '#ea580c'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#fff7ed'
-                    e.currentTarget.style.borderColor = '#fdba74'
-                  }}
-                >
-                  <span>⚡</span> View {rail.rail_code} Agentic Automation Flow →
-                </button>
               </div>
             </div>
           )

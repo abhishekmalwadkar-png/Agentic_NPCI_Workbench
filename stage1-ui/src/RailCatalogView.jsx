@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 
-const API = 'http://localhost:8000'
+const API = ''
 
 // Professional SVG Vector Icons for each payment rail
 function RailSvgIcon({ code, color = '#0284c7' }) {

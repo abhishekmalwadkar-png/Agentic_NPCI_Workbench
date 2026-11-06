@@ -1641,7 +1641,7 @@ export default function App() {
             onClick={async () => {
               if (window.confirm("Clear all logs, vaults, and reset state for fresh file testing?")) {
                 try {
-                  await fetch('http://localhost:8000/api/system/clear-all', { method: 'POST' })
+                  await fetch(`${API}/api/system/clear-all`, { method: 'POST' })
                 } catch (e) {
                   console.warn("Backend clear call error:", e)
                 }

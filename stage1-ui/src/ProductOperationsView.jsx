@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 
-const API = 'http://localhost:8000'
+const API = ''
 
 const RAILS = [
   { code: 'UPI',   label: 'UPI',   name: 'Unified Payments Interface (UPI 2.0)', color: '#0284c7' },

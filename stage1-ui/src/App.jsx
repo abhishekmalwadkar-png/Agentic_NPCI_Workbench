@@ -1730,6 +1730,10 @@ export default function App() {
               aeState={aeExecutionStatus}
               sidebarCollapsed={sidebarCollapsed}
               onTriggerAe={() => setAeModalOpen(true)}
+              selectedRailCode={activeRailScope || selectedRailForOps || 'UPI'}
+              onSelectRail={(railCode) => {
+                setSelectedRailForOps(railCode)
+              }}
             />
           )}
 
@@ -1750,7 +1754,13 @@ export default function App() {
           {activeNav === 'catalog' && (
             <RailCatalogView
               selectedRailCode={activeRailScope}
-              onLaunchWorkflow={() => setActiveNav('ae_agentic_flow')}
+              onLaunchWorkflow={(rail) => {
+                if (rail) {
+                  setSelectedRailForOps(rail)
+                  setActiveRailScope(rail)
+                }
+                setActiveNav('ae_agentic_flow')
+              }}
               onOpenRailOps={(rail) => {
                 const meta = railMetadata[rail]
                 setSelectedRailForOps(rail)

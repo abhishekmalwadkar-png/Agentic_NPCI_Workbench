@@ -295,77 +295,18 @@ export default function RailCatalogView({
                     {isSubscribed ? 'SUBSCRIBED' : 'TRIAL AVAILABLE'}
                   </span>
                 </div>
-
-                {/* Description Body Text */}
-                <div style={{
-                  fontSize: 13,
-                  color: '#475569',
-                  lineHeight: 1.55,
-                  margin: '16px 0 14px',
-                  minHeight: 40
-                }}>
-                  {rail.tagline}
-                </div>
-
-                {/* Modern Pill Tags (Domain, STP Rate, SLA standard, Tasks) */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 18 }}>
-                  <span style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    padding: '3px 9px',
-                    borderRadius: 6,
-                    background: '#fff7ed',
-                    color: '#c2410c',
-                    border: '1px solid #ffedd5'
-                  }}>
-                    {rail.category}
-                  </span>
-                  <span style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    padding: '3px 9px',
-                    borderRadius: 6,
-                    background: '#f0fdf4',
-                    color: '#15803d',
-                    border: '1px solid #dcfce7'
-                  }}>
-                    95.2% STP
-                  </span>
-                  <span style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    padding: '3px 9px',
-                    borderRadius: 6,
-                    background: '#eff6ff',
-                    color: '#1d4ed8',
-                    border: '1px solid #dbeafe'
-                  }}>
-                    RBI T+1 SLA
-                  </span>
-                  <span style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: '3px 8px',
-                    borderRadius: 6,
-                    background: '#f8fafc',
-                    color: '#64748b',
-                    border: '1px solid #e2e8f0'
-                  }}>
-                    +{rail.automated_tasks?.length || 5} tasks
-                  </span>
-                </div>
               </div>
 
               {/* Bottom Action Area: Preserving Try Now & Subscribe buttons */}
               <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 14 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 8 }}>
                   {/* TRY NOW BUTTON - UI Theme Orange without emojis */}
                   <button
                     className="btn btn-primary"
                     style={{
                       fontSize: 12.5,
                       fontWeight: 700,
-                      padding: '9px 12px',
+                      padding: '8px 12px',
                       background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
                       borderColor: '#ea580c',
                       color: '#ffffff',
@@ -385,7 +326,7 @@ export default function RailCatalogView({
                     style={{
                       fontSize: 12,
                       fontWeight: 700,
-                      padding: '9px 10px',
+                      padding: '8px 10px',
                       justifyContent: 'center',
                       background: isSubscribed ? '#f8fafc' : '#ffffff',
                       color: isSubscribed ? '#64748b' : '#ea580c',
@@ -398,6 +339,37 @@ export default function RailCatalogView({
                     {isSubscribed ? 'Subscribed' : 'Subscribe'}
                   </button>
                 </div>
+
+                {/* VIEW AGENTIC FLOW BUTTON */}
+                <button
+                  onClick={() => onLaunchWorkflow && onLaunchWorkflow(rail.rail_code)}
+                  style={{
+                    width: '100%',
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    padding: '7px 10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    background: '#fff7ed',
+                    color: '#ea580c',
+                    border: '1px dashed #fdba74',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#ffedd5'
+                    e.currentTarget.style.borderColor = '#ea580c'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#fff7ed'
+                    e.currentTarget.style.borderColor = '#fdba74'
+                  }}
+                >
+                  <span>⚡</span> View {rail.rail_code} Agentic Automation Flow →
+                </button>
               </div>
             </div>
           )

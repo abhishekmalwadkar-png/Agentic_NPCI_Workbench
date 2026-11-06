@@ -912,7 +912,7 @@ export default function AgenticFlowView({
             }}
           >
             <span>{simStage !== 'IDLE' ? '⚡' : '▶'}</span>
-            {simStage === 'IDLE' && 'Simulate Flow (Client Demo)'}
+            {simStage === 'IDLE' && 'Simulate Flow'}
             {simStage === 'INGESTING' && 'Step 1: Ingesting 4 Feeds...'}
             {simStage === 'MATCHING' && 'Step 2: AI 4-Way Matching Core...'}
             {simStage === 'DISPATCHING' && 'Step 3: Triggering 3 Tools...'}

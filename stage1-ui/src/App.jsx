@@ -3288,7 +3288,7 @@ export default function App() {
                   {scopedRailVol} <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>Transactions</span>
                 </div>
                 <div style={{ fontSize: 11.5, color: '#ea580c', fontWeight: 600, marginTop: 4 }}>
-                  {scopedRailVol > 0 ? `Cycle: ${activeRailScope ? activeRailScope.toUpperCase() : 'UPI'}-20261029-CY01 • Active` : 'Cycle: Standby • Awaiting File Intake'}
+                  {scopedRailVol > 0 ? `Cycle: ${activeRailScope ? activeRailScope.toUpperCase() : 'UPI'}-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-CY01 • Active` : 'Cycle: Standby • Awaiting File Intake'}
                 </div>
               </div>
 

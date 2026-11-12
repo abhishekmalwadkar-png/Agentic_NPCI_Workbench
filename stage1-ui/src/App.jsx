@@ -6,6 +6,18 @@ import AgenticFlowView from './AgenticFlowView'
 import './index.css'
 
 const LIVE_RAILS = ['AEPS', 'NETC', 'IMPS']
+
+// ── Browser history for in-app navigation ────────────────────────────────────
+// Each tab / rail-scope change is a history entry (#/<tab>?rail=<code>) so the browser
+// Back / Forward buttons move between workbench tabs instead of leaving the site.
+const VALID_NAVS = ['ae_agentic_flow', 'dashboard', 'catalog', 'product_ops', 'upload', 'files', 'staging',
+  'recon', 'investigate', 'recovery', 'reports', 'audit', 'orchestrator']
+function readNavFromUrl() {
+  const m = /^#\/([a-z_]+)(?:\?rail=([A-Za-z0-9]+))?/.exec(window.location.hash || '')
+  if (!m || !VALID_NAVS.includes(m[1])) return null
+  return { nav: m[1], rail: m[2] ? m[2].toUpperCase() : null }
+}
+const navUrl = (nav, rail) => `#/${nav}${rail ? `?rail=${rail}` : ''}`
 const API = import.meta.env.VITE_API_URL || ''
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -667,10 +679,36 @@ export default function App() {
   const [files, setFiles] = useState([])
   const [audit, setAudit] = useState([])
   const [staging, setStaging] = useState([])
-  const [activeNav, setActiveNav] = useState('ae_agentic_flow')
+  const [activeNav, setActiveNav] = useState(() => readNavFromUrl()?.nav || 'ae_agentic_flow')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [activeRailScope, setActiveRailScope] = useState(null)
-  const [activeRailName, setActiveRailName] = useState('')
+  const [activeRailScope, setActiveRailScope] = useState(() => readNavFromUrl()?.rail || null)
+  const [activeRailName, setActiveRailName] = useState(() => readNavFromUrl()?.rail || '')
+
+  // Push a history entry whenever the tab or rail scope changes; Back / Forward restore it.
+  const historyReady = useRef(false)
+  useEffect(() => {
+    const state = { nav: activeNav, rail: activeRailScope || null, railName: activeRailName || '' }
+    const url = navUrl(activeNav, activeRailScope)
+    if (!historyReady.current) {
+      window.history.replaceState(state, '', url)   // first entry = current screen (no extra Back step)
+      historyReady.current = true
+      return
+    }
+    const cur = window.history.state
+    if (cur && cur.nav === state.nav && (cur.rail || null) === state.rail) return   // already here (e.g. just restored by Back)
+    window.history.pushState(state, '', url)
+  }, [activeNav, activeRailScope, activeRailName])
+
+  useEffect(() => {
+    const onPop = (e) => {
+      const s = e.state || readNavFromUrl() || { nav: 'ae_agentic_flow', rail: null, railName: '' }
+      setActiveNav(s.nav)
+      setActiveRailScope(s.rail || null)
+      setActiveRailName(s.railName || s.rail || '')
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
   const [uploading, setUploading] = useState(false)
   const [lastResult, setLastResult] = useState(null)
   const [pipeStage, setPipeStage] = useState(0)

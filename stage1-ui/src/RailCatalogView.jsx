@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { DEFAULT_RAIL_CATALOGS } from './railCatalogData'
 
 const API = ''
 
@@ -48,8 +49,8 @@ export default function RailCatalogView({
   onOpenRecon,
   onOpenHitl
 }) {
-  const [catalogs, setCatalogs] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [catalogs, setCatalogs] = useState(DEFAULT_RAIL_CATALOGS)
+  const [loading, setLoading] = useState(false)
   const [activeCategory, setActiveCategory] = useState('ALL')
   const [selectedRail, setSelectedRail] = useState(null)
 
@@ -60,14 +61,16 @@ export default function RailCatalogView({
 
   const fetchCatalogs = async () => {
     try {
-      setLoading(true)
       const res = await fetch(`${API}/api/rail-catalog/all`)
-      const data = await res.json()
-      setCatalogs(data.catalogs || [])
+      if (res.ok) {
+        const data = await res.json()
+        if (data.catalogs && data.catalogs.length > 0) {
+          setCatalogs(data.catalogs)
+        }
+      }
     } catch (e) {
-      console.error(e)
-    } finally {
-      setLoading(false)
+      // In offline / Cloudflare Pages static mode, seamlessly retain DEFAULT_RAIL_CATALOGS
+      console.log('Using preloaded rail catalog dataset')
     }
   }
 
@@ -94,13 +97,18 @@ export default function RailCatalogView({
       const res = await fetch(`${API}/api/rail-catalog/subscribe?rail_code=${rail.rail_code}&status=${newStatus}`, {
         method: 'POST'
       })
-      const data = await res.json()
-      if (data.status === 'SUCCESS') {
-        fetchCatalogs()
+      if (res.ok) {
+        const data = await res.json()
+        if (data.status === 'SUCCESS') {
+          fetchCatalogs()
+          return
+        }
       }
     } catch (e) {
-      alert(`Error updating subscription: ` + e.message)
+      // Fallback local update
     }
+    // Update local state directly
+    setCatalogs(prev => prev.map(c => c.rail_code === rail.rail_code ? { ...c, subscription_status: newStatus } : c))
   }
 
   const filteredCatalogs = catalogs.filter(c => {
@@ -115,34 +123,34 @@ export default function RailCatalogView({
         background: 'linear-gradient(135deg, #ffffff 0%, #fff7ed 45%, #fed7aa 100%)',
         border: '1px solid #fdba74',
         color: '#0f172a',
-        padding: '24px 28px',
-        borderRadius: 14,
-        marginBottom: 20,
-        boxShadow: '0 4px 20px rgba(234, 88, 12, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)',
+        padding: '14px 20px',
+        borderRadius: 0,
+        marginBottom: 14,
+        boxShadow: '0 2px 10px rgba(234, 88, 12, 0.06)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: 16
+        gap: 12
       }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 20, fontWeight: 900, letterSpacing: '-0.3px', color: '#0f172a' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 17, fontWeight: 900, letterSpacing: '-0.3px', color: '#0f172a' }}>
               NPCI Payment Rail Solution Catalog
             </span>
             <span style={{
               background: '#ffedd5',
               border: '1px solid #ea580c',
               color: '#c2410c',
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: 800,
-              padding: '3px 10px',
-              borderRadius: 99
+              padding: '2px 8px',
+              borderRadius: 0
             }}>
               8 Modular Rail Suites
             </span>
           </div>
-          <div style={{ fontSize: 13, color: '#334155', marginTop: 6, maxWidth: 840, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: '#334155', marginTop: 4, maxWidth: 840, lineHeight: 1.4 }}>
             Each NPCI rail has its own dedicated automation suite. Select any rail catalog to subscribe, and click <b style={{ color: '#0f172a' }}>Try Now</b> to test automated clearing, 4-way reconciliation, and Finacle reversals.
           </div>
         </div>
@@ -153,31 +161,31 @@ export default function RailCatalogView({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
+              gap: 6,
               background: '#ffffff',
               border: '1px solid #fed7aa',
-              padding: '6px 12px',
-              borderRadius: 20,
-              boxShadow: '0 2px 6px rgba(234, 88, 12, 0.08)',
+              padding: '4px 10px',
+              borderRadius: 0,
+              boxShadow: '0 1px 4px rgba(234, 88, 12, 0.06)',
               cursor: 'default'
             }}
           >
             <div style={{
-              width: 22,
-              height: 22,
-              borderRadius: '50%',
+              width: 18,
+              height: 18,
+              borderRadius: 0,
               background: '#ffedd5',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: '#ea580c'
             }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                 <polyline points="22 4 12 14.01 9 11.01" />
               </svg>
             </div>
-            <span style={{ fontSize: 12, fontWeight: 800, color: '#c2410c' }}>
+            <span style={{ fontSize: 11.5, fontWeight: 800, color: '#c2410c' }}>
               {catalogs.filter(c => c.subscription_status === 'SUBSCRIBED').length}/{catalogs.length || 8} Active
             </span>
           </div>
@@ -186,12 +194,12 @@ export default function RailCatalogView({
 
 
 
-      {/* ── 3. Rail Solution Catalog Grid ─────────────────────────────────── */}
+      {/* ── 3. Rail Solution Catalog Grid (Balanced Ratio: 4 columns on 1080p) ── */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
-        gap: 18,
-        marginBottom: 24
+        gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+        gap: 12,
+        marginBottom: 16
       }}>
         {filteredCatalogs.map(rail => {
           const isSubscribed = rail.subscription_status === 'SUBSCRIBED'
@@ -206,35 +214,35 @@ export default function RailCatalogView({
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 border: '1.5px solid #e2e8f0',
-                borderRadius: 16,
-                padding: '22px 24px 18px',
+                borderRadius: 0,
+                padding: '14px 16px 12px',
                 position: 'relative',
                 background: '#ffffff',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
+                boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)'
               }}
             >
-              {/* Card Top: Big Favicon Icon + Name & Subtitle + Status Badge */}
+              {/* Card Top: Favicon Icon + Name & Subtitle + Status Badge */}
               <div>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    {/* Big Square Favicon Icon Container (Matching Reference Design) */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {/* Square Favicon Icon Container */}
                     <div className="catalog-icon-box" style={{
-                      width: 58,
-                      height: 58,
-                      borderRadius: 14,
+                      width: 44,
+                      height: 44,
+                      borderRadius: 0,
                       background: '#ffffff',
-                      border: '1.5px solid #fed7aa',
+                      border: '1.2px solid #fed7aa',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: '0 4px 14px rgba(234, 88, 12, 0.12)',
-                      padding: 8,
+                      boxShadow: '0 2px 8px rgba(234, 88, 12, 0.08)',
+                      padding: 6,
                       flexShrink: 0
                     }}>
                       <img
                         src="/favicon.svg"
                         alt="AutomationEdge"
-                        style={{ width: 40, height: 40, objectFit: 'contain' }}
+                        style={{ width: 30, height: 30, objectFit: 'contain' }}
                       />
                     </div>
 
@@ -244,10 +252,10 @@ export default function RailCatalogView({
                       onClick={() => onOpenRailOps && onOpenRailOps(rail.rail_code)}
                       title={`Click to view ${rail.name} Operations`}
                     >
-                      <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', lineHeight: 1.25 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 800, color: '#0f172a', lineHeight: 1.25 }}>
                         {rail.name}
                       </div>
-                      <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ fontSize: 11, color: '#64748b', marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span>&copy; 2026 AutomationEdge</span>
                         <span>&bull;</span>
                         <span style={{ color: '#ea580c', fontWeight: 700 }}>{rail.rail_code}</span>
@@ -259,11 +267,11 @@ export default function RailCatalogView({
                   <span
                     className={`badge ${isSubscribed ? 'badge-green' : 'badge-amber'}`}
                     style={{
-                      fontSize: 10.5,
-                      padding: '4px 9px',
-                      letterSpacing: '0.3px',
+                      fontSize: 9.5,
+                      padding: '3px 7px',
+                      letterSpacing: '0.2px',
                       fontWeight: 700,
-                      borderRadius: 99,
+                      borderRadius: 0,
                       flexShrink: 0
                     }}
                   >
@@ -273,21 +281,22 @@ export default function RailCatalogView({
               </div>
 
               {/* Bottom Action Area: Preserving Try Now & Subscribe buttons */}
-              <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 14 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  {/* TRY NOW BUTTON - UI Theme Orange without emojis */}
+              <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10, marginTop: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  {/* TRY NOW BUTTON - Light Orange */}
                   <button
-                    className="btn btn-primary"
+                    className="btn btn-try-now"
                     style={{
-                      fontSize: 12.5,
+                      fontSize: 11.5,
                       fontWeight: 700,
-                      padding: '8px 12px',
-                      background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
-                      borderColor: '#ea580c',
-                      color: '#ffffff',
+                      padding: '6px 10px',
+                      background: '#ffedd5',
+                      border: '1.2px solid #fdba74',
+                      color: '#c2410c',
                       justifyContent: 'center',
-                      boxShadow: '0 2px 8px rgba(234, 88, 12, 0.35)',
-                      borderRadius: 8
+                      boxShadow: '0 1px 2px rgba(234, 88, 12, 0.08)',
+                      borderRadius: 0,
+                      cursor: 'pointer'
                     }}
                     disabled={isRunningThis}
                     onClick={() => handleTryNow(rail)}
@@ -295,19 +304,19 @@ export default function RailCatalogView({
                     {isRunningThis ? 'Running...' : 'Try Now'}
                   </button>
 
-                  {/* SUBSCRIBE / TOGGLE ACCESS BUTTON - UI Theme without emojis */}
+                  {/* SUBSCRIBE / TOGGLE ACCESS BUTTON */}
                   <button
                     className="btn btn-secondary"
                     style={{
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: 700,
-                      padding: '8px 10px',
+                      padding: '6px 8px',
                       justifyContent: 'center',
                       background: isSubscribed ? '#f8fafc' : '#ffffff',
-                      color: isSubscribed ? '#64748b' : '#ea580c',
-                      borderColor: isSubscribed ? '#e2e8f0' : '#ea580c',
-                      boxShadow: isSubscribed ? 'none' : '0 1px 3px rgba(234, 88, 12, 0.1)',
-                      borderRadius: 8
+                      color: isSubscribed ? '#64748b' : '#c2410c',
+                      borderColor: isSubscribed ? '#e2e8f0' : '#fed7aa',
+                      boxShadow: isSubscribed ? 'none' : '0 1px 2px rgba(234, 88, 12, 0.06)',
+                      borderRadius: 0
                     }}
                     onClick={() => handleToggleSubscribe(rail)}
                   >
@@ -365,7 +374,7 @@ export default function RailCatalogView({
               <div style={{
                 background: '#f8fafc',
                 border: '1px solid #e2e8f0',
-                borderRadius: 8,
+                borderRadius: 0,
                 padding: 14,
                 marginBottom: 16
               }}>
@@ -379,28 +388,28 @@ export default function RailCatalogView({
 
               {/* KPI Results Grid */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 18 }}>
-                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: 12 }}>
+                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 0, padding: 12 }}>
                   <div style={{ fontSize: 11, color: '#1e40af', fontWeight: 600 }}>Records Ingested &amp; Validated</div>
                   <div style={{ fontSize: 18, fontWeight: 800, color: '#1d4ed8', marginTop: 2 }}>
                     {trialResult.results?.records_ingested?.toLocaleString('en-IN')} txns
                   </div>
                 </div>
 
-                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: 12 }}>
+                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 0, padding: 12 }}>
                   <div style={{ fontSize: 11, color: '#166534', fontWeight: 600 }}>4-Way STP Match Rate</div>
                   <div style={{ fontSize: 18, fontWeight: 800, color: '#15803d', marginTop: 2 }}>
                     {trialResult.results?.stp_match_rate} ({trialResult.results?.matched_stp_count?.toLocaleString('en-IN')} STP)
                   </div>
                 </div>
 
-                <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 8, padding: 12 }}>
+                <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 0, padding: 12 }}>
                   <div style={{ fontSize: 11, color: '#92400e', fontWeight: 600 }}>Exceptions Auto-Resolved</div>
                   <div style={{ fontSize: 18, fontWeight: 800, color: '#b45309', marginTop: 2 }}>
                     {trialResult.results?.exceptions_auto_resolved?.toLocaleString('en-IN')} of {trialResult.results?.exceptions_detected}
                   </div>
                 </div>
 
-                <div style={{ background: '#fdf4ff', border: '1px solid #f5d0fe', borderRadius: 8, padding: 12 }}>
+                <div style={{ background: '#fdf4ff', border: '1px solid #f5d0fe', borderRadius: 0, padding: 12 }}>
                   <div style={{ fontSize: 11, color: '#86198f', fontWeight: 600 }}>Financial Amounts Recovered</div>
                   <div style={{ fontSize: 18, fontWeight: 800, color: '#a21caf', marginTop: 2 }}>
                     ₹ {Number(trialResult.results?.total_financial_recovered_inr || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -409,7 +418,7 @@ export default function RailCatalogView({
               </div>
 
               {/* Cryptographic Proof */}
-              <div style={{ background: '#0f172a', color: '#e2e8f0', borderRadius: 6, padding: '10px 14px', fontFamily: 'JetBrains Mono', fontSize: 11, marginBottom: 16 }}>
+              <div style={{ background: '#0f172a', color: '#e2e8f0', borderRadius: 0, padding: '10px 14px', fontFamily: 'JetBrains Mono', fontSize: 11, marginBottom: 16 }}>
                 <span style={{ color: '#38bdf8' }}>Cryptographic Proof:</span> {trialResult.results?.cryptographic_trial_seal}<br/>
                 <span style={{ color: '#4ade80' }}>RBI DPSS Compliance:</span> {trialResult.results?.rbi_tat_compliance}
               </div>

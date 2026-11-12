@@ -1,0 +1,4 @@
+[1/2] Python FastAPI Backend is active on Port 8001.
+[2/2] React Workbench UI is active on Port 5173.
+
+Connecting to Cloudflare Edge Network...

@@ -49,3 +49,13 @@ yarn-debug.log*
 # Backup files
 *.bak
 
+# Cloudflare & Wrangler
+.wrangler/
+stage1-ui/.wrangler/
+
+# Large binaries & proprietary tools
+*.exe
+tools/cloudflared.exe
+claude_skills_beta4/
+
+

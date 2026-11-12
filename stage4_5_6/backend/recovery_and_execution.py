@@ -35,6 +35,14 @@ STAGE_STATE: Dict[str, Any] = {
 
 HITL_PENDING_QUEUE: List[Dict[str, Any]] = []
 
+# Cases pushed by Process Studio rail workflows (AePS / NETC dual-track dispatchers).
+EXTERNAL_SOURCE = "PROCESS_STUDIO"
+EXTERNAL_DOSSIERS: Dict[str, Dict[str, Any]] = {}   # txn_id -> full evidence payload as received
+
+
+def _external_cases() -> List[Dict[str, Any]]:
+    return [q for q in HITL_PENDING_QUEUE if q.get("source") == EXTERNAL_SOURCE]
+
 
 def initialize_recovery_pipeline():
     """Initializes the Stage 4 & 5 queues from Stage 3 investigation results."""
@@ -42,7 +50,8 @@ def initialize_recovery_pipeline():
     asum = get_agent_summary()
     dossiers = asum.get("dossiers", {})
 
-    HITL_PENDING_QUEUE = []
+    # Keep AePS / NETC cases enqueued by Process Studio - a UPI recon re-run must not wipe them.
+    HITL_PENDING_QUEUE = _external_cases()
     auto_count = 0
     auto_amt = 0.0
 
@@ -84,6 +93,18 @@ def initialize_recovery_pipeline():
 
 def get_recovery_summary() -> Dict[str, Any]:
     """Stage 4 summary: Threshold split and auto-dispatch status."""
+    ext = _external_cases()
+    if ext and not STAGE_STATE["auto_dispatched"]:
+        return {
+            "auto_resolvable_count": STAGE_STATE.get("external_auto_count", 0),
+            "auto_resolvable_amount": round(STAGE_STATE.get("external_auto_amount", 0.0), 2),
+            "hitl_pending_count": len([q for q in ext if q["status"] == "PENDING_APPROVAL"]),
+            "hitl_approved_count": STAGE_STATE["hitl_approved_count"],
+            "hitl_approved_amount": STAGE_STATE["hitl_approved_amount"],
+            "hitl_rejected_count": STAGE_STATE["hitl_rejected_count"],
+            "execution_bot_status": "ONLINE",
+            "total_cbs_reversals_posted": len(STAGE_STATE["cbs_postings"])
+        }
     if not STAGE_STATE["auto_dispatched"]:
         return {
             "auto_resolvable_count": 0,
@@ -98,8 +119,8 @@ def get_recovery_summary() -> Dict[str, Any]:
 
     asum = get_agent_summary()
     return {
-        "auto_resolvable_count": STAGE_STATE["auto_executed_count"],
-        "auto_resolvable_amount": STAGE_STATE["auto_executed_amount"],
+        "auto_resolvable_count": STAGE_STATE["auto_executed_count"] + STAGE_STATE.get("external_auto_count", 0),
+        "auto_resolvable_amount": round(STAGE_STATE["auto_executed_amount"] + STAGE_STATE.get("external_auto_amount", 0.0), 2),
         "hitl_pending_count": len([q for q in HITL_PENDING_QUEUE if q["status"] == "PENDING_APPROVAL"]),
         "hitl_approved_count": STAGE_STATE["hitl_approved_count"],
         "hitl_approved_amount": STAGE_STATE["hitl_approved_amount"],
@@ -112,8 +133,81 @@ def get_recovery_summary() -> Dict[str, Any]:
 def get_hitl_queue(limit: int = 200) -> List[Dict[str, Any]]:
     """Stage 5: Returns pending approvals for Operations Manager Cockpit."""
     if not STAGE_STATE["auto_dispatched"]:
-        return []
+        return _external_cases()[:limit]
     return HITL_PENDING_QUEUE[:limit]
+
+
+def _priority(p: Any) -> str:
+    v = str(p or "").upper()
+    if v in ("P1", "CRITICAL", "HIGH"):
+        return "P1"
+    return "P2"
+
+
+def enqueue_external_case(payload: Dict[str, Any], auto_approved: bool = False) -> Dict[str, Any]:
+    """
+    Accepts a case from a Process Studio rail dispatcher (AePS / NETC) and adds it to the
+    HITL queue in the same shape the Operations Manager Cockpit renders.
+      auto_approved=False -> HITL track, status PENDING_APPROVAL (manager approves in the cockpit)
+      auto_approved=True  -> Auto-Reversal track, status AUTO_APPROVED (picked up by the rail CBS / wallet bot)
+    Idempotent on txn_id: re-sending the same dossier returns the existing case.
+    """
+    global HITL_PENDING_QUEUE
+    p = payload or {}
+    rail = str(p.get("rail") or "").upper()
+    if rail not in ("AEPS", "NETC", "IMPS"):
+        raise ValueError(f"Unsupported rail '{p.get('rail')}' - expected AEPS, NETC or IMPS")
+    rrn = str(p.get("rrn") or p.get("RRN") or "").strip()
+    txn_id = str(p.get("dossierId") or p.get("instructionId") or p.get("txn_id") or "").strip()
+    if not rrn or not txn_id:
+        raise ValueError("Payload must carry rrn and dossierId / instructionId")
+    try:
+        amount = round(float(p.get("amount") or 0.0), 2)
+    except (TypeError, ValueError):
+        raise ValueError(f"Invalid amount '{p.get('amount')}'")
+
+    for q in HITL_PENDING_QUEUE:
+        if q["txn_id"] == txn_id:
+            return {"success": True, "duplicate": True, "txn_id": txn_id, "status": q["status"]}
+
+    scenario = str(p.get("breakCategory") or p.get("action") or ("AUTO_REVERSAL" if auto_approved else "HITL_REVIEW"))
+    if auto_approved:
+        sla = "Refund in 5 min" if rail == "NETC" else f"RBI TAT {p.get('rbiTatDeadline') or 'T+1'}"
+        action = p.get("rootCause") or "Auto-reversal approved by AI Recovery Agent"
+    else:
+        sla = "12h 00m" if _priority(p.get("priority")) == "P1" else "24h 00m"
+        action = p.get("routingReason") or p.get("rootCause") or "Operations Manager review"
+
+    case = {
+        "txn_id": txn_id,
+        "rrn": rrn,
+        "rail": rail,
+        "cycle_id": p.get("cycleId") or f"{rail}-{datetime.now():%Y%m%d}-PS",
+        "amount": amount,
+        "scenario": scenario,
+        "category": scenario.replace("_", " ").title(),
+        "priority": _priority(p.get("priority") or ("HIGH" if auto_approved else "MEDIUM")),
+        "sla_countdown": sla,
+        "action_label": action,
+        "status": "AUTO_APPROVED" if auto_approved else "PENDING_APPROVAL",
+        "track": "AUTO_REVERSAL" if auto_approved else "HITL",
+        "root_cause": p.get("rootCause"),
+        "rca_confidence": p.get("rcaConfidence"),
+        "evidence_hash": p.get("evidenceHash"),
+        "bc_id": p.get("bcId"),
+        "terminal_id": p.get("terminalId"),
+        "epc": p.get("epc"),
+        "acc_no": p.get("accNo"),
+        "source": EXTERNAL_SOURCE,
+        "submitted_at": datetime.now().isoformat(),
+    }
+    HITL_PENDING_QUEUE.insert(0, case)
+    EXTERNAL_DOSSIERS[txn_id] = p
+    return {"success": True, "duplicate": False, "txn_id": txn_id, "status": case["status"], "rail": rail}
+
+
+def get_external_dossier(txn_id: str) -> Optional[Dict[str, Any]]:
+    return EXTERNAL_DOSSIERS.get(txn_id)
 
 
 def approve_transaction(txn_id: str, approver: str = "Operations Manager", notes: str = "Approved for Finacle credit reversal") -> Dict[str, Any]:
@@ -129,6 +223,18 @@ def approve_transaction(txn_id: str, approver: str = "Operations Manager", notes
     if not target:
         raise ValueError(f"Transaction {txn_id} not found in pending approval queue")
 
+    # Idempotency: a second approve (manager click + bot, or a bot re-run) must not double-post to Finacle.
+    if target.get("status") == "APPROVED_AND_POSTED":
+        return {
+            "success": True,
+            "txn_id": txn_id,
+            "posting_ref": target.get("posting_ref"),
+            "status": "POSTED_SUCCESS",
+            "already_posted": True,
+            "message": f"Reversal already posted to Finacle CBS (Ref: {target.get('posting_ref')})"
+        }
+
+    was_auto = target.get("status") == "AUTO_APPROVED"
     posting_ref = f"FIN_EXEC_{target['rrn'][-6:]}_{uuid.uuid4().hex[:4].upper()}"
 
     target["status"] = "APPROVED_AND_POSTED"
@@ -137,8 +243,12 @@ def approve_transaction(txn_id: str, approver: str = "Operations Manager", notes
     target["approved_at"] = datetime.now().isoformat()
     target["notes"] = notes
 
-    STAGE_STATE["hitl_approved_count"] += 1
-    STAGE_STATE["hitl_approved_amount"] = round(STAGE_STATE["hitl_approved_amount"] + target["amount"], 2)
+    if was_auto:
+        STAGE_STATE["external_auto_count"] = STAGE_STATE.get("external_auto_count", 0) + 1
+        STAGE_STATE["external_auto_amount"] = round(STAGE_STATE.get("external_auto_amount", 0.0) + target["amount"], 2)
+    else:
+        STAGE_STATE["hitl_approved_count"] += 1
+        STAGE_STATE["hitl_approved_amount"] = round(STAGE_STATE["hitl_approved_amount"] + target["amount"], 2)
 
     STAGE_STATE["cbs_postings"][txn_id] = {
         "posting_ref": posting_ref,
@@ -153,6 +263,8 @@ def approve_transaction(txn_id: str, approver: str = "Operations Manager", notes
     return {
         "success": True,
         "txn_id": txn_id,
+        "rail": target.get("rail"),
+        "amount": target["amount"],
         "posting_ref": posting_ref,
         "status": "POSTED_SUCCESS",
         "message": f"Successfully posted reversal to Finacle CBS (Ref: {posting_ref})"
@@ -320,6 +432,7 @@ def reset_recovery_and_execution():
     """Resets Stage 4, 5, 6 recovery states, posting refs, and HITL approval queues."""
     global STAGE_STATE, HITL_PENDING_QUEUE
     HITL_PENDING_QUEUE = []
+    EXTERNAL_DOSSIERS.clear()
     STAGE_STATE = {
         "auto_dispatched": False,
         "auto_executed_count": 0,

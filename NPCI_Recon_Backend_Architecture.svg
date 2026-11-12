@@ -1,0 +1,434 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 940" width="1600" height="940" role="img" aria-label="NPCI Recon Architecture Diagram">
+  <defs>
+    <!-- Background Grid -->
+    <pattern id="dotGrid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#e2e8f0" />
+    </pattern>
+
+    <!-- Gradients -->
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#fff7ed"/>
+      <stop offset="100%" stop-color="#fed7aa"/>
+    </linearGradient>
+
+    <linearGradient id="coreAgentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#eff6ff"/>
+    </linearGradient>
+
+    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f0fdf4"/>
+    </linearGradient>
+
+    <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fff7ed"/>
+    </linearGradient>
+
+    <linearGradient id="roseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fff1f2"/>
+    </linearGradient>
+
+    <!-- Drop Shadows -->
+    <filter id="shadowSm" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.04"/>
+    </filter>
+    <filter id="shadowMd" x="-5%" y="-5%" width="110%" height="120%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#ea580c" flood-opacity="0.08"/>
+    </filter>
+
+    <!-- Arrow Markers -->
+    <marker id="arrowGray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#94a3b8"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#16a34a"/>
+    </marker>
+    <marker id="arrowOrange" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#ea580c"/>
+    </marker>
+    <marker id="arrowRose" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#e11d48"/>
+    </marker>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#0284c7"/>
+    </marker>
+  </defs>
+
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .title { font-weight: 900; font-size: 26px; fill: #0f172a; letter-spacing: -0.5px; }
+    .subtitle { font-weight: 500; font-size: 13.5px; fill: #475569; }
+    .col-header { font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 0.8px; }
+    .card-title { font-weight: 800; font-size: 14.5px; fill: #0f172a; }
+    .card-subtitle { font-weight: 600; font-size: 11.5px; fill: #64748b; }
+    .body-text { font-weight: 500; font-size: 12px; fill: #334155; line-height: 1.4; }
+    .badge-text { font-weight: 700; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .code-text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; font-weight: 600; }
+  </style>
+
+  <!-- Background Base -->
+  <rect width="1600" height="940" fill="#f8fafc"/>
+  <rect width="1600" height="940" fill="url(#dotGrid)"/>
+
+  <!-- ========================================================================= -->
+  <!-- TOP BANNER HEADER                                                         -->
+  <!-- ========================================================================= -->
+  <g transform="translate(40, 24)">
+    <rect width="1520" height="88" fill="url(#headerGrad)" stroke="#fdba74" stroke-width="1.5" filter="url(#shadowMd)"/>
+    
+    <!-- Title & Subtitle -->
+    <text x="32" y="38" class="title">NPCI Multi-Rail Reconciliation &amp; Settlement Architecture</text>
+    <text x="32" y="64" class="subtitle">Autonomous 4-Way Matching · AI Exception Investigation · Dual-Track Financial Recovery · RBI T+1 TAT Mandate</text>
+
+    <!-- Legend Badges on Right -->
+    <g transform="translate(1010, 30)">
+      <!-- STP Badge -->
+      <rect x="0" y="0" width="112" height="28" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+      <circle cx="14" cy="14" r="4.5" fill="#16a34a"/>
+      <text x="26" y="18" fill="#15803d" class="badge-text">STP Matched</text>
+
+      <!-- Auto Bot Badge -->
+      <rect x="122" y="0" width="128" height="28" fill="#ffedd5" stroke="#fdba74" stroke-width="1"/>
+      <circle cx="136" cy="14" r="4.5" fill="#ea580c"/>
+      <text x="148" y="18" fill="#c2410c" class="badge-text">Auto Reversal</text>
+
+      <!-- HITL Badge -->
+      <rect x="260" y="0" width="116" height="28" fill="#ffe4e6" stroke="#fca5a5" stroke-width="1"/>
+      <circle cx="274" cy="14" r="4.5" fill="#e11d48"/>
+      <text x="286" y="18" fill="#be123c" class="badge-text">HITL Approval</text>
+
+      <!-- Audit Badge -->
+      <rect x="386" y="0" width="114" height="28" fill="#e0f2fe" stroke="#7dd3fc" stroke-width="1"/>
+      <circle cx="400" cy="14" r="4.5" fill="#0284c7"/>
+      <text x="412" y="18" fill="#0369a1" class="badge-text">Audit MIS</text>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- COLUMN 1: MULTI-RAIL INBOUND FEEDS (X: 40, W: 330)                        -->
+  <!-- ========================================================================= -->
+  <g transform="translate(40, 136)">
+    <!-- Column Header -->
+    <rect width="330" height="34" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="16" y="22" fill="#0f172a" class="col-header">1. Multi-Rail Inbound Feeds</text>
+    <rect x="250" y="7" width="68" height="20" fill="#e2e8f0"/>
+    <text x="284" y="21" fill="#475569" class="badge-text" text-anchor="middle">4 LEGS</text>
+
+    <!-- Rail Selector Pills Matrix -->
+    <rect x="0" y="46" width="330" height="66" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" filter="url(#shadowSm)"/>
+    <text x="12" y="66" fill="#64748b" class="badge-text">Supported Payment Rails (8 Modular Suites):</text>
+    <g transform="translate(10, 74)">
+      <!-- Row 1 -->
+      <rect x="0" y="0" width="70" height="24" fill="#ffedd5" stroke="#fdba74" stroke-width="1"/>
+      <text x="35" y="16" fill="#c2410c" class="code-text" text-anchor="middle">UPI 2.0</text>
+
+      <rect x="76" y="0" width="68" height="24" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+      <text x="110" y="16" fill="#475569" class="code-text" text-anchor="middle">IMPS</text>
+
+      <rect x="150" y="0" width="72" height="24" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+      <text x="186" y="16" fill="#475569" class="code-text" text-anchor="middle">NACH</text>
+
+      <rect x="228" y="0" width="76" height="24" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+      <text x="266" y="16" fill="#475569" class="code-text" text-anchor="middle">AePS</text>
+    </g>
+
+    <!-- Leg 1: Central NPCI Master -->
+    <g transform="translate(0, 126)">
+      <rect width="330" height="96" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" filter="url(#shadowSm)"/>
+      <rect x="0" y="0" width="6" height="96" fill="#ea580c"/>
+      <text x="18" y="26" class="card-title">Leg 1 · NPCI Clearing Master</text>
+      <text x="18" y="46" class="card-subtitle">Official Net Settlement Raw Feed</text>
+      <text x="18" y="70" class="code-text" fill="#0284c7">RRN, TXN_ID, UTR, CYCLE_ID, AMOUNT, STATUS</text>
+      <text x="18" y="86" fill="#64748b" style="font-size: 11px;">Source: SFTP / Direct NPCI Clearing Drop</text>
+    </g>
+
+    <!-- Leg 2: Payment Switch Gateway -->
+    <g transform="translate(0, 234)">
+      <rect width="330" height="96" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" filter="url(#shadowSm)"/>
+      <rect x="0" y="0" width="6" height="96" fill="#0284c7"/>
+      <text x="18" y="26" class="card-title">Leg 2 · Payment Switch Logs</text>
+      <text x="18" y="46" class="card-subtitle">Base24-eps / Fiserv Real-Time Gateway</text>
+      <text x="18" y="70" class="code-text" fill="#0284c7">RRN, SWITCH_RESP_CODE (00, 91, 96), STATUS</text>
+      <text x="18" y="86" fill="#64748b" style="font-size: 11px;">Captures Network Timeouts &amp; Declines</text>
+    </g>
+
+    <!-- Leg 3: Core Banking (CBS) -->
+    <g transform="translate(0, 342)">
+      <rect width="330" height="96" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" filter="url(#shadowSm)"/>
+      <rect x="0" y="0" width="6" height="96" fill="#10b981"/>
+      <text x="18" y="26" class="card-title">Leg 3 · Core Banking (Finacle CBS)</text>
+      <text x="18" y="46" class="card-subtitle">Host Account Postings &amp; Debit Logs</text>
+      <text x="18" y="70" class="code-text" fill="#0284c7">RRN, ACCOUNT_NO, CBS_AMOUNT, CBS_STATUS</text>
+      <text x="18" y="86" fill="#64748b" style="font-size: 11px;">Customer Account Debits / Credits</text>
+    </g>
+
+    <!-- Leg 4: GL Suspense Pool -->
+    <g transform="translate(0, 450)">
+      <rect width="330" height="96" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" filter="url(#shadowSm)"/>
+      <rect x="0" y="0" width="6" height="96" fill="#8b5cf6"/>
+      <text x="18" y="26" class="card-title">Leg 4 · GL Suspense Pool</text>
+      <text x="18" y="46" class="card-subtitle">Interbank Clearing Ledger (GL-14022)</text>
+      <text x="18" y="70" class="code-text" fill="#0284c7">RRN, GL_AMOUNT, GL_STATUS, VOUCHER_NO</text>
+      <text x="18" y="86" fill="#64748b" style="font-size: 11px;">Net Interbank Obligation Holding Balance</text>
+    </g>
+
+    <!-- Ingestion & Watcher Footer -->
+    <g transform="translate(0, 560)">
+      <rect width="330" height="54" fill="#f8fafc" stroke="#cbd5e1" stroke-dasharray="4 3"/>
+      <text x="16" y="24" fill="#0f172a" style="font-size: 12px; font-weight: 700;">Ingestion Guard &amp; Watch Folder</text>
+      <text x="16" y="42" fill="#64748b" style="font-size: 11px;">SHA-256 Duplication Check · Schema Validation</text>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- COLUMN 2: 4-WAY RECON ENGINE & AI AGENT (X: 420, W: 360)                   -->
+  <!-- ========================================================================= -->
+  <g transform="translate(420, 136)">
+    <!-- Column Header -->
+    <rect width="360" height="34" fill="#eff6ff" stroke="#93c5fd" stroke-width="1"/>
+    <text x="16" y="22" fill="#1e40af" class="col-header">2. 4-Way Matching &amp; AI Diagnostics</text>
+    <rect x="270" y="7" width="76" height="20" fill="#dbeafe"/>
+    <text x="308" y="21" fill="#1d4ed8" class="badge-text" text-anchor="middle">MATCH CORE</text>
+
+    <!-- Large AI Reconciler Box -->
+    <rect x="0" y="46" width="360" height="320" fill="url(#coreAgentGrad)" stroke="#3b82f6" stroke-width="1.8" filter="url(#shadowMd)"/>
+    
+    <!-- Header Inside AI Reconciler -->
+    <g transform="translate(20, 68)">
+      <circle cx="20" cy="20" r="18" fill="#dbeafe"/>
+      <text x="20" y="26" text-anchor="middle" font-size="18">⚡</text>
+      <text x="48" y="18" class="card-title" fill="#1e3a8a">AI 4-Way Reconciler Engine</text>
+      <text x="48" y="34" class="card-subtitle">FastAPI Core + AutomationEdge .psw</text>
+    </g>
+
+    <!-- 4-Way Outer Join Process Box -->
+    <g transform="translate(20, 126)">
+      <rect width="320" height="98" fill="#ffffff" stroke="#bfdbfe" stroke-width="1"/>
+      <text x="12" y="22" fill="#1e40af" style="font-size: 12.5px; font-weight: 800;">Mathematical Cross-Join Rules:</text>
+      <text x="12" y="42" class="body-text">• Outer-Join 4 legs on <tspan class="code-text" fill="#0284c7">RRN + UTR</tspan></text>
+      <text x="12" y="62" class="body-text">• Check: <tspan class="code-text" fill="#16a34a">NPCI_AMT == CBS_AMT == GL_AMT</tspan></text>
+      <text x="12" y="82" class="body-text">• Check: <tspan class="code-text" fill="#16a34a">Switch == 00 (Auth) &amp; CBS == SUCCESS</tspan></text>
+    </g>
+
+    <!-- Match Outcomes Bifurcation Inside Engine -->
+    <g transform="translate(20, 238)">
+      <!-- STP Outcome -->
+      <rect x="0" y="0" width="320" height="48" fill="#f0fdf4" stroke="#86efac" stroke-width="1.2"/>
+      <text x="12" y="20" fill="#166534" style="font-size: 12px; font-weight: 800;">✓ STP MATCHED (&gt;95% Volume)</text>
+      <text x="12" y="36" fill="#15803d" style="font-size: 11px;">Zero delta across all legs &#8594; Immediate Knock-Off</text>
+
+      <!-- Break Outcome -->
+      <rect x="0" y="58" width="320" height="58" fill="#fff1f2" stroke="#fca5a5" stroke-width="1.2"/>
+      <text x="12" y="78" fill="#9f1239" style="font-size: 12px; font-weight: 800;">⚠ EXCEPTION BREAKS (&lt;5% Volume)</text>
+      <text x="12" y="96" fill="#be123c" style="font-size: 11px;">RC-91 Timeout · Amount Mismatch · Deemed Fail</text>
+    </g>
+
+    <!-- AI Break Investigation Agent Card (Stage 3) -->
+    <g transform="translate(0, 386)">
+      <rect width="360" height="228" fill="#ffffff" stroke="#fdba74" stroke-width="1.5" filter="url(#shadowSm)"/>
+      <rect x="0" y="0" width="360" height="32" fill="#fff7ed"/>
+      <text x="16" y="21" fill="#c2410c" style="font-size: 12.5px; font-weight: 800;">Stage 3 · AI Break Investigation Agent</text>
+
+      <g transform="translate(16, 46)">
+        <text x="0" y="16" fill="#0f172a" style="font-size: 12px; font-weight: 700;">Autonomous Root-Cause Diagnostic:</text>
+        <text x="0" y="36" class="body-text">1. Correlates ISO-8583 error codes &amp; network latency</text>
+        <text x="0" y="56" class="body-text">2. Checks CBS debit timestamps vs switch timeout</text>
+        <text x="0" y="76" class="body-text">3. Computes AI Confidence Score (typically 94–98%)</text>
+        <text x="0" y="96" class="body-text">4. Starts RBI T+1 Penalty Countdown Clock</text>
+
+        <!-- Dynamic Rule Route Box -->
+        <rect x="0" y="112" width="328" height="52" fill="#f8fafc" stroke="#e2e8f0"/>
+        <text x="12" y="132" fill="#0f172a" style="font-size: 11.5px; font-weight: 700;">Dual-Track Routing Decision:</text>
+        <text x="12" y="150" fill="#475569" style="font-size: 11px;">If Timeout &amp; &lt;₹50k &#8594; Track A | If &#8805;₹50k &#8594; Track B</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- COLUMN 3: DUAL-TRACK RECOVERY ENGINE (X: 830, W: 360)                     -->
+  <!-- ========================================================================= -->
+  <g transform="translate(830, 136)">
+    <!-- Column Header -->
+    <rect width="360" height="34" fill="#fef3c7" stroke="#fcd34d" stroke-width="1"/>
+    <text x="16" y="22" fill="#92400e" class="col-header">3. Automated Execution &amp; Recovery</text>
+    <rect x="254" y="7" width="92" height="20" fill="#fde68a"/>
+    <text x="300" y="21" fill="#b45309" class="badge-text" text-anchor="middle">DUAL-TRACK</text>
+
+    <!-- TRACK 0: STP ZERO-DELTA GL KNOCK-OFF -->
+    <g transform="translate(0, 46)">
+      <rect width="360" height="154" fill="url(#greenGrad)" stroke="#16a34a" stroke-width="1.8" filter="url(#shadowSm)"/>
+      <rect x="0" y="0" width="360" height="28" fill="#dcfce7"/>
+      <text x="14" y="19" fill="#15803d" class="badge-text">TRACK 0 · ZERO-TOUCH SETTLEMENT</text>
+      
+      <g transform="translate(16, 44)">
+        <text x="0" y="16" class="card-title" fill="#14532d">Zero-Delta GL Knock-Off Bot</text>
+        <text x="0" y="34" class="code-text" fill="#15803d">AE Workflow: UPI/IMPS_ZeroDelta_GL_KnockOff.psw</text>
+        <text x="0" y="58" class="body-text">• Reads validated Matched STP batches</text>
+        <text x="0" y="76" class="body-text">• Balances Suspense (<tspan class="code-text">GL-14022</tspan>) against RBI Settlement (<tspan class="code-text">GL-11010</tspan>)</text>
+        <text x="0" y="96" fill="#15803d" style="font-size: 11.5px; font-weight: 700;">Result: ₹0.00 Variance &amp; Instant Clearing Closure</text>
+      </g>
+    </g>
+
+    <!-- TRACK A: AUTONOMOUS FINACLE REVERSAL BOT (< 50K) -->
+    <g transform="translate(0, 218)">
+      <rect width="360" height="182" fill="url(#orangeGrad)" stroke="#ea580c" stroke-width="1.8" filter="url(#shadowSm)"/>
+      <rect x="0" y="0" width="360" height="28" fill="#ffedd5"/>
+      <text x="14" y="19" fill="#c2410c" class="badge-text">TRACK A · AUTONOMOUS STP BOT (&lt; ₹50,000)</text>
+
+      <g transform="translate(16, 44)">
+        <text x="0" y="16" class="card-title" fill="#7c2d12">Autonomous CBS Reversal Bot</text>
+        <text x="0" y="34" class="code-text" fill="#c2410c">AE Workflow: RC91_Timeout_AutoReturn.psw</text>
+        <text x="0" y="58" class="body-text">• Self-driving RPA execution for verified CBS timeouts</text>
+        <text x="0" y="76" class="body-text">• Calls Finacle Reversal API without human delay</text>
+        <text x="0" y="94" class="body-text">• Credits affected customer account automatically</text>
+        <text x="0" y="118" fill="#c2410c" style="font-size: 11.5px; font-weight: 700;">Result: 100% RBI T+1 TAT Compliance (Stops Penalties)</text>
+      </g>
+    </g>
+
+    <!-- TRACK B: HUMAN-IN-THE-LOOP MANAGER COCKPIT (>= 50K) -->
+    <g transform="translate(0, 418)">
+      <rect width="360" height="196" fill="url(#roseGrad)" stroke="#e11d48" stroke-width="1.8" filter="url(#shadowSm)"/>
+      <rect x="0" y="0" width="360" height="28" fill="#ffe4e6"/>
+      <text x="14" y="19" fill="#be123c" class="badge-text">TRACK B · HITL MAKER-CHECKER (&#8805; ₹50,000)</text>
+
+      <g transform="translate(16, 44)">
+        <text x="0" y="16" class="card-title" fill="#881337">Operations Approval Cockpit</text>
+        <text x="0" y="34" class="code-text" fill="#e11d48">AE Workflow: AI_DualTrack_Dispatcher.psw</text>
+        <text x="0" y="58" class="body-text">• Mandatory dual-authorization for high-value breaks</text>
+        <text x="0" y="76" class="body-text">• Packages comprehensive evidence dossier per case</text>
+        <text x="0" y="94" class="body-text">• 1-Click Operations Manager electronic sign-off</text>
+        <text x="0" y="118" fill="#be123c" style="font-size: 11.5px; font-weight: 700;">Result: Zero unauthorized loss &amp; strict audit gate</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- COLUMN 4: CORE TARGET SYSTEMS & LEDGERS (X: 1240, W: 320)                 -->
+  <!-- ========================================================================= -->
+  <g transform="translate(1240, 136)">
+    <!-- Column Header -->
+    <rect width="320" height="34" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="16" y="22" fill="#0f172a" class="col-header">4. Target Ledgers &amp; Core Bank</text>
+    <rect x="230" y="7" width="76" height="20" fill="#e2e8f0"/>
+    <text x="268" y="21" fill="#475569" class="badge-text" text-anchor="middle">TARGETS</text>
+
+    <!-- Target 1: Finacle Core Banking -->
+    <g transform="translate(0, 46)">
+      <rect width="320" height="114" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" filter="url(#shadowSm)"/>
+      <rect x="0" y="0" width="6" height="114" fill="#ea580c"/>
+      <text x="18" y="26" class="card-title">Finacle Core Banking (CBS)</text>
+      <text x="18" y="46" class="card-subtitle">Host Accounting Engine &amp; Customer Ledger</text>
+      <text x="18" y="70" class="body-text">• Instant Credit Adjustment API</text>
+      <text x="18" y="90" class="body-text">• Reverse erroneous customer debits</text>
+      <text x="18" y="106" fill="#16a34a" style="font-size: 11px; font-weight: 700;">Status: Real-Time Posting Active</text>
+    </g>
+
+    <!-- Target 2: General Ledger Accounts -->
+    <g transform="translate(0, 178)">
+      <rect width="320" height="118" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" filter="url(#shadowSm)"/>
+      <rect x="0" y="0" width="6" height="118" fill="#16a34a"/>
+      <text x="18" y="26" class="card-title">Interbank General Ledger (GL)</text>
+      <text x="18" y="46" class="card-subtitle">Double-Entry Accounting Pool</text>
+      <text x="18" y="70" class="code-text" fill="#0f172a">Debit : GL-14022 (Suspense Clearing)</text>
+      <text x="18" y="88" class="code-text" fill="#0f172a">Credit: GL-11010 (Settlement Reserve)</text>
+      <text x="18" y="108" fill="#16a34a" style="font-size: 11px; font-weight: 700;">Net Delta: Exactly ₹0.00 Variance</text>
+    </g>
+
+    <!-- Target 3: RBI RTGS Interbank Settlement -->
+    <g transform="translate(0, 314)">
+      <rect width="320" height="114" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" filter="url(#shadowSm)"/>
+      <rect x="0" y="0" width="6" height="114" fill="#0284c7"/>
+      <text x="18" y="26" class="card-title">RBI RTGS Settlement Account</text>
+      <text x="18" y="46" class="card-subtitle">Multilateral Net Settlement (MNS)</text>
+      <text x="18" y="70" class="body-text">• Clearing cycle net settlement vouchers</text>
+      <text x="18" y="90" class="body-text">• Final and irrevocable interbank transfer</text>
+      <text x="18" y="106" fill="#0284c7" style="font-size: 11px; font-weight: 700;">Cycle: Multilateral Batch Knock-Off</text>
+    </g>
+
+    <!-- Target 4: Audit MIS & Regulatory Evidence Vault -->
+    <g transform="translate(0, 446)">
+      <rect width="320" height="168" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" filter="url(#shadowSm)"/>
+      <rect x="0" y="0" width="6" height="168" fill="#0f172a"/>
+      <text x="18" y="26" class="card-title">Audit Vault &amp; RBI Compliance</text>
+      <text x="18" y="46" class="card-subtitle">Cryptographic Evidence Dossier Pack</text>
+      <text x="18" y="70" class="body-text">• SHA-256 Tamper-Proof Cryptographic Hash</text>
+      <text x="18" y="90" class="body-text">• Full Maker-Checker timestamped logs</text>
+      <text x="18" y="110" class="body-text">• Automated RBI DPSS Circular reporting</text>
+      <g transform="translate(18, 126)">
+        <rect width="284" height="28" fill="#f1f5f9" stroke="#cbd5e1"/>
+        <text x="10" y="18" class="code-text" fill="#334155">SEAL: 7f8a9e...3b4c (VERIFIED)</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- CONNECTING ARROWS & DATA FLOWS                                            -->
+  <!-- ========================================================================= -->
+  <!-- Col 1 (Inbound Feeds) to Col 2 (AI Reconciler Engine) -->
+  <path d="M 370 230 L 420 230" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrowGray)"/>
+  <path d="M 370 338 L 420 280" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrowGray)"/>
+  <path d="M 370 446 L 420 330" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrowGray)"/>
+  <path d="M 370 554 L 420 380" fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrowGray)"/>
+
+  <!-- Col 2 STP Matched -> Col 3 Track 0 (Green) -->
+  <path d="M 780 262 L 830 156" fill="none" stroke="#16a34a" stroke-width="2.8" marker-end="url(#arrowGreen)"/>
+
+  <!-- Col 2 Break Decision -> Col 3 Track A (Orange) -->
+  <path d="M 780 500 L 805 500 L 805 310 L 830 310" fill="none" stroke="#ea580c" stroke-width="2.8" marker-end="url(#arrowOrange)"/>
+
+  <!-- Col 2 Break Decision -> Col 3 Track B (Rose) -->
+  <path d="M 780 540 L 830 540" fill="none" stroke="#e11d48" stroke-width="2.8" marker-end="url(#arrowRose)"/>
+
+  <!-- Col 3 Track 0 (GL Knock-Off) -> Col 4 GL Accounts (Green) -->
+  <path d="M 1190 156 L 1240 236" fill="none" stroke="#16a34a" stroke-width="2.8" marker-end="url(#arrowGreen)"/>
+
+  <!-- Col 3 Track A (Auto-Reversal Bot) -> Col 4 Finacle CBS (Orange) -->
+  <path d="M 1190 310 L 1240 102" fill="none" stroke="#ea580c" stroke-width="2.8" marker-end="url(#arrowOrange)"/>
+
+  <!-- Col 3 Track B (Operations Cockpit) -> Col 4 Audit Vault (Rose) -->
+  <path d="M 1190 540 L 1240 530" fill="none" stroke="#e11d48" stroke-width="2.8" marker-end="url(#arrowRose)"/>
+
+  <!-- ========================================================================= -->
+  <!-- BOTTOM REGULATORY SUMMARY STRIP                                           -->
+  <!-- ========================================================================= -->
+  <g transform="translate(40, 780)">
+    <rect width="1520" height="126" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#shadowSm)"/>
+    <rect x="0" y="0" width="1520" height="30" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="24" y="20" fill="#0f172a" class="badge-text">Core Regulatory Framework &amp; System Guarantees</text>
+
+    <g transform="translate(24, 46)">
+      <!-- Rule 1 -->
+      <g transform="translate(0, 0)">
+        <text x="0" y="16" fill="#15803d" style="font-size: 13px; font-weight: 800;">1. 95%+ Straight-Through Processing (STP)</text>
+        <text x="0" y="36" class="body-text">4-way matching on RRN + UTR guarantees matched</text>
+        <text x="0" y="54" class="body-text">funds are automatically recognized without human touch.</text>
+      </g>
+
+      <!-- Rule 2 -->
+      <g transform="translate(380, 0)">
+        <text x="0" y="16" fill="#1e40af" style="font-size: 13px; font-weight: 800;">2. Zero-Delta Double-Entry Ledger</text>
+        <text x="0" y="36" class="body-text">Suspense (GL-14022) is balanced against RBI RTGS</text>
+        <text x="0" y="54" class="body-text">Settlement (GL-11010) with exact ₹0.00 net variance.</text>
+      </g>
+
+      <!-- Rule 3 -->
+      <g transform="translate(760, 0)">
+        <text x="0" y="16" fill="#c2410c" style="font-size: 13px; font-weight: 800;">3. RBI DPSS Circular T+1 TAT Compliance</text>
+        <text x="0" y="36" class="body-text">Autonomous execution for RC-91 timeouts (&lt;₹50k)</text>
+        <text x="0" y="54" class="body-text">eliminates delay penalties through instant Finacle refunds.</text>
+      </g>
+
+      <!-- Rule 4 -->
+      <g transform="translate(1140, 0)">
+        <text x="0" y="16" fill="#be123c" style="font-size: 13px; font-weight: 800;">4. Cryptographic Audit Seal (GRC Ready)</text>
+        <text x="0" y="36" class="body-text">Every transaction, AI diagnostic breakdown, and maker-</text>
+        <text x="0" y="54" class="body-text">checker sign-off is sealed with a SHA-256 evidence certificate.</text>
+      </g>
+    </g>
+  </g>
+</svg>

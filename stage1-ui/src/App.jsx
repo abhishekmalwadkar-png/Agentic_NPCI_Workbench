@@ -5,6 +5,7 @@ import AeServerExecutionModal from './AeServerExecutionModal'
 import AgenticFlowView from './AgenticFlowView'
 import './index.css'
 
+const LIVE_RAILS = ['AEPS', 'NETC', 'IMPS']
 const API = import.meta.env.VITE_API_URL || ''
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -194,7 +195,7 @@ function KpiCard({ label, value, sub, color, prefix = '', suffix = '' }) {
 function ScenarioBreakdown({ files, scopedRail, reconData }) {
   const totals = {}
   if (scopedRail === 'UPI' && reconData && reconData.total_records) {
-    totals['STP_MATCH_SUCCESS'] = reconData.matched_count || 1
+    totals['STP_MATCH_SUCCESS'] = reconData.matched_count || 0
     const bb = reconData.break_breakdown || {}
     Object.entries(bb).forEach(([k, v]) => {
       totals[k] = v
@@ -438,7 +439,7 @@ function FileTable({ files, onDownload }) {
 function ValidationResult({ result }) {
   if (!result) return null
   const cls = result.status === 'VALIDATED' ? 'ok' : result.status === 'DUPLICATE' ? 'dup' : 'err'
-  const icons = { VALIDATED: '✅', REJECTED: '❌', DUPLICATE: '⚠️' }
+  const icons = { VALIDATED: 'VALID', REJECTED: 'REJECTED', DUPLICATE: 'DUPLICATE' }
   return (
     <div className={`validation-box ${cls}`}>
       <div className="validation-title">
@@ -446,21 +447,21 @@ function ValidationResult({ result }) {
         <span>{result.status} &mdash; {result.filename}</span>
       </div>
       <div className="validation-metrics">
-        <div className="validation-pill">📄 Records: <b>{fmt(result.records)}</b></div>
-        <div className="validation-pill">🔴 P1 Critical: <b style={{ color: 'var(--red)' }}>{fmt(result.p1_count)}</b></div>
-        <div className="validation-pill">🟡 P2 Exceptions: <b style={{ color: 'var(--amber)' }}>{fmt(result.p2_count)}</b></div>
-        <div className="validation-pill">💥 Breaks: <b style={{ color: 'var(--red)' }}>{fmt(result.exception_count)}</b></div>
-        <div className="validation-pill">✅ STP Rate: <b style={{ color: 'var(--green)' }}>{result.records ? Math.round((result.stp_count || 0) / result.records * 100) + '%' : '—'}</b></div>
-        <div className="validation-pill">🔐 Hash: <b style={{ fontFamily: 'JetBrains Mono', fontSize: 11 }}>{(result.hash || '').slice(0, 14)}…</b></div>
+        <div className="validation-pill">Records: <b>{fmt(result.records)}</b></div>
+        <div className="validation-pill">P1 Critical: <b style={{ color: 'var(--red)' }}>{fmt(result.p1_count)}</b></div>
+        <div className="validation-pill">P2 Exceptions: <b style={{ color: 'var(--amber)' }}>{fmt(result.p2_count)}</b></div>
+        <div className="validation-pill">Breaks: <b style={{ color: 'var(--red)' }}>{fmt(result.exception_count)}</b></div>
+        <div className="validation-pill">STP Rate: <b style={{ color: 'var(--green)' }}>{result.records ? Math.round((result.stp_count || 0) / result.records * 100) + '%' : '—'}</b></div>
+        <div className="validation-pill">Hash: <b style={{ fontFamily: 'JetBrains Mono', fontSize: 11 }}>{(result.hash || '').slice(0, 14)}…</b></div>
       </div>
       {result.errors?.length > 0 && (
         <ul className="validation-list" style={{ color: 'var(--red)' }}>
-          {result.errors.map((e, i) => <li key={i}>❌ {e}</li>)}
+          {result.errors.map((e, i) => <li key={i}>• {e}</li>)}
         </ul>
       )}
       {result.warnings?.length > 0 && (
         <ul className="validation-list" style={{ color: 'var(--amber)', marginTop: 4 }}>
-          {result.warnings.slice(0, 3).map((w, i) => <li key={i}>⚠️ {w}</li>)}
+          {result.warnings.slice(0, 3).map((w, i) => <li key={i}>• {w}</li>)}
         </ul>
       )}
     </div>
@@ -476,7 +477,7 @@ function LegModal({ breakItem, onClose }) {
       <div className="modal-box" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div>
-            <div className="modal-title">🔍 4-Way Leg Comparison — {breakItem.txn_id}</div>
+            <div className="modal-title">4-Way Leg Comparison — {breakItem.txn_id}</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
               RRN: <b>{breakItem.rrn}</b> | Rail: <b>{breakItem.rail}</b> | Cycle: <b>{breakItem.cycle_id}</b>
             </div>
@@ -534,7 +535,7 @@ function LegModal({ breakItem, onClose }) {
         </div>
 
         <div style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid var(--border)', marginBottom: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>💰 Financial Variance Analysis:</div>
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>Financial Variance Analysis:</div>
           <div style={{ fontSize: 12.5, color: 'var(--text-main)' }}>
             CBS Debited: <b>{fmtInr(breakItem.cbs_amount)}</b> &mdash; NPCI Settled: <b>{fmtInr(breakItem.npci_amount)}</b>
             &nbsp;|&nbsp; Net Delta: <b style={{ color: breakItem.variance !== 0 ? 'var(--red)' : 'var(--green)' }}>{fmtInr(breakItem.variance)}</b>
@@ -569,7 +570,7 @@ function DossierModal({ dossier, onClose }) {
         <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: 0, marginBottom: 12 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 24 }}>📑</span>
+              
               <div className="modal-title">{dossier.dossier_id}</div>
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
@@ -581,7 +582,7 @@ function DossierModal({ dossier, onClose }) {
 
         {/* AI Root-Cause Diagnostic Narrative */}
         <div className="dossier-section">
-          <div className="dossier-sec-title">🤖 AI Agent Root-Cause Diagnostic:</div>
+          <div className="dossier-sec-title">AI Agent Root-Cause Diagnostic:</div>
           <div className="dossier-narrative">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
               <b>{dossier.category}</b>
@@ -593,7 +594,7 @@ function DossierModal({ dossier, onClose }) {
 
         {/* 4-Way Technical Evidence Table */}
         <div className="dossier-section">
-          <div className="dossier-sec-title">⚖️ 4-Way System Audit Evidence:</div>
+          <div className="dossier-sec-title">4-Way System Audit Evidence:</div>
           <div className="leg-grid">
             <div className={`leg-item ${dossier.four_way_legs?.npci?.status === 'SUCCESS' ? 'success' : 'error'}`}>
               <div className="leg-title">1. NPCI Master</div>
@@ -643,13 +644,13 @@ function DossierModal({ dossier, onClose }) {
               {dossier.action_label}
             </div>
             <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>
-              Routing: {dossier.is_hitl_required ? '🛡️ Operations Manager Sign-Off Required' : '⚡ Autonomous Reversal Execution Bot (Finacle)'}
+              Routing: {dossier.is_hitl_required ? 'Operations Manager Sign-Off Required' : 'Autonomous Reversal Execution Bot (Finacle)'}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn btn-secondary" onClick={onClose}>Close</button>
             <button className="btn btn-primary" onClick={() => { alert(`Action Queued: ${dossier.action_label}`); onClose(); }}>
-              {dossier.is_hitl_required ? 'Approve & Route to Ops Cockpit' : 'Execute Reversal Bot ⚡'}
+              {dossier.is_hitl_required ? 'Approve & Route to Ops Cockpit' : 'Execute Reversal Bot'}
             </button>
           </div>
         </div>
@@ -730,16 +731,19 @@ export default function App() {
 
   // Polling
   const refresh = useCallback(async () => {
+    // AePS / NETC / IMPS have live Process Studio recon data - scope Stage 2 & 3 calls to the selected rail
+    const liveRail = activeRailScope && LIVE_RAILS.includes(activeRailScope.toUpperCase()) ? activeRailScope.toUpperCase() : null
+    const railQ = liveRail ? `rail=${liveRail}` : ''
     try {
       const [s, f, a, st, rc, rb, rm, as, rec, hitl, mis, mg] = await Promise.all([
         fetch(`${API}/api/stats`).then(r => r.json()),
         fetch(`${API}/api/files`).then(r => r.json()),
         fetch(`${API}/api/audit`).then(r => r.json()),
         fetch(`${API}/api/staging`).then(r => r.json()),
-        fetch(`${API}/api/recon/summary`).then(r => r.json()).catch(() => null),
-        fetch(`${API}/api/recon/breaks?limit=150`).then(r => r.json()).catch(() => ({ breaks: [] })),
-        fetch(`${API}/api/recon/matched?limit=200`).then(r => r.json()).catch(() => ({ matched: [] })),
-        fetch(`${API}/api/agent/investigate/summary`).then(r => r.json()).catch(() => null),
+        fetch(`${API}/api/recon/summary${railQ ? `?${railQ}` : ''}`).then(r => r.json()).catch(() => null),
+        fetch(`${API}/api/recon/breaks?limit=${liveRail ? 500 : 150}${railQ ? `&${railQ}` : ''}`).then(r => r.json()).catch(() => ({ breaks: [] })),
+        fetch(`${API}/api/recon/matched?limit=200${railQ ? `&${railQ}` : ''}`).then(r => r.json()).catch(() => ({ matched: [] })),
+        fetch(`${API}/api/agent/investigate/summary${railQ ? `?${railQ}` : ''}`).then(r => r.json()).catch(() => null),
         fetch(`${API}/api/recovery/summary`).then(r => r.json()).catch(() => null),
         fetch(`${API}/api/hitl/queue?limit=200`).then(r => r.json()).catch(() => ({ queue: [] })),
         fetch(`${API}/api/mis/report`).then(r => r.json()).catch(() => null),
@@ -771,7 +775,9 @@ export default function App() {
       if (mg) setMafGraph(mg)
       setBackendOk(true)
     } catch { setBackendOk(false) }
-  }, [])
+  }, [activeRailScope])
+
+  const liveRailQuery = () => (activeRailScope && LIVE_RAILS.includes(activeRailScope.toUpperCase()) ? `rail=${activeRailScope.toUpperCase()}` : '')
 
   useEffect(() => { refresh(); const id = setInterval(refresh, 4000); return () => clearInterval(id) }, [refresh])
   useEffect(() => { const id = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(id) }, [])
@@ -782,13 +788,14 @@ export default function App() {
   const triggerReconRun = async () => {
     setReconRunning(true)
     try {
-      const res = await fetch(`${API}/api/recon/run`, { method: 'POST' })
+      const rq = liveRailQuery()
+      const res = await fetch(`${API}/api/recon/run${rq ? `?${rq}` : ''}`, { method: 'POST' })
       const data = await res.json()
       await sleep(1000)
       setReconData(data)
-      const breaksRes = await fetch(`${API}/api/recon/breaks?limit=150`).then(r => r.json())
+      const breaksRes = await fetch(`${API}/api/recon/breaks?limit=${rq ? 500 : 150}${rq ? `&${rq}` : ''}`).then(r => r.json())
       setReconBreaks(breaksRes.breaks || [])
-      const matchedRes = await fetch(`${API}/api/recon/matched?limit=200`).then(r => r.json()).catch(() => ({ matched: [] }))
+      const matchedRes = await fetch(`${API}/api/recon/matched?limit=200${rq ? `&${rq}` : ''}`).then(r => r.json()).catch(() => ({ matched: [] }))
       setReconMatched(matchedRes.matched || [])
       refresh()
     } catch (e) {
@@ -801,7 +808,8 @@ export default function App() {
   const triggerAgentInvestigation = async () => {
     setAgentRunning(true)
     try {
-      const res = await fetch(`${API}/api/agent/investigate/run`, { method: 'POST' })
+      const rq = liveRailQuery()
+      const res = await fetch(`${API}/api/agent/investigate/run${rq ? `?${rq}` : ''}`, { method: 'POST' })
       const data = await res.json()
       await sleep(1200)
       setAgentSummary(data)
@@ -836,7 +844,7 @@ export default function App() {
     const reason = window.prompt(`Enter rejection reason for transaction ${item.txn_id}:`, "Unverified beneficiary claim / Suspicious debit velocity")
     if (reason === null) return
     setHitlQueue(prev => prev.map(q => q.txn_id === item.txn_id ? { ...q, status: 'REJECTED', rejection_reason: reason } : q))
-    alert(`❌ Transaction ${item.txn_id} REJECTED.\n• Reason: ${reason}\n• Action: Finacle CBS posting suspended.\n• Status: Flagged to Fraud Risk Monitor.`)
+    alert(`Transaction ${item.txn_id} REJECTED.\n• Reason: ${reason}\n• Action: Finacle CBS posting suspended.\n• Status: Flagged to Fraud Risk Monitor.`)
   }
 
   // Stage 5: Escalate Transaction to High-Level Committee
@@ -844,7 +852,7 @@ export default function App() {
     const note = window.prompt(`Enter escalation note for transaction ${item.txn_id}:`, "Amount mismatch exceeds branch authority — Escalate to Head of Settlement & Risk Committee")
     if (note === null) return
     setHitlQueue(prev => prev.map(q => q.txn_id === item.txn_id ? { ...q, status: 'ESCALATED', priority: 'P1', escalation_note: note } : q))
-    alert(`⚠️ Transaction ${item.txn_id} ESCALATED.\n• Priority: P1 Urgent\n• Recipient: Head of Operations & Risk Committee\n• Note: ${note}`)
+    alert(`Transaction ${item.txn_id} ESCALATED.\n• Priority: P1 Urgent\n• Recipient: Head of Operations & Risk Committee\n• Note: ${note}`)
   }
 
   // Stage 5: Batch Approve All Pending P1 Breaks
@@ -856,7 +864,7 @@ export default function App() {
       })
       const result = await res.json()
       if (result.success) {
-        alert(`⚡ BATCH P1 EXECUTION COMPLETE!\n\n• Approved Cases: ${result.approved_count.toLocaleString()}\n• Total Amount Posted: ₹${result.approved_amount.toLocaleString()}\n• Avoided RBI Compensation Penalty: ₹2,40,000 / Day\n• Authorizer: ${result.approver}\n• Status: All reversals dispatched to Finacle CBS`)
+        alert(`BATCH P1 EXECUTION COMPLETE!\n\n• Approved Cases: ${result.approved_count.toLocaleString()}\n• Total Amount Posted: ₹${result.approved_amount.toLocaleString()}\n• Avoided RBI Compensation Penalty: ₹2,40,000 / Day\n• Authorizer: ${result.approver}\n• Status: All reversals dispatched to Finacle CBS`)
         refresh()
       }
     } catch (e) {
@@ -1035,7 +1043,7 @@ export default function App() {
     setActiveNav('dashboard') // Redirect directly to Home Dashboard scoped to this catalogue!
     setPipeStage(0)
     setLastResult(null)
-    setAgentText(`🎯 [${railCode} ACTIVE] Home Dashboard scoped to ${meta?.name || railCode} only. Showing isolated transactions, 4-way matching & STP rates.`)
+    setAgentText(`[${railCode} ACTIVE] Home Dashboard scoped to ${meta?.name || railCode} only. Showing isolated transactions, 4-way matching & STP rates.`)
   }
 
   // Upload handler with choreographed step-by-step animations & AE Server Modal
@@ -1059,7 +1067,7 @@ export default function App() {
     ])
 
     setPipeStage(1)
-    setAgentText(`📥 [WF-01 Courier Bot] File detected: '${f.name}' (${(f.size / (1024 * 1024)).toFixed(1)} MB). Streaming payload...`)
+    setAgentText(`[WF-01 Courier Bot] File detected: '${f.name}' (${(f.size / (1024 * 1024)).toFixed(1)} MB). Streaming payload...`)
     await sleep(700)
 
     setPipeStage(2)
@@ -1070,7 +1078,7 @@ export default function App() {
       `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-03: Computing SHA-256 cryptographic digest across stream...`,
       `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-03: SHA-256 verified. Duplicate registry query: Clean (New Cycle).`
     ])
-    setAgentText(`🔐 [WF-03 Gatekeeper] Computing SHA-256 cryptographic hash & querying duplicate registry...`)
+    setAgentText(`[WF-03 Gatekeeper] Computing SHA-256 cryptographic hash & querying duplicate registry...`)
     await sleep(750)
 
     setPipeStage(3)
@@ -1078,7 +1086,7 @@ export default function App() {
       ...prev,
       `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-03: Validating 32 ISO-8583 columns & payment rails (UPI, IMPS, NACH)...`
     ])
-    setAgentText(`🔎 [WF-03 Gatekeeper] Validating 32 mandatory columns, NPCI rails & ISO-8583 response codes...`)
+    setAgentText(`[WF-03 Gatekeeper] Validating 32 mandatory columns, NPCI rails & ISO-8583 response codes...`)
 
     const form = new FormData()
     form.append('file', f)
@@ -1094,11 +1102,11 @@ export default function App() {
           ...prev,
           `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-03: Moving validated file to Staging Vault enclave: /vault/staged/...`
         ])
-        setAgentText(`🗄️ [WF-03 Gatekeeper] Staging Vault: Moving clean settlement file to secure vault...`)
+        setAgentText(`[WF-03 Gatekeeper] Staging Vault: Moving clean settlement file to secure vault...`)
         await sleep(650)
 
         setPipeStage(5)
-        setAgentText(`✅ [STAGE 1 COMPLETE] File Validated (${(data.records || 0).toLocaleString()} records). 4-Way Recon Ready!`)
+        setAgentText(`[STAGE 1 COMPLETE] File Validated (${(data.records || 0).toLocaleString()} records). 4-Way Recon Ready!`)
         setAeLogs(prev => [
           ...prev,
           `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-03: Staging complete (${(data.records || 50000).toLocaleString()} records). Triggering 4-Way Recon...`
@@ -1170,7 +1178,7 @@ export default function App() {
           `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] AE-SERVER: Downstream 4-Way Recon (WF-04) & Finacle CBS (WF-10) cancelled to protect ledger integrity.`,
           `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-03: Quarantined duplicate file '${f.name}' to /rejected/ archive.`
         ])
-        setAgentText(`⚠️ [DUPLICATE DETECTED] Identical SHA-256 hash seen before. Quarantined to /rejected/!`)
+        setAgentText(`[DUPLICATE DETECTED] Identical SHA-256 hash seen before. Quarantined to /rejected/!`)
       } else {
         setPipeStage(3)
         setAeExecutionStatus('REJECTED_HALTED')
@@ -1180,7 +1188,7 @@ export default function App() {
           `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-03: [VALIDATION REJECTED] Mandatory columns missing or schema malformed.`,
           `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] AE-SERVER: Pipeline halted at Step 2. Downstream workflows cancelled.`
         ])
-        setAgentText(`❌ [VALIDATION FAILED] Rejected: Missing mandatory columns or malformed rows.`)
+        setAgentText(`[VALIDATION FAILED] Rejected: Missing mandatory columns or malformed rows.`)
       }
 
       setLastResult(data)
@@ -1189,7 +1197,7 @@ export default function App() {
       setPipeStage(0)
       setAeExecutionStatus('REJECTED_HALTED')
       setAeCurrentStep(2)
-      setAgentText(`❌ Connection error: Backend API unreachable on http://localhost:8000`)
+      setAgentText(`Connection error: Backend API unreachable on http://localhost:8000`)
       setLastResult({ status: 'REJECTED', filename: f.name, errors: ['Backend unreachable – is the server running on port 8000?'], records: 0 })
     }
     setUploading(false)
@@ -1220,7 +1228,7 @@ export default function App() {
 
     // Stage 1 Ingestion
     setPipeStage(1)
-    setAgentText(`📡 [WF-01 File Download] Pulling ${activeRailScope ? activeRailScope + ' ' : ''}settlement file from NPCI SFTP...`)
+    setAgentText(`[WF-01 File Download] Pulling ${activeRailScope ? activeRailScope + ' ' : ''}settlement file from NPCI SFTP...`)
     await sleep(700)
 
     setPipeStage(2)
@@ -1230,7 +1238,7 @@ export default function App() {
       `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] AE-SERVER: Dispatching WF03_Staging_Cryptkeeper.psw...`,
       `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-03: Computing SHA-256 hash & verifying duplicate registry...`
     ])
-    setAgentText(`🔐 [WF-03 Validation] Computing SHA-256 hash & verifying duplicate registry...`)
+    setAgentText(`[WF-03 Validation] Computing SHA-256 hash & verifying duplicate registry...`)
     await sleep(700)
 
     setPipeStage(3)
@@ -1238,7 +1246,7 @@ export default function App() {
       ...prev,
       `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-03: Parsing ${scopedVol.toLocaleString()} records across 32 columns for ${activeRailScope || 'UPI'} rail...`
     ])
-    setAgentText(`🔎 [WF-03 Validation] Parsing & isolating ${scopedVol.toLocaleString()} ${activeRailScope || 'UPI'} records...`)
+    setAgentText(`[WF-03 Validation] Parsing & isolating ${scopedVol.toLocaleString()} ${activeRailScope || 'UPI'} records...`)
     await sleep(700)
 
     setPipeStage(4)
@@ -1246,11 +1254,11 @@ export default function App() {
       ...prev,
       `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-03: Locking clean file into Staging Vault enclave: /vault/staged/${scopedFileName}`
     ])
-    setAgentText(`🗄️ [WF-03 Validation] Locking ${scopedVol.toLocaleString()} clean records into Staging Vault...`)
+    setAgentText(`[WF-03 Validation] Locking ${scopedVol.toLocaleString()} clean records into Staging Vault...`)
     await sleep(600)
 
     setPipeStage(5)
-    setAgentText(`✅ [STAGE 1 COMPLETE] ${scopedVol.toLocaleString()} ${activeRailScope || 'UPI'} records staged. Triggering Stage 2 Recon...`)
+    setAgentText(`[STAGE 1 COMPLETE] ${scopedVol.toLocaleString()} ${activeRailScope || 'UPI'} records staged. Triggering Stage 2 Recon...`)
 
     const p1Count = activeRailScope ? Math.round(scopedVol * 0.048) : 2400
     const p2Count = activeRailScope ? Math.round(scopedVol * 0.007) : 350
@@ -1282,7 +1290,7 @@ export default function App() {
       ...prev,
       `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-04: 4-Way matching finished! ${stpCount.toLocaleString()} Matched (94.5% STP) | ${excCount.toLocaleString()} Breaks.`
     ])
-    setAgentText(`✅ [STAGE 2 COMPLETE] 4-Way Recon matched ${stpCount.toLocaleString()} records (${((stpCount / scopedVol) * 100).toFixed(1)}% STP).`)
+    setAgentText(`[STAGE 2 COMPLETE] 4-Way Recon matched ${stpCount.toLocaleString()} records (${((stpCount / scopedVol) * 100).toFixed(1)}% STP).`)
 
     // Stage 3 AI Diagnostics
     setAeCurrentStep(4)
@@ -1325,7 +1333,7 @@ export default function App() {
       `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] AE-SERVER: ALL 6 PROCESS STUDIO WORKFLOWS EXECUTED SUCCESSFULLY.`
     ])
 
-    setAgentText('✅ [END-TO-END COMPLETE] All 6 Stages Executed: 47,250 STP Matched | 2,750 AI Dossiers Diagnosed | Finacle CBS Reversals Posted.')
+    setAgentText('[END-TO-END COMPLETE] All 6 Stages Executed: 47,250 STP Matched | 2,750 AI Dossiers Diagnosed | Finacle CBS Reversals Posted.')
     refresh()
   }
 
@@ -1384,26 +1392,28 @@ export default function App() {
   const scopedRailVol = isScoped
     ? (railRecordCounts[activeRailScope.toUpperCase()] || 0)
     : (hasData ? (stats.total_records_ingested || 5) : 0)
+  // Real recon figures exist for UPI and for rails whose Process Studio batch is loaded (reconData.rail matches)
+  const railLive = isScoped && (activeRailScope.toUpperCase() === 'UPI' || (reconData?.rail || '').toUpperCase() === activeRailScope.toUpperCase())
   const scopedP1Count = isScoped
-    ? (activeRailScope.toUpperCase() === 'UPI' && reconData?.p1_count !== undefined
+    ? (railLive && reconData?.p1_count !== undefined
         ? reconData.p1_count
         : (scopedRailVol > 0 ? Math.round(scopedRailVol * 0.048) : 0))
     : (hasData ? (stats.p1_count ?? 4) : 0)
   const scopedP2Count = isScoped
-    ? (activeRailScope.toUpperCase() === 'UPI' && reconData?.p2_count !== undefined
+    ? (railLive && reconData?.p2_count !== undefined
         ? reconData.p2_count
         : (scopedRailVol > 0 ? Math.round(scopedRailVol * 0.007) : 0))
     : (hasData ? (stats.p2_count ?? 0) : 0)
-  const scopedExcCount = isScoped && activeRailScope.toUpperCase() === 'UPI' && reconData?.break_count !== undefined
+  const scopedExcCount = railLive && reconData?.break_count !== undefined
     ? reconData.break_count
     : (scopedP1Count + scopedP2Count)
-  const scopedStpCount = isScoped && activeRailScope.toUpperCase() === 'UPI' && reconData?.matched_count !== undefined
+  const scopedStpCount = railLive && reconData?.matched_count !== undefined
     ? reconData.matched_count
     : (scopedRailVol > 0 ? (scopedRailVol - scopedExcCount) : 0)
-  const scopedStpPct = isScoped && activeRailScope.toUpperCase() === 'UPI' && reconData?.stp_rate !== undefined
+  const scopedStpPct = railLive && reconData?.stp_rate !== undefined
     ? reconData.stp_rate
     : (scopedRailVol > 0 ? ((scopedStpCount / scopedRailVol) * 100).toFixed(1) : 0)
-  const scopedExcPct = isScoped && activeRailScope.toUpperCase() === 'UPI' && reconData?.stp_rate !== undefined
+  const scopedExcPct = railLive && reconData?.stp_rate !== undefined
     ? (100 - reconData.stp_rate).toFixed(1)
     : (scopedRailVol > 0 ? ((scopedExcCount / scopedRailVol) * 100).toFixed(1) : 0)
 
@@ -1414,7 +1424,7 @@ export default function App() {
     {
       id: 'ae_agentic_flow',
       icon: (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#f97316' }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#ea580c' }}>
           <polygon points="12 2 2 7 12 12 22 7 12 2" />
           <polyline points="2 17 12 22 22 17" />
           <polyline points="2 12 12 17 22 12" />
@@ -1628,7 +1638,7 @@ export default function App() {
             flexShrink: 0,
             fontSize: 17
           }}>
-            🏦
+            
           </div>
           <div className="header-title"><span>ABC Bank</span></div>
         </div>
@@ -1759,7 +1769,7 @@ export default function App() {
                   setSelectedRailForOps(rail)
                   setActiveRailScope(rail)
                 }
-                setActiveNav('ae_agentic_flow')
+                setActiveNav('dashboard')
               }}
               onOpenRailOps={(rail) => {
                 const meta = railMetadata[rail]
@@ -1786,7 +1796,7 @@ export default function App() {
             <div className="maf-banner">
               <div>
                 <div className="maf-banner-title">
-                  <span>🕸️</span>
+                  
                   <span>Microsoft Agent Framework (MAF) &bull; Context Graph Orchestrator</span>
                   <span className="maf-badge">MAF Multi-Agent Runtime</span>
                 </div>
@@ -1939,7 +1949,7 @@ export default function App() {
               <div className="maf-graph-header">
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)' }}>
-                    📐 MAF Directed Workflow Graph Topology &mdash; 6 Coordinated Executors
+                    MAF Directed Workflow Graph Topology &mdash; 6 Coordinated Executors
                   </div>
                   <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>
                     Click any node to inspect its Grounded Memory Capsule &amp; input/output contracts
@@ -2120,7 +2130,7 @@ export default function App() {
                 {/* 1. FileContext */}
                 <div className="cg-card">
                   <div className="cg-header">
-                    <span className="cg-title">📁 FileContext</span>
+                    <span className="cg-title">FileContext</span>
                     <span className="badge badge-green">VALIDATED</span>
                   </div>
                   <div className="cg-content">
@@ -2134,7 +2144,7 @@ export default function App() {
                 {/* 2. ReconContext */}
                 <div className="cg-card">
                   <div className="cg-header">
-                    <span className="cg-title">⚖️ ReconContext</span>
+                    <span className="cg-title">ReconContext</span>
                     <span className="badge badge-green">4-WAY SYNCED</span>
                   </div>
                   <div className="cg-content">
@@ -2148,7 +2158,7 @@ export default function App() {
                 {/* 3. DiagnosticContext */}
                 <div className="cg-card">
                   <div className="cg-header">
-                    <span className="cg-title">🤖 DiagnosticContext</span>
+                    <span className="cg-title">DiagnosticContext</span>
                     <span className="badge badge-purple">AI REASONED</span>
                   </div>
                   <div className="cg-content">
@@ -2162,7 +2172,7 @@ export default function App() {
                 {/* 4. ExecutionContext */}
                 <div className="cg-card">
                   <div className="cg-header">
-                    <span className="cg-title">⚡ ExecutionContext</span>
+                    <span className="cg-title">ExecutionContext</span>
                     <span className="badge badge-green">FINACLE POSTED</span>
                   </div>
                   <div className="cg-content">
@@ -2176,7 +2186,7 @@ export default function App() {
                 {/* 5. ComplianceContext */}
                 <div className="cg-card">
                   <div className="cg-header">
-                    <span className="cg-title">📜 ComplianceContext</span>
+                    <span className="cg-title">ComplianceContext</span>
                     <span className="badge badge-blue">RBI SEALED</span>
                   </div>
                   <div className="cg-content">
@@ -2260,7 +2270,6 @@ export default function App() {
             {/* AI Agent Banner */}
             <div className="ai-banner">
               <div className="ai-banner-left">
-                <div className="ai-avatar">🤖</div>
                 <div>
                   <div className="ai-banner-title">Stage 3: AI Break Investigation Agent</div>
                   <div className="ai-banner-sub">
@@ -2274,7 +2283,7 @@ export default function App() {
                 disabled={agentRunning}
                 onClick={triggerAgentInvestigation}
               >
-                {agentRunning ? '🧠 Diagnosing 2,750 Breaks…' : '⚡ Run AI Root-Cause Investigation'}
+                {agentRunning ? 'Diagnosing 2,750 Breaks…' : 'Run AI Root-Cause Investigation'}
               </button>
             </div>
 
@@ -2292,7 +2301,7 @@ export default function App() {
             {agentSummary && (
               <div className="sla-grid">
                 <div className="sla-card critical">
-                  <span className="sla-label">🔴 Critical (&lt; 4h to Breach)</span>
+                  <span className="sla-label">Critical (&lt; 4h to Breach)</span>
                   <div className="sla-val" style={{ color: 'var(--red)' }}>
                     {fmt(agentSummary.sla_urgency_breakdown?.critical_under_4h)}
                   </div>
@@ -2300,7 +2309,7 @@ export default function App() {
                 </div>
 
                 <div className="sla-card warning">
-                  <span className="sla-label">🟡 Urgent (4 &ndash; 12h to Breach)</span>
+                  <span className="sla-label">Urgent (4 &ndash; 12h to Breach)</span>
                   <div className="sla-val" style={{ color: 'var(--amber)' }}>
                     {fmt(agentSummary.sla_urgency_breakdown?.warning_4_to_12h)}
                   </div>
@@ -2308,7 +2317,7 @@ export default function App() {
                 </div>
 
                 <div className="sla-card normal">
-                  <span className="sla-label">🟢 Standard (&gt; 12h Window)</span>
+                  <span className="sla-label">Standard (&gt; 12h Window)</span>
                   <div className="sla-val" style={{ color: 'var(--green)' }}>
                     {fmt(agentSummary.sla_urgency_breakdown?.normal_above_12h)}
                   </div>
@@ -2325,7 +2334,7 @@ export default function App() {
                   <span>Evidence Dossier &amp; Root Cause Explorer ({filteredDossiers.length} records)</span>
                 </div>
                 <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
-                  Click &ldquo;View Dossier 📄&rdquo; for full AI diagnostic breakdown &amp; approval routing
+                  Click &ldquo;View Dossier&rdquo; for full AI diagnostic breakdown &amp; approval routing
                 </span>
               </div>
 
@@ -2333,13 +2342,13 @@ export default function App() {
               <div className="filter-tabs">
                 {[
                   ['ALL', `All Dossiers (${agentSummary?.total_breaks_analyzed || 0})`],
-                  ['CRITICAL', `🔴 Critical &lt;4h (${agentSummary?.sla_urgency_breakdown?.critical_under_4h || 0})`],
-                  ['AUTO', `⚡ Auto-Resolvable (${agentSummary?.auto_resolvable_count || 0})`],
-                  ['HITL', `🛡️ HITL Required (${agentSummary?.hitl_required_count || 0})`],
-                  ['TIMEOUT', 'CBS Timeout (1,000)'],
-                  ['AMOUNT_MISMATCH', 'Amount Mismatch (500)'],
-                  ['REVERSAL_MISSING', 'Reversal Missing (400)'],
-                  ['DEEMED_FAIL', 'Deemed Fail (250)'],
+                  ['CRITICAL', `Critical &lt;4h (${agentSummary?.sla_urgency_breakdown?.critical_under_4h || 0})`],
+                  ['AUTO', `Auto-Resolvable (${agentSummary?.auto_resolvable_count || 0})`],
+                  ['HITL', `HITL Required (${agentSummary?.hitl_required_count || 0})`],
+                  ['TIMEOUT', `CBS Timeout (${agentSummary?.root_cause_breakdown?.CBS_TIMEOUT ?? 0})`],
+                  ['AMOUNT_MISMATCH', `Amount Mismatch (${agentSummary?.root_cause_breakdown?.AMOUNT_MISMATCH ?? 0})`],
+                  ['REVERSAL_MISSING', `Reversal Missing (${agentSummary?.root_cause_breakdown?.REVERSAL_MISSING ?? 0})`],
+                  ['DEEMED_FAIL', `Deemed Fail (${agentSummary?.root_cause_breakdown?.DEEMED_FAIL ?? 0})`],
                 ].map(([val, label]) => (
                   <button
                     key={val}
@@ -2379,19 +2388,19 @@ export default function App() {
                         </td>
                         <td>
                           <span className={`badge ${d.sla_urgency === 'CRITICAL' ? 'badge-red' : d.sla_urgency === 'WARNING' ? 'badge-amber' : 'badge-green'}`}>
-                            ⏳ {d.sla_countdown}
+                            {d.sla_countdown}
                           </span>
                         </td>
                         <td>
                           {d.is_hitl_required ? (
-                            <span className="badge badge-amber">🛡️ HITL Approval</span>
+                            <span className="badge badge-amber">HITL Approval</span>
                           ) : (
-                            <span className="badge badge-green">⚡ Auto-Refund</span>
+                            <span className="badge badge-green">Auto-Refund</span>
                           )}
                         </td>
                         <td>
                           <button className="btn btn-secondary" style={{ padding: '3px 8px', fontSize: 11 }} onClick={(e) => { e.stopPropagation(); setSelectedDossier(d) }}>
-                            View Dossier 📄
+                            View Dossier
                           </button>
                         </td>
                       </tr>
@@ -2417,7 +2426,7 @@ export default function App() {
             {/* Top Operations Header */}
             <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }}>
               <div>
-                <div className="page-title">⚡ Stages 4 &amp; 5: Operations Approval Cockpit &amp; Finacle Execution Bot</div>
+                <div className="page-title">Stages 4 &amp; 5: Operations Approval Cockpit &amp; Finacle Execution Bot</div>
                 <div className="page-sub">
                   Dual-track financial recovery: Autonomous Finacle RPA Bot (&lt; ₹50,000) + Human-in-the-Loop Sign-Off (&ge; ₹50,000) under RBI T+1 TAT mandate
                 </div>
@@ -2433,7 +2442,7 @@ export default function App() {
                   disabled={batchLoading}
                   onClick={handleBatchApproveP1}
                 >
-                  {batchLoading ? '⚡ Dispatched to Finacle CBS...' : '⚡ Batch Approve All P1 Breaks (2,400 Cases)'}
+                  {batchLoading ? 'Dispatched to Finacle CBS...' : `Batch Approve All P1 Breaks (${hitlQueue.length} Cases)`}
                 </button>
               </div>
             </div>
@@ -2444,7 +2453,7 @@ export default function App() {
               <div className="track-card track-auto">
                 <div className="track-header">
                   <span className="track-tag">Track A &bull; Autonomous STP Bot (WF-10)</span>
-                  <span style={{ fontSize: 20 }}>⚡</span>
+                  
                 </div>
                 <div className="track-title">Autonomous Finacle Reversal Bot</div>
                 <div className="track-desc">
@@ -2453,13 +2462,13 @@ export default function App() {
                 <div className="track-stats-row">
                   <div>
                     <div className="track-stat-num" style={{ color: '#059669' }}>
-                      {fmt(recoverySummary?.auto_resolvable_count || 1612)}
+                      {fmt(recoverySummary?.auto_resolvable_count ?? 0)}
                     </div>
                     <div className="track-stat-lbl">Auto-Executed Txns</div>
                   </div>
                   <div>
                     <div className="track-stat-num" style={{ color: '#0f172a' }}>
-                      {recoverySummary?.auto_resolvable_amount ? fmtInr(recoverySummary.auto_resolvable_amount) : '₹ 78,11,490.63'}
+                      {recoverySummary?.auto_resolvable_amount ? fmtInr(recoverySummary.auto_resolvable_amount) : '₹ 0.00'}
                     </div>
                     <div className="track-stat-lbl">Dispatched Funds</div>
                   </div>
@@ -2473,7 +2482,7 @@ export default function App() {
               <div className="track-card track-hitl">
                 <div className="track-header">
                   <span className="track-tag">Track B &bull; HITL Manager Cockpit (WF-11)</span>
-                  <span style={{ fontSize: 20 }}>👨‍💼</span>
+                  
                 </div>
                 <div className="track-title">Operations Manager Dual-Approval</div>
                 <div className="track-desc">
@@ -2482,7 +2491,7 @@ export default function App() {
                 <div className="track-stats-row">
                   <div>
                     <div className="track-stat-num" style={{ color: '#ea580c' }}>
-                      {fmt(recoverySummary?.hitl_pending_count ?? 1138)}
+                      {fmt(recoverySummary?.hitl_pending_count ?? hitlQueue.length ?? 0)}
                     </div>
                     <div className="track-stat-lbl">Pending Review</div>
                   </div>
@@ -2503,26 +2512,26 @@ export default function App() {
             <div className="kpi-grid">
               <KpiCard
                 label="Total Reversals Posted"
-                value={recoverySummary?.total_cbs_reversals_posted || 1612}
+                value={recoverySummary?.total_cbs_reversals_posted ?? 0}
                 color="green"
                 sub="Dispatched to Finacle pool"
               />
               <KpiCard
                 label="Autonomous Bot Volume"
-                value={recoverySummary?.auto_resolvable_amount ? Math.round(recoverySummary.auto_resolvable_amount) : 7811491}
+                value={recoverySummary?.auto_resolvable_amount ? Math.round(recoverySummary.auto_resolvable_amount) : 0}
                 prefix="₹ "
                 color="blue"
                 sub="Threshold < ₹50k (STP)"
               />
               <KpiCard
                 label="Pending Manager Action"
-                value={recoverySummary?.hitl_pending_count ?? 1138}
+                value={recoverySummary?.hitl_pending_count ?? hitlQueue.length ?? 0}
                 color="amber"
                 sub="Awaiting electronic sign-off"
               />
               <KpiCard
                 label="RBI Penalties Avoided"
-                value="2,40,000"
+                value={recoverySummary?.hitl_pending_count ? (recoverySummary.hitl_pending_count * 100) : 0}
                 prefix="₹ "
                 suffix=" / Day"
                 color="purple"
@@ -2546,12 +2555,12 @@ export default function App() {
               <div className="filter-tabs">
                 {[
                   ['ALL', `All Cases (${hitlQueue.length})`],
-                  ['P1', '🔴 P1 Urgent (TAT Active)'],
-                  ['AMOUNT_MISMATCH', '⚖️ Amount Mismatch'],
-                  ['PENDING', `⏳ Pending (${recoverySummary?.hitl_pending_count ?? 1138})`],
-                  ['APPROVED', `✅ Approved & Posted (${recoverySummary?.hitl_approved_count || 0})`],
-                  ['REJECTED', '❌ Rejected'],
-                  ['ESCALATED', '⚠️ Escalated'],
+                  ['P1', 'P1 Urgent (TAT Active)'],
+                  ['AMOUNT_MISMATCH', 'Amount Mismatch'],
+                  ['PENDING', `Pending (${recoverySummary?.hitl_pending_count ?? hitlQueue.filter(c => c.status === 'PENDING').length ?? 0})`],
+                  ['APPROVED', `Approved & Posted (${recoverySummary?.hitl_approved_count || 0})`],
+                  ['REJECTED', 'Rejected'],
+                  ['ESCALATED', 'Escalated'],
                 ].map(([val, label]) => (
                   <button
                     key={val}
@@ -2591,7 +2600,7 @@ export default function App() {
                         </td>
                         <td>
                           <span className={`badge ${q.priority === 'P1' ? 'badge-red' : 'badge-amber'}`}>
-                            ⏳ {q.sla_countdown}
+                            {q.sla_countdown}
                           </span>
                         </td>
                         <td style={{ maxWidth: 220, fontSize: 11.5, lineHeight: 1.4 }}>
@@ -2616,14 +2625,14 @@ export default function App() {
                           )}
                           {q.status === 'ESCALATED' && (
                             <div>
-                              <span className="badge badge-purple">⚠️ ESCALATED (P1)</span>
+                              <span className="badge badge-purple">ESCALATED (P1)</span>
                               <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
                                 {q.escalation_note || 'Sent to Committee'}
                               </div>
                             </div>
                           )}
                           {(!q.status || q.status === 'PENDING_APPROVAL') && (
-                            <span className="badge badge-amber">⏳ PENDING APPROVAL</span>
+                            <span className="badge badge-amber">PENDING APPROVAL</span>
                           )}
                         </td>
                         <td>
@@ -2682,7 +2691,7 @@ export default function App() {
                                   onClick={() => handleEscalateTxn(q)}
                                   title="Escalate to Risk Committee & Operations Head"
                                 >
-                                  ⚠️ Escalate
+                                  Escalate
                                 </button>
                               </>
                             ) : q.status === 'APPROVED_AND_POSTED' ? (
@@ -2706,7 +2715,7 @@ export default function App() {
                               }}
                               title="Inspect AI Evidence Dossier"
                             >
-                              📄
+                              
                             </button>
                           </div>
                         </td>
@@ -2734,7 +2743,7 @@ export default function App() {
             <div className="audit-seal-card">
               <div className="seal-header">
                 <div className="seal-title-area">
-                  <div className="seal-icon-emblem">🏛️</div>
+                  <div className="seal-icon-emblem"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
                   <div>
                     <div className="seal-main-title">
                       Reserve Bank of India &mdash; Automated Clearing &amp; Settlement Compliance Pack
@@ -2750,7 +2759,7 @@ export default function App() {
                   disabled={sealing}
                   onClick={handleSealAuditPack}
                 >
-                  {sealing ? '🔐 Generating SHA-256 Seal...' : (sealedPack ? '🔄 Re-Seal Audit Pack' : '🔐 Seal Cryptographic Audit Pack')}
+                  {sealing ? 'Generating SHA-256 Seal...' : (sealedPack ? 'Re-Seal Audit Pack' : 'Seal Cryptographic Audit Pack')}
                 </button>
               </div>
 
@@ -2774,7 +2783,7 @@ export default function App() {
             {/* Penalty Mitigation Highlight Box */}
             <div className="penalty-counter-card">
               <div className="penalty-left">
-                <div className="penalty-icon-box">🛡️</div>
+                <div className="penalty-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     RBI DPSS Customer Penalty Mitigation Guarantee
@@ -2852,7 +2861,7 @@ export default function App() {
                       alert("Cryptographic Audit Pack copied to clipboard!")
                     }}
                   >
-                    📋 Copy Audit JSON
+                    Copy Audit JSON
                   </button>
                   <button
                     className="btn btn-primary"
@@ -2867,7 +2876,7 @@ export default function App() {
                       downloadAnchor.remove()
                     }}
                   >
-                    📥 Download Audit Package
+                    Download Audit Package
                   </button>
                 </div>
               </div>
@@ -3119,13 +3128,13 @@ export default function App() {
               {/* Filter Tabs */}
               <div className="filter-tabs">
                 {[
-                  ['MATCHED', `Matched STP (${reconData?.matched_count || reconMatched.length || 1})`],
-                  ['ALL', `All Breaks (${reconData?.break_count || 4})`],
-                  ['P1', `P1 Critical (${reconData?.p1_count || 4})`],
-                  ['CBS_TIMEOUT', 'CBS Timeout (1)'],
-                  ['AMOUNT_MISMATCH', 'Amount Mismatch (1)'],
-                  ['DEEMED_FAIL', 'Deemed Fail (1)'],
-                  ['REVERSAL_MISSING', 'Reversal Missing (1)'],
+                  ['MATCHED', `Matched STP (${reconData?.matched_count ?? reconMatched.length ?? 0})`],
+                  ['ALL', `All Breaks (${reconData?.break_count ?? reconBreaks.length ?? 0})`],
+                  ['P1', `P1 Critical (${reconData?.p1_count ?? 0})`],
+                  ['CBS_TIMEOUT', `CBS Timeout (${reconData?.break_breakdown?.CBS_TIMEOUT ?? reconBreaks.filter(b => b.scenario === 'CBS_TIMEOUT').length ?? 0})`],
+                  ['AMOUNT_MISMATCH', `Amount Mismatch (${reconData?.break_breakdown?.AMOUNT_MISMATCH ?? reconBreaks.filter(b => b.scenario === 'AMOUNT_MISMATCH').length ?? 0})`],
+                  ['DEEMED_FAIL', `Deemed Fail (${reconData?.break_breakdown?.DEEMED_FAIL ?? reconBreaks.filter(b => b.scenario === 'DEEMED_FAIL').length ?? 0})`],
+                  ['REVERSAL_MISSING', `Reversal Missing (${reconData?.break_breakdown?.REVERSAL_MISSING ?? reconBreaks.filter(b => b.scenario === 'REVERSAL_MISSING').length ?? 0})`],
                 ].map(([val, label]) => (
                   <button
                     key={val}
@@ -3158,7 +3167,7 @@ export default function App() {
                       <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setSelectedBreak(b)}>
                         <td>
                           <code style={{ fontSize: 11, fontWeight: 700 }}>{b.txn_id}</code>
-                          {b.source_file && <div style={{ fontSize: 9.5, color: 'var(--text-muted)', marginTop: 2 }}>📄 {b.source_file}</div>}
+                          {b.source_file && <div style={{ fontSize: 9.5, color: 'var(--text-muted)', marginTop: 2 }}>{b.source_file}</div>}
                         </td>
                         <td>{b.rrn}</td>
                         <td><b>{b.rail}</b></td>
@@ -3171,7 +3180,7 @@ export default function App() {
                         <td><Badge type={b.priority === 'STP' ? 'NORMAL' : b.priority} label={b.priority === 'STP' ? 'STP 100%' : b.priority} /></td>
                         <td>
                           {b.penalty_clock_started === 'Yes' ? (
-                            <span style={{ color: 'var(--red)', fontWeight: 700, fontSize: 11 }}>⏳ T+1 Clock</span>
+                            <span style={{ color: 'var(--red)', fontWeight: 700, fontSize: 11 }}>T+1 Clock</span>
                           ) : (
                             <span style={{ color: b.scenario === 'SUCCESS' ? 'var(--green)' : 'var(--text-faint)', fontSize: 11, fontWeight: b.scenario === 'SUCCESS' ? 600 : 400 }}>
                               {b.scenario === 'SUCCESS' ? 'Balanced' : 'Normal'}
@@ -3180,7 +3189,7 @@ export default function App() {
                         </td>
                         <td>
                           <button className="btn btn-secondary" style={{ padding: '3px 8px', fontSize: 11 }} onClick={(e) => { e.stopPropagation(); setSelectedBreak(b) }}>
-                            Inspect 🔍
+                            Inspect
                           </button>
                         </td>
                       </tr>
@@ -3235,13 +3244,13 @@ export default function App() {
               {/* Card 1: Batch Intake */}
               <div className="card" style={{ padding: '18px 20px', borderLeft: '4px solid #ea580c' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                  UPI 2.0 Ingested Batch
+                  {activeRailScope ? `${activeRailName || activeRailScope} Ingested Batch` : 'UPI 2.0 Ingested Batch'}
                 </div>
                 <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>
                   {scopedRailVol} <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>Transactions</span>
                 </div>
                 <div style={{ fontSize: 11.5, color: '#ea580c', fontWeight: 600, marginTop: 4 }}>
-                  Cycle: UPI-20261029-CY01 &bull; Active
+                  {scopedRailVol > 0 ? `Cycle: ${activeRailScope ? activeRailScope.toUpperCase() : 'UPI'}-20261029-CY01 • Active` : 'Cycle: Standby • Awaiting File Intake'}
                 </div>
               </div>
 
@@ -3251,10 +3260,12 @@ export default function App() {
                   Straight-Through (STP) Settled
                 </div>
                 <div style={{ fontSize: 24, fontWeight: 800, color: '#16a34a', marginTop: 4 }}>
-                  {reconData?.matched_count || 1} <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>Txn ({reconData?.stp_rate ?? '20.0'}%)</span>
+                  {reconData?.matched_count ?? 0} <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>Txn ({reconData?.stp_rate ? `${reconData.stp_rate}%` : '0.0%'})</span>
                 </div>
                 <div style={{ fontSize: 11.5, color: '#15803d', fontWeight: 600, marginTop: 4 }}>
-                  Zero-Delta GL-14020 Knocked Off (₹{(reconData?.matched_amount || 840.04).toLocaleString()})
+                  {reconData?.matched_count
+                    ? `Zero-Delta ${activeRailScope === 'NETC' ? 'GL-9908' : activeRailScope === 'AEPS' ? 'GL-9904' : activeRailScope === 'IMPS' ? 'GL-9902' : 'GL-14020'} Knocked Off (₹${(reconData.matched_amount || 0).toLocaleString()})`
+                    : `Zero-Delta ${activeRailScope === 'NETC' ? 'GL-9908' : activeRailScope === 'AEPS' ? 'GL-9904' : activeRailScope === 'IMPS' ? 'GL-9902' : 'GL-14020'} Knock-Off Standby (₹0.00)`}
                 </div>
               </div>
 
@@ -3264,10 +3275,10 @@ export default function App() {
                   AI Exception Breaks (Dual-Track)
                 </div>
                 <div style={{ fontSize: 24, fontWeight: 800, color: '#e11d48', marginTop: 4 }}>
-                  {reconData?.break_count || 4} <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>Breaks (₹{(reconData?.break_amount || 7700).toLocaleString()})</span>
+                  {reconData?.break_count ?? 0} <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>Breaks (₹{(reconData?.break_amount ?? 0).toLocaleString()})</span>
                 </div>
                 <div style={{ fontSize: 11.5, color: '#be123c', fontWeight: 600, marginTop: 4 }}>
-                  3 Auto-Reversed (&lt; ₹5k) &bull; 1 HITL Cockpit
+                  {reconData?.break_count ? `${reconData.auto_refund_count || 0} Auto-Reversed (< ₹5k) • ${reconData.hitl_count || 0} HITL Cockpit` : '0 Auto-Reversed • 0 HITL Cockpit'}
                 </div>
               </div>
 
@@ -3358,7 +3369,7 @@ export default function App() {
                     </div>
                   ) : (
                     <>
-                      <div className="up-icon-wrap">📂</div>
+                      <div className="up-icon-wrap"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></div>
                       <div className="up-label">Drag &amp; drop your NPCI settlement file here</div>
                       <div className="up-sub">or click to browse &mdash; Supports .csv, .dat, .txt (up to 500,000 records)</div>
                       <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={e => { e.stopPropagation(); fileRef.current.click() }}>

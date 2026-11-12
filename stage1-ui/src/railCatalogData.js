@@ -1,0 +1,190 @@
+// Pre-loaded 8 NPCI Rail Catalog definitions (offline & Cloudflare Pages static fallback)
+export const DEFAULT_RAIL_CATALOGS = [
+  {
+    rail_code: "UPI",
+    name: "Unified Payments Interface (UPI 2.0)",
+    tagline: "Real-time 24x7 Mobile P2P/P2M Clearing & Auto-Reversals",
+    icon: "",
+    color: "#0284c7",
+    category: "Instant & Mobile",
+    subscription_status: "SUBSCRIBED",
+    subscription_tier: "Enterprise Multi-Cycle",
+    sla_standard: "T+1 Calendar Day (RBI DPSS Circular No.629)",
+    clearing_window: "6 Daily Settlement Cycles (00:00 - 24:00 IST)",
+    daily_volume_rating: "50,000 - 100,000,000 txns/day",
+    systems_integrated: ["NPCI Central Switch", "Base24 Switch", "Finacle 10.x CBS", "GL Clearing Pool 9901"],
+    automated_tasks: [
+      { code: "WF-01", name: "SFTP Cycle Stream Ingestion", desc: "Ingests raw settlement files across 6 daily NPCI cut-off windows." },
+      { code: "WF-03", name: "SHA-256 Duplicate & Schema Gate", desc: "Validates 32-column specification & cryptographic hash duplicates." },
+      { code: "WF-04", name: "4-Way Multi-Leg Reconciliation", desc: "Matches NPCI raw vs Switch vs Finacle CBS vs GL Suspense with 94.5%+ STP." },
+      { code: "WF-07", name: "AI RC-U66 & Timeout Diagnostic", desc: "Correlates ISO-8583 logs, 15-second timeouts, and calculates RBI TAT countdown." },
+      { code: "WF-10", name: "Autonomous Finacle Reversal Bot", desc: "Dispatches instant STP customer credits for timeouts below ₹50,000." },
+      { code: "WF-11", name: "UDIR Online Dispute Cockpit", desc: "Dual-authorization queue for high-value breaks and customer chargebacks." },
+      { code: "WF-12", name: "SHA-256 Audit Seal Generator", desc: "Tamper-proof compliance packaging for RBI DPSS inspection." }
+    ],
+    pricing_model: "₹ 0.002 per matched transaction or ₹ 45,000 / month flat",
+    last_trial_run: "2026-10-28T12:00:00"
+  },
+  {
+    rail_code: "IMPS",
+    name: "Immediate Payment Service (IMPS)",
+    tagline: "Instant 24x7 Interbank Account-to-Account Settlement",
+    icon: "",
+    color: "#6366f1",
+    category: "Instant & Mobile",
+    subscription_status: "SUBSCRIBED",
+    subscription_tier: "Instant Interbank Standard",
+    sla_standard: "T+1 Calendar Day (Immediate Settlement Obligation)",
+    clearing_window: "Continuous Real-Time 24x7 Clearing",
+    daily_volume_rating: "10,000 - 25,000,000 txns/day",
+    systems_integrated: ["NPCI IMPS Switch", "Core Banking Host", "CBS Suspense 9902", "RBI RTGS Leg"],
+    automated_tasks: [
+      { code: "WF-01", name: "Real-Time Message Stream Ingestion", desc: "Validates continuous 24x7 interbank clearing feeds." },
+      { code: "WF-04", name: "Late-Credit & Balance Matcher", desc: "Reconciles remitter vs beneficiary bank settlement entries." },
+      { code: "WF-07", name: "Response Code 91 / Timeout Resolver", desc: "Diagnoses beneficiary CBS system drops within 30s window." },
+      { code: "WF-10", name: "Immediate Auto-Return Bot", desc: "Auto-credits remitter account if beneficiary debit fails." },
+      { code: "WF-12", name: "Daily IMPS Settlement Audit Trail", desc: "Consolidates RBI RTGS settlement certificates." }
+    ],
+    pricing_model: "₹ 0.003 per matched transaction or ₹ 35,000 / month flat",
+    last_trial_run: null
+  },
+  {
+    rail_code: "NACH",
+    name: "National Automated Clearing House (NACH)",
+    tagline: "High-Volume Bulk Direct Debit, Mandates, Salary & Dividend Clearing",
+    icon: "",
+    color: "#059669",
+    category: "Bulk & Mandates",
+    subscription_status: "TRIAL_AVAILABLE",
+    subscription_tier: "Bulk Mandate Enterprise",
+    sla_standard: "T+1 Session Cycle (Session 1 & Session 2)",
+    clearing_window: "Batch Clearing Sessions (09:00 & 14:00 IST)",
+    daily_volume_rating: "500,000 - 50,000,000 txns/session",
+    systems_integrated: ["NPCI ACH Host", "APBS Clearing File", "CBS Bulk Debit Engine", "Sundry Clearing 9903"],
+    automated_tasks: [
+      { code: "WF-01", name: "ACH / APBS Batch Presentation Ingestion", desc: "Validates bulk presentation files containing up to 10M records." },
+      { code: "WF-03", name: "E-Mandate Reference Check", desc: "Cryptographically verifies UMRN (Unique Mandate Reference Number)." },
+      { code: "WF-04", name: "Bulk Return Reason Code Processor", desc: "Classifies return codes M01 (Insufficient Funds), M03 (Closed), M10 (Stop)." },
+      { code: "WF-10", name: "ACH Return Memo Generation Bot", desc: "Autonomously drafts and dispatches return files back to NPCI before session cut-off." },
+      { code: "WF-13", name: "Mandate Compliance Scorecard", desc: "Generates sponsor bank compliance filings." }
+    ],
+    pricing_model: "₹ 0.0015 per mandate or ₹ 55,000 / month flat",
+    last_trial_run: null
+  },
+  {
+    rail_code: "AEPS",
+    name: "Aadhaar Enabled Payment System (AePS)",
+    tagline: "Biometric Micro-ATM Clearing & BC Agent Settlement",
+    icon: "",
+    color: "#d97706",
+    category: "Cards & Biometrics",
+    subscription_status: "TRIAL_AVAILABLE",
+    subscription_tier: "Financial Inclusion Pack",
+    sla_standard: "T+1 Calendar Day (Micro-ATM Settlement)",
+    clearing_window: "Daily Batch Settlement Window",
+    daily_volume_rating: "25,000 - 5,000,000 txns/day",
+    systems_integrated: ["UIDAI Biometric Gateway", "NPCI AePS Switch", "CBS BC Float Account", "GL Suspense 9904"],
+    automated_tasks: [
+      { code: "WF-01", name: "Micro-ATM Journal File Intake", desc: "Ingests terminal cash-withdrawal and balance-inquiry logs." },
+      { code: "WF-04", name: "On-us / Off-us 4-Way Matcher", desc: "Cross-reconciles BC Agent device logs with UIDAI biometric confirmations." },
+      { code: "WF-07", name: "Terminal Timeout Breakdown Resolver", desc: "Diagnoses cash-dispense timeout failures at remote banking points." },
+      { code: "WF-10", name: "BC Float Account Rebalancer Bot", desc: "Auto-credits business correspondent float accounts." },
+      { code: "WF-12", name: "Micro-ATM Audit Pack", desc: "Tamper-proof compliance log for RBI financial inclusion audits." }
+    ],
+    pricing_model: "₹ 0.0025 per txn or ₹ 30,000 / month flat",
+    last_trial_run: null
+  },
+  {
+    rail_code: "RUPAY",
+    name: "RuPay Multi-Channel Card Scheme",
+    tagline: "Domestic Debit/Credit/Prepaid Card Interchange & Chargeback Settlement",
+    icon: "",
+    color: "#ea580c",
+    category: "Cards & Biometrics",
+    subscription_status: "TRIAL_AVAILABLE",
+    subscription_tier: "Card Interchange Multi-Channel",
+    sla_standard: "T+1 Settlement Window (Dual-Message Scheme)",
+    clearing_window: "4 Daily Clearing Sessions (E-Com, ATM, POS)",
+    daily_volume_rating: "100,000 - 30,000,000 txns/day",
+    systems_integrated: ["RuPay Central Switch", "POS/ATM Gateway", "Card Management System (CMS)", "GL Interchange 9905"],
+    automated_tasks: [
+      { code: "WF-01", name: "Raw Settlement Feed Parser", desc: "Ingests IPM / ISO-8583 settlement logs across ATM and POS channels." },
+      { code: "WF-04", name: "Interchange Fee & Surcharge Calculator", desc: "Validates exact basis point interchange splits between acquirer and issuer." },
+      { code: "WF-07", name: "Late Presentment & Dispute Classifier", desc: "Analyzes chargeback reason codes (CB-01, CB-04) and pre-arbitration claims." },
+      { code: "WF-10", name: "Card Reversal & Credit Adjustment Bot", desc: "Dispatches Finacle card account credits for deemed failed swipes." },
+      { code: "WF-13", name: "RuPay Scheme MIS & Audit Filing", desc: "Generates merchant acquirer settlement certificates." }
+    ],
+    pricing_model: "₹ 0.002 per swipe or ₹ 60,000 / month flat",
+    last_trial_run: null
+  },
+  {
+    rail_code: "CTS",
+    name: "Cheque Truncation System (CTS-2010)",
+    tagline: "Image-Based Electronic Physical Cheque Clearing & Return Memos",
+    icon: "",
+    color: "#475569",
+    category: "Bulk & Cheque",
+    subscription_status: "TRIAL_AVAILABLE",
+    subscription_tier: "Cheque Clearing House Suite",
+    sla_standard: "T+1 Clearing Cycle (Grid-Based Clearing: Western, Northern, Southern)",
+    clearing_window: "2 Daily Clearing Grid Windows (Presentment & Return)",
+    daily_volume_rating: "10,000 - 2,000,000 cheques/day",
+    systems_integrated: ["CTS Clearing House Grid", "Document Scanner Vault", "Finacle Cheque Clearing Module", "Clearing Pool 9906"],
+    automated_tasks: [
+      { code: "WF-01", name: "Cheque Image Pack & MICR Ingestion", desc: "Validates grayscale/UV cheque image packs and MICR band checksums." },
+      { code: "WF-04", name: "Outward vs Inward Clearing Reconciler", desc: "Matches presenting bank figures with clearing house net obligations." },
+      { code: "WF-07", name: "Cheque Return Reason Code Classifier", desc: "Categorizes returns (Code 88 Funds Insufficient, Code 89 Signature Differs)." },
+      { code: "WF-10", name: "Auto-Return Memo Dispatcher Bot", desc: "Generates statutory legal return memos under Section 138 of NI Act." },
+      { code: "WF-12", name: "CTS Grid Settlement Certificate", desc: "SHA-256 sealed digital audit register for physical instruments." }
+    ],
+    pricing_model: "₹ 0.005 per cheque or ₹ 40,000 / month flat",
+    last_trial_run: null
+  },
+  {
+    rail_code: "BBPS",
+    name: "Bharat Bill Payment System (BBPS)",
+    tagline: "Interoperable Utility, Telecom, Gas & Municipal Bill Settlement",
+    icon: "",
+    color: "#0284c7",
+    category: "Utility & Transit",
+    subscription_status: "TRIAL_AVAILABLE",
+    subscription_tier: "Biller Operating Unit (BOU) Pack",
+    sla_standard: "T+1 Calendar Day (Biller Settlement Window)",
+    clearing_window: "Daily Batch Clearing Window (00:00 - 23:59 IST)",
+    daily_volume_rating: "50,000 - 15,000,000 bills/day",
+    systems_integrated: ["NPCI Bharat BillPay Central Unit (BBPCU)", "Agent Institution Feed", "Biller Gateway", "GL BBPS 9907"],
+    automated_tasks: [
+      { code: "WF-01", name: "Biller Settlement File Stream Intake", desc: "Ingests daily bill collections across electricity, water, FASTag, telecom." },
+      { code: "WF-04", name: "BOU vs COU Multi-Party Matcher", desc: "Cross-matches customer payment receipts with biller clearing vouchers." },
+      { code: "WF-07", name: "Biller Failure & Double-Debit Analyzer", desc: "Identifies bills debited at customer app but uncredited at utility biller." },
+      { code: "WF-10", name: "Instant Consumer Refund Bot", desc: "Auto-refunds failed bill debits back to source customer accounts." },
+      { code: "WF-12", name: "BBPS Inter-Biller Commission Audit", desc: "Calculates and reconciles agent convenience fee splits." }
+    ],
+    pricing_model: "₹ 0.002 per bill payment or ₹ 35,000 / month flat",
+    last_trial_run: null
+  },
+  {
+    rail_code: "NETC",
+    name: "National Electronic Toll Collection (NETC FASTag)",
+    tagline: "RFID Highway Toll Plaza Clearing & Concessionaire Reconciliation",
+    icon: "",
+    color: "#16a34a",
+    category: "Utility & Transit",
+    subscription_status: "TRIAL_AVAILABLE",
+    subscription_tier: "FASTag Acquirer & Issuer Suite",
+    sla_standard: "T+1 Batch Window (Plaza Settlement Mandate)",
+    clearing_window: "Hourly & Daily Toll Plaza Batch Settlement",
+    daily_volume_rating: "100,000 - 20,000,000 toll tags/day",
+    systems_integrated: ["IHMCL / NPCI NETC Switch", "Plaza Toll Reader Log", "FASTag Wallet CBS Host", "GL NETC Suspense 9908"],
+    automated_tasks: [
+      { code: "WF-01", name: "Plaza XML / CSV Stream Ingestion", desc: "Ingests hourly toll booth tag reader events across national highways." },
+      { code: "WF-04", name: "Acquirer vs Issuer Net Toll Matcher", desc: "Cross-reconciles plaza concessionaire claims vs vehicle tag wallet debits." },
+      { code: "WF-07", name: "Reader Glitch & Double-Toll Classifier", desc: "Detects vehicle double-deductions caused by multi-lane antenna reads." },
+      { code: "WF-10", name: "Toll Adjustment & Chargeback Bot", desc: "Auto-credits FASTag wallet balance for erroneous toll plaza deductions." },
+      { code: "WF-12", name: "NHAI / Concessionaire Audit Pack", desc: "Immutable settlement report for highway concessionaires." }
+    ],
+    pricing_model: "₹ 0.002 per toll read or ₹ 40,000 / month flat",
+    last_trial_run: null
+  }
+]
+

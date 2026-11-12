@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 960" width="1700" height="960" role="img" aria-label="NPCI 4-Agent Autonomous Architecture">
+  <defs>
+    <!-- Background Dot Grid -->
+    <pattern id="dotGrid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#e2e8f0" />
+    </pattern>
+
+    <!-- Header Gradient -->
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="60%" stop-color="#fff7ed"/>
+      <stop offset="100%" stop-color="#ffedd5"/>
+    </linearGradient>
+
+    <!-- 4 Core Agent Card Gradients -->
+    <linearGradient id="agent1Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#eff6ff"/>
+    </linearGradient>
+
+    <linearGradient id="agent2Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fff7ed"/>
+    </linearGradient>
+
+    <linearGradient id="agent3Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fff7ed"/>
+    </linearGradient>
+
+    <linearGradient id="agent4Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fff1f2"/>
+    </linearGradient>
+
+    <!-- Drop Shadows -->
+    <filter id="shadowSm" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.05"/>
+    </filter>
+    <filter id="shadowMd" x="-5%" y="-5%" width="110%" height="120%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#ea580c" flood-opacity="0.10"/>
+    </filter>
+    <filter id="shadowLg" x="-5%" y="-5%" width="110%" height="120%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0284c7" flood-opacity="0.10"/>
+    </filter>
+    <filter id="buttonGlow" x="-10%" y="-10%" width="120%" height="130%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#ea580c" flood-opacity="0.20"/>
+    </filter>
+
+    <!-- Arrow Markers -->
+    <marker id="arGray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#64748b"/>
+    </marker>
+    <marker id="arGreen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#16a34a"/>
+    </marker>
+    <marker id="arOrange" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#ea580c"/>
+    </marker>
+    <marker id="arRose" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#e11d48"/>
+    </marker>
+  </defs>
+
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .page-title { font-weight: 900; font-size: 26px; fill: #0f172a; letter-spacing: -0.5px; }
+    .page-sub { font-weight: 500; font-size: 13.5px; fill: #475569; }
+    .agent-title { font-weight: 900; font-size: 16.5px; }
+    .agent-badge { font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; }
+    .agent-role { font-weight: 700; font-size: 13px; }
+    .agent-desc { font-weight: 500; font-size: 12px; fill: #334155; line-height: 1.5; }
+    .agent-tech { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; font-weight: 700; }
+    .tag-title { font-weight: 800; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.6px; fill: #475569; }
+    .flow-badge { font-weight: 800; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px; }
+  </style>
+
+  <!-- Background Base -->
+  <rect width="1700" height="960" fill="#f8fafc"/>
+  <rect width="1700" height="960" fill="url(#dotGrid)"/>
+
+  <!-- ========================================================================= -->
+  <!-- TOP BANNER HEADER                                                         -->
+  <!-- ========================================================================= -->
+  <g transform="translate(40, 20)">
+    <rect width="1620" height="90" fill="url(#headerGrad)" stroke="#fdba74" stroke-width="1.5" filter="url(#shadowMd)"/>
+    
+    <!-- Title and Subtitle -->
+    <g transform="translate(30, 24)">
+      <text x="0" y="24" class="page-title">NPCI Payment Rail · Autonomous Reconciliation Flow</text>
+      <text x="0" y="48" class="page-sub">End-to-End Orchestration: 4 Inbound Settlement Feeds &#8594; AI Reconciler &#8594; AI Break Investigator &#8594; Dual-Track Execution Bots</text>
+    </g>
+
+    <!-- UI-STYLIZED "AGENTIC FLOW" BUTTON (Directly migrated from UI Sidebar) -->
+    <g transform="translate(1330, 20)" filter="url(#buttonGlow)">
+      <!-- Orange Rounded Pill Container -->
+      <rect width="250" height="50" rx="14" ry="14" fill="#ffedd5" stroke="#fdba74" stroke-width="2"/>
+      
+      <!-- 3-Stacked Layers Icon -->
+      <g transform="translate(18, 14)">
+        <polygon points="12 2 2 7 12 12 22 7 12 2" fill="#fed7aa" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline points="2 12 12 17 22 12" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline points="2 17 12 22 22 17" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      
+      <!-- Button Text -->
+      <text x="52" y="25" fill="#c2410c" style="font-size: 15px; font-weight: 900; letter-spacing: -0.2px;">Agentic Flow</text>
+      <text x="52" y="40" fill="#ea580c" style="font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">4 Core Autonomous Agents</text>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- INBOUND DATA FEEDS (LEFT STRIP, X: 40, W: 240)                            -->
+  <!-- ========================================================================= -->
+  <g transform="translate(40, 134)">
+    <text x="0" y="0" class="tag-title">Inbound 4-Way Feeds</text>
+
+    <!-- Leg 1: Central NPCI Master -->
+    <g transform="translate(0, 14)">
+      <rect width="240" height="68" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" filter="url(#shadowSm)"/>
+      <rect x="0" y="0" width="5" height="68" fill="#ea580c"/>
+      <text x="14" y="24" fill="#0f172a" style="font-size: 12.5px; font-weight: 800;">1. NPCI Settlement Master</text>
+      <text x="14" y="42" fill="#64748b" style="font-size: 10.5px;">Central Rail Raw Feed</text>
+      <text x="14" y="58" fill="#0284c7" class="agent-tech" style="font-size: 10.5px;">RRN, TXN_ID, AMOUNT, STATUS</text>
+    </g>
+
+    <!-- Leg 2: Payment Switch Logs -->
+    <g transform="translate(0, 92)">
+      <rect width="240" height="68" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" filter="url(#shadowSm)"/>
+      <rect x="0" y="0" width="5" height="68" fill="#0284c7"/>
+      <text x="14" y="24" fill="#0f172a" style="font-size: 12.5px; font-weight: 800;">2. Payment Switch Logs</text>
+      <text x="14" y="42" fill="#64748b" style="font-size: 10.5px;">Base24 ISO-8583 Gateway</text>
+      <text x="14" y="58" fill="#0284c7" class="agent-tech" style="font-size: 10.5px;">RESP_CODE (00, 91, 96)</text>
+    </g>
+
+    <!-- Leg 3: Core Banking CBS -->
+    <g transform="translate(0, 170)">
+      <rect width="240" height="68" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" filter="url(#shadowSm)"/>
+      <rect x="0" y="0" width="5" height="68" fill="#16a34a"/>
+      <text x="14" y="24" fill="#0f172a" style="font-size: 12.5px; font-weight: 800;">3. Core Banking (CBS)</text>
+      <text x="14" y="42" fill="#64748b" style="font-size: 10.5px;">Finacle Debit Postings</text>
+      <text x="14" y="58" fill="#0284c7" class="agent-tech" style="font-size: 10.5px;">ACCOUNT_NO, CBS_AMT</text>
+    </g>
+
+    <!-- Leg 4: GL Suspense Pool -->
+    <g transform="translate(0, 248)">
+      <rect width="240" height="68" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" filter="url(#shadowSm)"/>
+      <rect x="0" y="0" width="5" height="68" fill="#8b5cf6"/>
+      <text x="14" y="24" fill="#0f172a" style="font-size: 12.5px; font-weight: 800;">4. GL Suspense Pool</text>
+      <text x="14" y="42" fill="#64748b" style="font-size: 10.5px;">Suspense Ledger (GL-14022)</text>
+      <text x="14" y="58" fill="#0284c7" class="agent-tech" style="font-size: 10.5px;">GL_AMOUNT, POOL_BALANCE</text>
+    </g>
+
+    <!-- Ingestion Guard Note -->
+    <g transform="translate(0, 328)">
+      <rect width="240" height="52" fill="#f1f5f9" stroke="#cbd5e1" stroke-dasharray="3 3"/>
+      <text x="12" y="22" fill="#0f172a" style="font-size: 11px; font-weight: 800;">Ingestion Guard Protocol:</text>
+      <text x="12" y="38" fill="#64748b" style="font-size: 10px;">SHA-256 Deduplication &amp; Schema Gate</text>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- AGENT 1: AI RECONCILER MASTER AGENT (X: 330, W: 350)                      -->
+  <!-- ========================================================================= -->
+  <g transform="translate(330, 134)">
+    <text x="0" y="0" class="tag-title">Stage 1 &amp; 2 · The Brain</text>
+
+    <g transform="translate(0, 14)">
+      <rect width="350" height="366" fill="url(#agent1Grad)" stroke="#2563eb" stroke-width="2" filter="url(#shadowLg)"/>
+      <rect x="0" y="0" width="350" height="34" fill="#dbeafe"/>
+      <circle cx="20" cy="17" r="6" fill="#2563eb"/>
+      <text x="34" y="22" fill="#1e40af" class="agent-badge">AGENT 1 · MASTER ORCHESTRATOR</text>
+
+      <g transform="translate(18, 48)">
+        <text x="0" y="16" class="agent-title" fill="#1e3a8a">AI Reconciler Master Agent</text>
+        <text x="0" y="36" class="agent-role" fill="#0284c7">Role: The Brain</text>
+        <text x="0" y="54" class="agent-tech" fill="#475569">Tech: Process Studio (.psw) + FastAPI Core</text>
+
+        <rect x="0" y="68" width="314" height="1" fill="#bfdbfe"/>
+
+        <!-- Responsibilities -->
+        <g transform="translate(0, 80)">
+          <text x="0" y="14" class="agent-desc">• Ingests and validates the 4 settlement feeds</text>
+          <text x="0" y="32" class="agent-desc">• Executes mathematical 4-way join on RRN + UTR</text>
+          <text x="0" y="50" class="agent-desc">• Reconciles amounts: NPCI == CBS == GL Pool</text>
+          <text x="0" y="68" class="agent-desc">• Immediately splits flow into two paths:</text>
+        </g>
+
+        <!-- Bifurcation Badges -->
+        <g transform="translate(0, 174)">
+          <!-- STP Matched Path -->
+          <rect width="314" height="44" fill="#f0fdf4" stroke="#86efac" stroke-width="1.2"/>
+          <text x="12" y="18" fill="#166534" style="font-size: 11.5px; font-weight: 800;">✓ STP MATCHED (&gt;95% Volume)</text>
+          <text x="12" y="34" fill="#15803d" class="agent-tech" style="font-size: 10.5px;">&#8594; Direct Zero-Delta GL Knock-Off (₹0.00)</text>
+
+          <!-- Break Path -->
+          <rect y="52" width="314" height="44" fill="#fff1f2" stroke="#fca5a5" stroke-width="1.2"/>
+          <text x="12" y="70" fill="#9f1239" style="font-size: 11.5px; font-weight: 800;">⚠ UNRECONCILED BREAKS (&lt;5%)</text>
+          <text x="12" y="86" fill="#be123c" class="agent-tech" style="font-size: 10.5px;">&#8594; Dispatches immediately to Agent 2</text>
+        </g>
+      </g>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- AGENT 2: AI BREAK INVESTIGATION AGENT (X: 730, W: 380)                    -->
+  <!-- ========================================================================= -->
+  <g transform="translate(730, 134)">
+    <text x="0" y="0" class="tag-title">Stage 3 · The Analyst</text>
+
+    <g transform="translate(0, 14)">
+      <rect width="380" height="366" fill="url(#agent2Grad)" stroke="#ea580c" stroke-width="2" filter="url(#shadowMd)"/>
+      <rect x="0" y="0" width="380" height="34" fill="#ffedd5"/>
+      <circle cx="20" cy="17" r="6" fill="#ea580c"/>
+      <text x="34" y="22" fill="#c2410c" class="agent-badge">AGENT 2 · DIAGNOSTIC INTELLIGENCE</text>
+
+      <g transform="translate(18, 48)">
+        <text x="0" y="16" class="agent-title" fill="#7c2d12">AI Break Investigation Agent</text>
+        <text x="0" y="36" class="agent-role" fill="#ea580c">Role: The Analyst</text>
+        <text x="0" y="54" class="agent-tech" fill="#475569">Tech: Python Engine (stage3/investigation_agent.py)</text>
+
+        <rect x="0" y="68" width="344" height="1" fill="#fed7aa"/>
+
+        <!-- Responsibilities -->
+        <g transform="translate(0, 80)">
+          <text x="0" y="14" class="agent-desc">• Examines ISO-8583 response codes (RC-91, RC-96)</text>
+          <text x="0" y="32" class="agent-desc">• Correlates CBS debit logs vs gateway network latency</text>
+          <text x="0" y="50" class="agent-desc">• Computes AI Confidence Score (typically 94–98%)</text>
+          <text x="0" y="68" class="agent-desc">• Starts real-time RBI T+1 penalty countdown clock</text>
+        </g>
+
+        <!-- Policy Gate Decision Box -->
+        <g transform="translate(0, 174)">
+          <rect width="344" height="96" fill="#ffffff" stroke="#fdba74" stroke-width="1.2"/>
+          <rect x="0" y="0" width="344" height="24" fill="#fff7ed"/>
+          <text x="12" y="17" fill="#c2410c" style="font-size: 11px; font-weight: 800;">ENFORCES ₹50,000 REGULATORY POLICY GATE</text>
+
+          <text x="12" y="44" fill="#c2410c" style="font-size: 11.5px; font-weight: 700;">&lt; ₹50,000 (Timeouts / Deemed Fails):</text>
+          <text x="12" y="58" fill="#475569" class="agent-tech" style="font-size: 10.5px;">&#8594; Routes to Agent 3 (Autonomous Reversal Bot)</text>
+
+          <text x="12" y="76" fill="#be123c" style="font-size: 11.5px; font-weight: 700;">&#8805; ₹50,000 (High-Value / Mismatches):</text>
+          <text x="12" y="90" fill="#475569" class="agent-tech" style="font-size: 10.5px;">&#8594; Routes to Agent 4 (HITL Cockpit Agent)</text>
+        </g>
+      </g>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- AGENT 3 & AGENT 4: THE EXECUTION PAIR (X: 1180, W: 480)                   -->
+  <!-- ========================================================================= -->
+  <!-- AGENT 3: Track A Autonomous Bot -->
+  <g transform="translate(1180, 134)">
+    <text x="0" y="0" class="tag-title">Stage 4 · The Speed Executor (Track A)</text>
+
+    <g transform="translate(0, 14)">
+      <rect width="480" height="172" fill="url(#agent3Grad)" stroke="#ea580c" stroke-width="2" filter="url(#shadowSm)"/>
+      <rect x="0" y="0" width="480" height="32" fill="#ffedd5"/>
+      <circle cx="20" cy="16" r="6" fill="#ea580c"/>
+      <text x="34" y="21" fill="#c2410c" class="agent-badge">AGENT 3 · AUTONOMOUS STP BOT (&lt; ₹50,000)</text>
+
+      <g transform="translate(18, 44)">
+        <text x="0" y="16" class="agent-title" fill="#7c2d12">Autonomous Reversal Bot (Track A)</text>
+        <text x="0" y="34" class="agent-role" fill="#ea580c">Role: The Speed Executor</text>
+        <text x="0" y="50" class="agent-tech" fill="#475569">Tech: AutomationEdge Bot / Process Studio (.psw)</text>
+
+        <rect x="0" y="58" width="444" height="1" fill="#fed7aa"/>
+
+        <g transform="translate(0, 68)">
+          <text x="0" y="14" class="agent-desc">• Auto-posts credit adjustments into Finacle Core Banking</text>
+          <text x="0" y="30" class="agent-desc">• Resolves RC-91 timeouts without manual human touch</text>
+          <text x="0" y="48" fill="#15803d" style="font-size: 11px; font-weight: 800;">Result: 100% RBI T+1 TAT Compliance (Halts penalty clocks)</text>
+        </g>
+      </g>
+    </g>
+  </g>
+
+  <!-- AGENT 4: Track B HITL Operations Cockpit Agent -->
+  <g transform="translate(1180, 328)">
+    <text x="0" y="0" class="tag-title">Stage 5 · The Risk Officer (Track B)</text>
+
+    <g transform="translate(0, 14)">
+      <rect width="480" height="172" fill="url(#agent4Grad)" stroke="#e11d48" stroke-width="2" filter="url(#shadowSm)"/>
+      <rect x="0" y="0" width="480" height="32" fill="#ffe4e6"/>
+      <circle cx="20" cy="16" r="6" fill="#e11d48"/>
+      <text x="34" y="21" fill="#be123c" class="agent-badge">AGENT 4 · OPERATIONS MAKER-CHECKER (&#8805; ₹50,000)</text>
+
+      <g transform="translate(18, 44)">
+        <text x="0" y="16" class="agent-title" fill="#881337">HITL Operations Cockpit Agent (Track B)</text>
+        <text x="0" y="34" class="agent-role" fill="#e11d48">Role: The Risk Officer</text>
+        <text x="0" y="50" class="agent-tech" fill="#475569">Tech: Workbench Cockpit UI + Approval API</text>
+
+        <rect x="0" y="58" width="444" height="1" fill="#fecdd3"/>
+
+        <g transform="translate(0, 68)">
+          <text x="0" y="14" class="agent-desc">• Compiles multi-system evidence dossiers for high-value breaks</text>
+          <text x="0" y="30" class="agent-desc">• Correlates side-by-side logs for Operations Manager sign-off</text>
+          <text x="0" y="48" fill="#be123c" style="font-size: 11px; font-weight: 800;">Result: Zero unauthorized funds release &amp; strict audit gate</text>
+        </g>
+      </g>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- INTER-AGENT DIRECTED CONNECTIONS & CLEAN NON-OVERLAPPING LABELS          -->
+  <!-- ========================================================================= -->
+  <!-- Inbound Feeds -> Agent 1 (The Brain) -->
+  <path d="M 280 295 L 330 295" fill="none" stroke="#64748b" stroke-width="2.5" marker-end="url(#arGray)"/>
+  <g transform="translate(283, 272)">
+    <rect width="44" height="18" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text x="22" y="13" class="flow-badge" fill="#475569" text-anchor="middle">FEEDS</text>
+  </g>
+
+  <!-- Agent 1 (The Brain) -> Agent 2 (The Analyst) [Unreconciled Breaks] -->
+  <path d="M 680 320 L 730 320" fill="none" stroke="#ea580c" stroke-width="3" marker-end="url(#arOrange)"/>
+  <g transform="translate(683, 296)">
+    <rect width="44" height="20" fill="#ffedd5" stroke="#fdba74"/>
+    <text x="22" y="14" class="flow-badge" fill="#c2410c" text-anchor="middle">BREAKS</text>
+  </g>
+
+  <!-- Agent 2 (The Analyst) -> Agent 3 (Speed Executor) [Track A < 50k] -->
+  <!-- Gap is from x=1110 to x=1180 (70px wide) -->
+  <path d="M 1110 234 L 1180 234" fill="none" stroke="#ea580c" stroke-width="3" marker-end="url(#arOrange)"/>
+  <g transform="translate(1096, 206)">
+    <rect width="80" height="20" rx="3" fill="#ffedd5" stroke="#fdba74"/>
+    <text x="40" y="14" class="flow-badge" fill="#c2410c" text-anchor="middle">&lt; ₹50k (AUTO)</text>
+  </g>
+
+  <!-- Agent 2 (The Analyst) -> Agent 4 (Risk Officer) [Track B >= 50k] -->
+  <path d="M 1110 390 L 1140 390 L 1140 430 L 1180 430" fill="none" stroke="#e11d48" stroke-width="3" marker-end="url(#arRose)"/>
+  <g transform="translate(1096, 436)">
+    <rect width="80" height="20" rx="3" fill="#ffe4e6" stroke="#fca5a5"/>
+    <text x="40" y="14" class="flow-badge" fill="#be123c" text-anchor="middle">&#8805; ₹50k (HITL)</text>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- STP DIRECT OUTPUT CALLOUT (FROM AGENT 1)                                  -->
+  <!-- ========================================================================= -->
+  <g transform="translate(330, 528)">
+    <rect width="350" height="84" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.8" filter="url(#shadowSm)"/>
+    <rect x="0" y="0" width="350" height="24" fill="#dcfce7"/>
+    <text x="12" y="17" fill="#15803d" class="agent-badge">STP ZERO-TOUCH SETTLEMENT TRACK</text>
+    <g transform="translate(14, 34)">
+      <text x="0" y="16" fill="#14532d" style="font-size: 13px; font-weight: 800;">Zero-Delta GL Knock-Off Sub-Routine</text>
+      <text x="0" y="32" class="agent-desc">Balances Suspense (GL-14022) vs RTGS (GL-11010)</text>
+      <text x="0" y="46" fill="#15803d" style="font-size: 11px; font-weight: 700;">Result: Exactly ₹0.00 variance &amp; instant cycle closure</text>
+    </g>
+  </g>
+  <path d="M 505 500 L 505 528" fill="none" stroke="#16a34a" stroke-width="2.5" marker-end="url(#arGreen)"/>
+
+  <!-- ========================================================================= -->
+  <!-- TARGET SYSTEM EXECUTION POSTINGS                                          -->
+  <!-- ========================================================================= -->
+  <g transform="translate(730, 528)">
+    <rect width="380" height="84" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#shadowSm)"/>
+    <rect x="0" y="0" width="380" height="24" fill="#f1f5f9"/>
+    <text x="12" y="17" fill="#0f172a" class="agent-badge">TARGET POSTINGS &amp; AUDIT SEAL</text>
+    <g transform="translate(14, 34)">
+      <text x="0" y="16" fill="#0f172a" style="font-size: 13px; font-weight: 800;">Finacle Core Banking &amp; SHA-256 MIS Pack</text>
+      <text x="0" y="32" class="agent-desc">• Direct Reversal API credits customer bank balance</text>
+      <text x="0" y="46" fill="#0284c7" style="font-size: 11px; font-weight: 700;">• SHA-256 sealed audit trail for RBI DPSS compliance</text>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- BOTTOM REGULATORY & ARCHITECTURE SUMMARY TABLE (CLEAN, NO OVERLAPS)      -->
+  <!-- ========================================================================= -->
+  <g transform="translate(40, 640)">
+    <rect width="1620" height="290" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" filter="url(#shadowSm)"/>
+    <rect x="0" y="0" width="1620" height="36" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="24" y="24" fill="#0f172a" class="agent-badge">4-AGENT ARCHITECTURE SUMMARY &amp; OPERATIONAL SPECIFICATIONS</text>
+
+    <!-- Table Header Row -->
+    <g transform="translate(20, 50)">
+      <rect width="1580" height="34" fill="#f1f5f9" stroke="#e2e8f0"/>
+      <text x="16" y="22" fill="#475569" style="font-size: 12px; font-weight: 800;">#</text>
+      <text x="50" y="22" fill="#475569" style="font-size: 12px; font-weight: 800;">Agent Name</text>
+      <text x="340" y="22" fill="#475569" style="font-size: 12px; font-weight: 800;">Operational Role</text>
+      <text x="960" y="22" fill="#475569" style="font-size: 12px; font-weight: 800;">Underlying Technology</text>
+      <text x="1360" y="22" fill="#475569" style="font-size: 12px; font-weight: 800;">API Key Required?</text>
+    </g>
+
+    <!-- Row 1: Agent 1 -->
+    <g transform="translate(20, 96)">
+      <text x="16" y="26" fill="#0f172a" style="font-size: 13px; font-weight: 700;">1</text>
+      <text x="50" y="26" fill="#1e3a8a" style="font-size: 13.5px; font-weight: 800;">AI Reconciler Master Agent</text>
+      <text x="340" y="26" fill="#334155" style="font-size: 12.5px;">The Brain: Ingests 4 feeds, 4-way join on RRN, splits matched vs breaks</text>
+      <text x="960" y="26" fill="#0284c7" class="agent-tech">Process Studio (.psw) + FastAPI Core</text>
+      <text x="1360" y="26" fill="#15803d" style="font-size: 12px; font-weight: 800;">NO (Deterministic Math)</text>
+    </g>
+    <line x1="20" y1="146" x2="1600" y2="146" stroke="#f1f5f9" stroke-width="1.2"/>
+
+    <!-- Row 2: Agent 2 -->
+    <g transform="translate(20, 150)">
+      <text x="16" y="26" fill="#0f172a" style="font-size: 13px; font-weight: 700;">2</text>
+      <text x="50" y="26" fill="#c2410c" style="font-size: 13.5px; font-weight: 800;">AI Break Investigation Agent</text>
+      <text x="340" y="26" fill="#334155" style="font-size: 12.5px;">The Analyst: Correlates RC-91/96 codes, computes confidence, enforces ₹50k gate</text>
+      <text x="960" y="26" fill="#0284c7" class="agent-tech">Python Engine (stage3/investigation_agent.py)</text>
+      <text x="1360" y="26" fill="#15803d" style="font-size: 12px; font-weight: 800;">NO (On-Premises Heuristics)</text>
+    </g>
+    <line x1="20" y1="200" x2="1600" y2="200" stroke="#f1f5f9" stroke-width="1.2"/>
+
+    <!-- Row 3: Agent 3 -->
+    <g transform="translate(20, 204)">
+      <text x="16" y="26" fill="#0f172a" style="font-size: 13px; font-weight: 700;">3</text>
+      <text x="50" y="26" fill="#ea580c" style="font-size: 13.5px; font-weight: 800;">Autonomous Reversal Bot (Track A)</text>
+      <text x="340" y="26" fill="#334155" style="font-size: 12.5px;">The Speed Executor: Auto-posts Finacle reversals for &lt; ₹50k (halts penalty clock)</text>
+      <text x="960" y="26" fill="#0284c7" class="agent-tech">AutomationEdge Bot / Process Studio (.psw)</text>
+      <text x="1360" y="26" fill="#15803d" style="font-size: 12px; font-weight: 800;">NO (RPA API Client)</text>
+    </g>
+    <line x1="20" y1="254" x2="1600" y2="254" stroke="#f1f5f9" stroke-width="1.2"/>
+
+    <!-- Row 4: Agent 4 -->
+    <g transform="translate(20, 258)">
+      <text x="16" y="26" fill="#0f172a" style="font-size: 13px; font-weight: 700;">4</text>
+      <text x="50" y="26" fill="#be123c" style="font-size: 13.5px; font-weight: 800;">HITL Operations Cockpit Agent (Track B)</text>
+      <text x="340" y="26" fill="#334155" style="font-size: 12.5px;">The Risk Officer: Compiles dossiers for &#8805; ₹50k, 1-click maker-checker sign-off</text>
+      <text x="960" y="26" fill="#0284c7" class="agent-tech">Workbench Cockpit UI + Approval API</text>
+      <text x="1360" y="26" fill="#15803d" style="font-size: 12px; font-weight: 800;">NO (Internal Webhook/Cockpit)</text>
+    </g>
+  </g>
+</svg>

@@ -145,13 +145,13 @@ body {
   transition: all 0.2s ease;
 }
 
-/* Floating animated active tab with glowing icon */
+/* Floating animated active tab with light orange styling */
 .nav-item.active {
-  background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
-  color: #fff;
-  font-weight: 700;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 8px 22px rgba(234, 88, 12, 0.45), 0 2px 6px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%) !important;
+  color: #c2410c !important;
+  font-weight: 800 !important;
+  border: 1.5px solid #fdba74 !important;
+  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.16), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
   animation: navTabFloat 2.8s ease-in-out infinite, navRipple 0.55s ease-out;
   z-index: 2;
 }
@@ -162,22 +162,22 @@ body {
 @keyframes navTabFloat {
   0%, 100% {
     transform: translateX(5px) translateY(0);
-    box-shadow: 0 8px 22px rgba(234, 88, 12, 0.45), 0 2px 6px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 14px rgba(234, 88, 12, 0.16), 0 1px 3px rgba(0, 0, 0, 0.05);
   }
   50% {
     transform: translateX(7px) translateY(-3px);
-    box-shadow: 0 14px 28px rgba(234, 88, 12, 0.6), 0 4px 10px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 6px 18px rgba(234, 88, 12, 0.22), 0 2px 5px rgba(0, 0, 0, 0.08);
   }
 }
 
 @keyframes navTabFloatCollapsed {
   0%, 100% {
     transform: translateY(0) scale(1.05);
-    box-shadow: 0 8px 20px rgba(234, 88, 12, 0.5);
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.18);
   }
   50% {
     transform: translateY(-4px) scale(1.08);
-    box-shadow: 0 14px 26px rgba(234, 88, 12, 0.7);
+    box-shadow: 0 6px 16px rgba(234, 88, 12, 0.25);
   }
 }
 
@@ -192,18 +192,18 @@ body {
 }
 
 .nav-item.active .nav-icon {
-  color: #ffffff;
+  color: #ea580c !important;
   animation: activeIconGlow 1.8s ease-in-out infinite;
 }
 
 @keyframes activeIconGlow {
   0%, 100% {
-    filter: drop-shadow(0 0 3px #ffffff) drop-shadow(0 0 8px rgba(255, 255, 255, 0.85));
+    filter: drop-shadow(0 0 3px rgba(234, 88, 12, 0.35));
     transform: scale(1.12);
   }
   50% {
-    filter: drop-shadow(0 0 6px #ffffff) drop-shadow(0 0 14px #ffffff) drop-shadow(0 0 20px rgba(254, 215, 170, 0.9));
-    transform: scale(1.22);
+    filter: drop-shadow(0 0 6px rgba(234, 88, 12, 0.55));
+    transform: scale(1.2);
   }
 }
 
@@ -243,11 +243,11 @@ body {
 .page-transition > *:nth-child(7)  { animation-delay: 0.28s; }
 .page-transition > *:nth-child(8)  { animation-delay: 0.32s; }
 
-/* Nav item click ripple */
+/* Nav item click ripple in light orange */
 @keyframes navRipple {
-  0%   { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.5), 0 8px 22px rgba(234, 88, 12, 0.45); }
-  70%  { box-shadow: 0 0 0 10px rgba(249, 115, 22, 0), 0 8px 22px rgba(234, 88, 12, 0.45); }
-  100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0), 0 8px 22px rgba(234, 88, 12, 0.45); }
+  0%   { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4), 0 4px 14px rgba(234, 88, 12, 0.16); }
+  70%  { box-shadow: 0 0 0 8px rgba(249, 115, 22, 0), 0 4px 14px rgba(234, 88, 12, 0.16); }
+  100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0), 0 4px 14px rgba(234, 88, 12, 0.16); }
 }
 .nav-item.active {
   animation: navTabFloat 2.8s ease-in-out infinite, navRipple 0.55s ease-out;
@@ -273,11 +273,46 @@ body {
 }
 
 .catalog-card {
+  border-radius: 0 !important;
   transition: transform 0.35s ease,
               box-shadow 0.35s ease,
               border-color 0.25s ease !important;
   will-change: transform, box-shadow;
   cursor: pointer;
+}
+
+.catalog-card .catalog-icon-box {
+  border-radius: 0 !important;
+}
+
+.catalog-card .badge {
+  border-radius: 0 !important;
+}
+
+.catalog-card .btn {
+  border-radius: 0 !important;
+}
+
+.btn-try-now {
+  background: #ffedd5 !important;
+  border: 1.5px solid #fdba74 !important;
+  color: #c2410c !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 3px rgba(234, 88, 12, 0.1) !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-try-now:hover:not(:disabled) {
+  background: #fed7aa !important;
+  border-color: #fb923c !important;
+  color: #9a3412 !important;
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.22) !important;
+  transform: translateY(-1px);
+}
+
+.btn-try-now:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .catalog-card:hover {

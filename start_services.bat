@@ -10,9 +10,9 @@ echo.
 :: 1. Navigate to Workbench Root
 cd /d "%~dp0"
 
-:: 2. Start FastAPI Backend on Port 8001 in a dedicated window
-echo [1/2] Starting FastAPI Backend on http://localhost:8001 ...
-start "NPCI Backend - FastAPI [Port 8001]" cmd /k "cd /d "%~dp0stage1\backend" && python -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload"
+:: 2. Start FastAPI Backend on Port 8000 in a dedicated window
+echo [1/2] Starting FastAPI Backend on http://localhost:8000 ...
+start "NPCI Backend - FastAPI [Port 8000]" cmd /k "cd /d "%~dp0stage1\backend" && python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
 
 :: 3. Start React Frontend Dashboard on Port 5173 in a dedicated window
 echo [2/2] Starting React Control Tower UI on http://localhost:5173 ...
@@ -33,7 +33,7 @@ echo    ALL SERVICES STARTED SUCCESSFULLY!
 echo.
 echo    * Custom Brand URL:    http://automationedgeagentic:5173
 echo    * Fallback Localhost:  http://localhost:5173
-echo    * FastAPI REST Docs:   http://localhost:8001/docs
+echo    * FastAPI REST Docs:   http://localhost:8000/docs
 echo    * AE Server Watcher:   Active (t4.automationedge.com)
 echo ======================================================================
 echo.

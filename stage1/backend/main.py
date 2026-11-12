@@ -45,9 +45,12 @@ from stage4_5_6.backend.recovery_and_execution import (
     batch_approve_all_p1,
     seal_cryptographic_audit_pack,
     get_mis_regulatory_report,
-    reset_recovery_and_execution
+    reset_recovery_and_execution,
+    enqueue_external_case,
+    get_external_dossier,
 )
 from orchestrator.backend.maf_orchestrator import get_orchestrator
+from stage2.backend import rail_recon
 
 app = FastAPI(title="NPCI Stage 1 – File Monitoring & Validation Agent", version="1.0.0")
 
@@ -397,8 +400,16 @@ def get_stats():
 
     total_r = STATS["total_records_ingested"]
     stp_pct = round(STATS["stp_count"] / total_r * 100, 1) if total_r > 0 else 0
+    # Live AePS / NETC / IMPS volumes from the latest Process Studio recon batches
+    volumes = dict(STATS.get("rail_volumes", {}))
+    rates = dict(STATS.get("rail_success_rates", {}))
+    for r, v in rail_recon.rail_volumes().items():
+        volumes[r] = v["total"]
+        rates[r] = v["stp_rate"]
     return {
         **STATS,
+        "rail_volumes": volumes,
+        "rail_success_rates": rates,
         "stp_percentage": stp_pct,
         "timestamp": datetime.now().isoformat(),
     }
@@ -527,7 +538,7 @@ def health():
 
 AE_SERVER_STATE: dict[str, Any] = {
     "server_url": "https://t4.automationedge.com/#/requests/list",
-    "username": "abhishek.malwatkar@valuedx.com",
+    "username": os.getenv("AE_USERNAME", ""),
     "workflow_name": "NPCI Demo UPI Reconn",
     "status": "COMPLETED",
     "message": "Message : UPI Recon Completed",
@@ -636,7 +647,7 @@ def execute_post_recon_pipeline(recon_res: dict) -> dict:
     # 4. Sync AutomationEdge Server State
     AE_SERVER_STATE = {
         "server_url": "https://t4.automationedge.com/#/requests/list",
-        "username": "abhishek.malwatkar@valuedx.com",
+        "username": os.getenv("AE_USERNAME", ""),
         "workflow_name": "NPCI Demo UPI Reconn",
         "status": "COMPLETED",
         "message": "Message : UPI Recon Completed",
@@ -675,14 +686,32 @@ def execute_post_recon_pipeline(recon_res: dict) -> dict:
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.post("/api/recon/run")
-async def trigger_recon(payload: Optional[Dict[str, Any]] = None):
+async def trigger_recon(payload: Optional[Dict[str, Any]] = None, rail: Optional[str] = None):
     """
+    ?rail=AEPS|NETC|IMPS reloads that rail's latest Process Studio recon batch (UPI flow unchanged).
     Handles both:
     1. Full 4-Way Reconciliation Run (when called from UI or orchestrator)
     2. Ultra-fast sub-millisecond ingestion when Process Studio 'UPI_AI_DualTrack_Dispatcher'
        streams break records via POST TO PORTAL for each row.
     """
+    if rail and rail.upper() in rail_recon.SUPPORTED_RAILS:
+        rail_recon.reset_rail_caches()
+        res = rail_recon.rail_summary(rail)
+        if res["status"] == "COMPLETED":
+            add_audit("INFO", "RECON_RUN_COMPLETED", res["run_id"],
+                      f"{res['rail']} 4-Way Matching: {res['matched_count']:,} Matched ({res['stp_rate']}%), {res['break_count']:,} Breaks ({res['p1_count']} P1)")
+        return res
     p = payload or {}
+    # AePS / NETC Process Studio workflows post knock-off journals and auto-reversal instructions here
+    # (their NPCI_URL default). Route them to the rail handlers instead of re-running the UPI recon.
+    if str(p.get("rail") or "").upper() in EXTERNAL_RAILS:
+        if str(p.get("action") or "").upper().endswith("KNOCKOFF"):
+            return post_rail_knockoff(p)
+        if str(p.get("track") or "").upper() == "AUTO_REVERSAL":
+            return post_auto_reversal(p)
+        if str(p.get("track") or "").upper() in ("HITL", "B_HITL"):
+            return post_hitl_case(p)
+        raise HTTPException(status_code=400, detail="AEPS/NETC payload needs action=*KNOCKOFF or track=AUTO_REVERSAL|HITL")
     # Fast path for single row streams from Process Studio:
     if p.get("RRN") or p.get("TXN_ID") or p.get("route") or p.get("is_hitl") or p.get("scenario"):
         return {
@@ -704,8 +733,13 @@ async def trigger_recon(payload: Optional[Dict[str, Any]] = None):
 
 
 @app.get("/api/recon/summary")
-def recon_summary():
+def recon_summary(rail: Optional[str] = None):
     """Get latest 4-Way Reconciliation summary metrics with GL knock-off and dual-track data."""
+    if rail and rail.upper() in rail_recon.SUPPORTED_RAILS:
+        res = rail_recon.rail_summary(rail)
+        res["gl_knock_off"] = RAIL_KNOCKOFF_STATE.get(rail.upper())
+        res["ae_server"] = AE_SERVER_STATE
+        return res
     res = get_recon_summary()
     # Ensure GL knock-off and dual track are populated if records exist
     if res.get("total_records", 0) > 0 and GL_KNOCK_OFF_STATE.get("matched_count", 0) == 0:
@@ -754,8 +788,112 @@ def get_latest_batch_files():
 
 @app.get("/api/recon/gl-knockoff")
 def get_gl_knockoff():
-    """Returns the zero-delta GL knock-off voucher and balanced ledger status."""
-    return GL_KNOCK_OFF_STATE
+    """Returns the zero-delta GL knock-off voucher and balanced ledger status (UPI + AePS / NETC rails)."""
+    return {**GL_KNOCK_OFF_STATE, "rail_knockoffs": RAIL_KNOCKOFF_STATE}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  AePS / NETC PROCESS STUDIO INGESTION (dual-track dispatchers + knock-offs)
+# ══════════════════════════════════════════════════════════════════════════════
+
+EXTERNAL_RAILS = {"AEPS", "NETC", "IMPS"}
+RAIL_KNOCKOFF_STATE: dict[str, Any] = {}   # rail -> latest knock-off journal
+
+
+@app.post("/api/hitl/queue")
+def post_hitl_case(payload: Optional[Dict[str, Any]] = None):
+    """HITL track: AePS / NETC dispatcher submits a sealed evidence dossier for Operations Manager approval."""
+    try:
+        res = enqueue_external_case(payload or {}, auto_approved=False)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if not res["duplicate"]:
+        p = payload or {}
+        add_audit("WARN", "HITL_DOSSIER_ENQUEUED", res["txn_id"],
+                  f"{res['rail']} {p.get('breakCategory', '')} RRN {p.get('rrn')} INR {p.get('amount')} queued for Operations Manager approval")
+    return res
+
+
+@app.post("/api/reversal/auto")
+def post_auto_reversal(payload: Optional[Dict[str, Any]] = None):
+    """Auto-Reversal track: AePS / NETC dispatcher submits an AI-approved reversal for the rail execution bot."""
+    try:
+        res = enqueue_external_case(payload or {}, auto_approved=True)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if not res["duplicate"]:
+        p = payload or {}
+        add_audit("INFO", "AUTO_REVERSAL_ENQUEUED", res["txn_id"],
+                  f"{res['rail']} auto-reversal RRN {p.get('rrn')} INR {p.get('amount')} queued for execution bot")
+    return res
+
+
+@app.post("/api/finacle/reversal")
+def post_finacle_reversal(payload: Optional[Dict[str, Any]] = None):
+    """
+    IMPS_RC91_Timeout_AutoReturn: direct Finacle reversal for RC91 timeouts under the auto-refund threshold.
+    Recorded as an auto-approved case and posted immediately, so it shows in the cockpit as FINACLE POSTED
+    and counts in the recovery summary. Idempotent on requestId / RRN.
+    """
+    p = dict(payload or {})
+    rrn = str(p.get("rrn") or "").strip()
+    if not rrn:
+        raise HTTPException(status_code=400, detail="rrn is required")
+    p["rail"] = p.get("rail") or "IMPS"
+    p["instructionId"] = p.get("requestId") or f"IMPS-RC91-{rrn}"
+    p["breakCategory"] = p.get("breakCategory") or "RC91_TIMEOUT"
+    p["rootCause"] = p.get("reversalReason") or "Switch timeout RC91 - auto return to remitter"
+    p["priority"] = p.get("priority") or "HIGH"
+    try:
+        enqueue_external_case(p, auto_approved=True)
+        res = approve_transaction(txn_id=p["instructionId"], approver=str(p.get("initiatedBy") or "IMPS RC91 Auto-Return Bot"),
+                                  notes=f"RC91 auto-return RRN {rrn}")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if not res.get("already_posted"):
+        add_audit("INFO", "IMPS_RC91_REVERSAL_POSTED", p["instructionId"],
+                  f"IMPS RC91 auto-return RRN {rrn} INR {p.get('amount')} posted in Finacle CBS: {res['posting_ref']}")
+    return res
+
+
+@app.post("/api/recon/knockoff")
+def post_rail_knockoff(payload: Optional[Dict[str, Any]] = None):
+    """AePS (GL-9904) / NETC (GL-9908) zero-delta knock-off journal from Process Studio."""
+    p = payload or {}
+    rail = str(p.get("rail") or "").upper()
+    if rail not in EXTERNAL_RAILS:
+        raise HTTPException(status_code=400, detail="rail must be AEPS or NETC")
+    entries = p.get("entries") or []
+    try:
+        dr = round(sum(float(e.get("amount") or 0) for e in entries if str(e.get("leg")).upper() == "DR"), 2)
+        cr = round(sum(float(e.get("amount") or 0) for e in entries if str(e.get("leg")).upper() == "CR"), 2)
+        variance = round(float(p.get("variance") or 0), 2)
+    except (TypeError, ValueError, AttributeError):
+        raise HTTPException(status_code=400, detail="entries / variance must be numeric")
+    if not entries or dr != cr:
+        raise HTTPException(status_code=422, detail=f"Journal not balanced: DR {dr} vs CR {cr}")
+    if abs(variance) >= 0.005:
+        raise HTTPException(status_code=422, detail=f"Non-zero variance {variance} - knock-off refused")
+    voucher = f"{rail}-KO-{datetime.now():%Y%m%d%H%M%S}"
+    RAIL_KNOCKOFF_STATE[rail] = {
+        "voucher_id": voucher,
+        "run_id": p.get("runId"),
+        "gl_account": p.get("glAccount"),
+        "status": "KNOCKED_OFF_BALANCED",
+        "txn_count": p.get("txnCount"),
+        "debit_total": dr,
+        "credit_total": cr,
+        "variance": variance,
+        "pools": p.get("bcPools") or p.get("plazaPools") or [],
+        "net_concessionaire_payout": p.get("netConcessionairePayout"),
+        "acquirer_interchange": p.get("acquirerInterchange"),
+        "cycle_closed": bool(p.get("closeClearingCycle", True)),
+        "evidence_hash": p.get("evidenceHash"),
+        "posted_at": datetime.now().isoformat(),
+    }
+    add_audit("INFO", "RAIL_GL_KNOCKOFF_POSTED", voucher,
+              f"{rail} {p.get('glAccount')} knock-off {p.get('txnCount')} txns DR=CR INR {dr:,.2f} variance 0.00")
+    return {"status": "SUCCESS", "voucher_id": voucher, "rail": rail, "debit_total": dr, "credit_total": cr, "variance": variance}
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -773,8 +911,9 @@ import ssl
 
 AE_CLIENT_CONFIG = {
     "server_url": os.getenv("AE_SERVER_URL", "https://t4.automationedge.com"),
-    "username": os.getenv("AE_USERNAME", "abhishek.malwatkar@valuedx.com"),
-    "password": os.getenv("AE_PASSWORD", "Abhi@2002"),
+    # Credentials come only from the environment / .env file (git-ignored). No hard-coded fallback.
+    "username": os.getenv("AE_USERNAME", ""),
+    "password": os.getenv("AE_PASSWORD", ""),
     "org_code": os.getenv("AE_ORG_CODE", "AE_POC_TEAM"),
     "session_token": None,
     "last_request_id": None,
@@ -799,7 +938,9 @@ def ae_server_authenticate(payload: Optional[Dict[str, Any]] = None):
     p = payload or {}
     server = (p.get("server_url") or AE_CLIENT_CONFIG["server_url"]).rstrip("/")
     user = p.get("username") or AE_CLIENT_CONFIG["username"]
-    pwd = p.get("password") or AE_CLIENT_CONFIG.get("password") or "Abhi@2002"
+    pwd = p.get("password") or AE_CLIENT_CONFIG.get("password") or ""
+    if not user or not pwd:
+        print("[AE-AUTH] AE_USERNAME / AE_PASSWORD not set in .env - live AE authentication will fail.")
 
     query = urllib.parse.urlencode({"username": user, "password": pwd})
     url = f"{server}/aeengine/rest/authenticate?{query}"
@@ -995,7 +1136,7 @@ def ae_server_run_and_orchestrate(payload: Optional[Dict[str, Any]] = None):
     return {
         "status": "SUCCESS",
         "server_url": "https://t4.automationedge.com/#/requests/list",
-        "username": "abhishek.malwatkar@valuedx.com",
+        "username": os.getenv("AE_USERNAME", ""),
         "workflow_name": wf_name,
         "ae_request_id": req_id,
         "ae_instance_status": inst_res.get("status", "Complete"),
@@ -1030,7 +1171,7 @@ def notify_ae_complete(payload: Optional[Dict[str, Any]] = None):
         return {
             "status": "SUCCESS",
             "server_url": "https://t4.automationedge.com/#/requests/list",
-            "username": "abhishek.malwatkar@valuedx.com",
+            "username": os.getenv("AE_USERNAME", ""),
             "workflow_name": wf_name,
             "message": "Message : UPI Recon Completed",
             "orchestrator_agent_result": orch_res,
@@ -1041,15 +1182,21 @@ def notify_ae_complete(payload: Optional[Dict[str, Any]] = None):
 
 
 @app.get("/api/recon/breaks")
-def recon_breaks(priority: Optional[str] = None, scenario: Optional[str] = None, limit: int = 200):
+def recon_breaks(priority: Optional[str] = None, scenario: Optional[str] = None, limit: int = 200, rail: Optional[str] = None):
     """Get filtered break records with root cause details and SLA countdown."""
+    if rail and rail.upper() in rail_recon.SUPPORTED_RAILS:
+        breaks = rail_recon.rail_breaks(rail, priority=priority, scenario=scenario, limit=limit)
+        return {"breaks": breaks, "count": len(breaks)}
     breaks = get_breaks(priority=priority, scenario=scenario, limit=limit)
     return {"breaks": breaks, "count": len(breaks)}
 
 
 @app.get("/api/recon/matched")
-def recon_matched(limit: int = 200):
+def recon_matched(limit: int = 200, rail: Optional[str] = None):
     """Get balanced matched STP records."""
+    if rail and rail.upper() in rail_recon.SUPPORTED_RAILS:
+        matched = rail_recon.rail_matched(rail, limit=limit)
+        return {"matched": matched, "count": len(matched)}
     matched = get_matched(limit=limit)
     return {"matched": matched, "count": len(matched)}
 
@@ -1059,8 +1206,13 @@ def recon_matched(limit: int = 200):
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.post("/api/agent/investigate/run")
-def trigger_agent_investigation():
-    """Trigger autonomous AI investigation across all Stage 2 breaks."""
+def trigger_agent_investigation(rail: Optional[str] = None):
+    """Trigger autonomous AI investigation across all Stage 2 breaks (?rail=AEPS|NETC|IMPS for those rails)."""
+    if rail and rail.upper() in rail_recon.SUPPORTED_RAILS:
+        res = rail_recon.run_rail_investigation(rail)
+        add_audit("INFO", "AI_INVESTIGATION_COMPLETED", f"STAGE3_AGENT_{res['rail']}",
+                  f"{res['rail']} AI Analysis: {res['total_breaks_analyzed']:,} breaks | {res['auto_resolvable_count']:,} auto-resolvable | {res['hitl_required_count']:,} HITL")
+        return res
     try:
         res = run_ai_investigation()
         add_audit("INFO", "AI_INVESTIGATION_COMPLETED", "STAGE3_AGENT",
@@ -1071,15 +1223,17 @@ def trigger_agent_investigation():
 
 
 @app.get("/api/agent/investigate/summary")
-def agent_summary():
+def agent_summary(rail: Optional[str] = None):
     """Get AI Investigation summary, root cause breakdown, and SLA metrics."""
+    if rail and rail.upper() in rail_recon.SUPPORTED_RAILS:
+        return rail_recon.rail_agent_summary(rail)
     return get_agent_summary()
 
 
 @app.get("/api/agent/dossier/{txn_id}")
 def get_dossier(txn_id: str):
     """Get detailed Evidence Dossier for a specific break transaction."""
-    dossier = get_dossier_by_txn_id(txn_id)
+    dossier = get_dossier_by_txn_id(txn_id) or rail_recon.rail_dossier(txn_id) or get_external_dossier(txn_id)
     if not dossier:
         raise HTTPException(status_code=404, detail=f"Dossier for transaction {txn_id} not found")
     return dossier
@@ -1350,7 +1504,9 @@ def _autonomous_ae_watcher_loop():
                     ai_res = ae_server_execute({
                         "workflow_name": "NPCI Demo UPI AI Dispatcher",
                         "params": [
-                            {"name": "UnMatched_File_Path", "value": latest_u_path}
+                            {"name": "UnMatched_File_Path", "value": latest_u_path},
+                            {"name": "NPCI_URL", "value": os.getenv("NPCI_URL", "http://localhost:8000/api/recon/run")},
+                            {"name": "NPCI_QUEUE_URL", "value": os.getenv("NPCI_QUEUE_URL", "http://localhost:8000/api/hitl/queue")}
                         ]
                     })
                     print(f"[AE-WATCHER] Triggered NPCI Demo UPI AI Dispatcher: Req {ai_res.get('requestId')}")
@@ -1463,6 +1619,8 @@ def system_clear_all():
                     print(f"Error deleting {f}: {e}")
 
     # 2. Reset in-memory storage & counters
+    RAIL_KNOCKOFF_STATE.clear()
+    rail_recon.reset_rail_caches()
     AUDIT_LOG.clear()
     FILE_REGISTRY.clear()
     SEEN_HASHES.clear()

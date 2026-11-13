@@ -369,15 +369,32 @@ def query_payments_copilot(query_text: str, channel: str = "teams") -> Dict[str,
     now_str = datetime.now().strftime("%d-%b-%Y %H:%M:%S IST")
     all_records = _generate_3way_records()
 
-    # Search for matching record by UTR, RRN, or Account
-    q_tokens = [t.strip().upper() for t in q.replace(":", " ").replace(",", " ").replace("?", " ").replace("`", "").split() if len(t.strip()) >= 4]
+    # Search for matching record by UTR, RRN, Account, or normalized variants (handling YY vs YYYY)
+    q_norm = q.replace(" ", "").replace("-", "").replace(":", "")
+    q_tokens = [t.strip().upper() for t in q.replace(":", " ").replace(",", " ").replace("?", " ").replace("`", "").replace("'", "").replace('"', '').split() if len(t.strip()) >= 3]
     matched_rec = None
     for r in all_records:
         r_utr = r["utr"].upper()
-        if r_utr in q or r["rrn"] in q or r["remitter_acc"] in q or r["beneficiary_acc"] in q:
+        r_short = r_utr.replace("2026", "26")
+        r_long = r_utr.replace("261113", "20261113")
+        r_suffix = r_utr[-6:]
+        r_rrn = r["rrn"]
+
+        # Exact or substring match in raw or normalized query
+        if (r_utr in q or r_short in q or r_long in q or
+            r_utr in q_norm or r_short in q_norm or r_long in q_norm or
+            r_rrn in q or r["remitter_acc"] in q or r["beneficiary_acc"] in q):
             matched_rec = r
             break
-        if any((tok in r_utr or r_utr in tok or tok in r["rrn"]) for tok in q_tokens if tok not in ["STATUS", "CHECK", "INVESTIGATE"]):
+
+        # Suffix / sequence match (e.g. 000101, 000103, 000104)
+        if r_suffix in q_norm:
+            matched_rec = r
+            break
+
+        # Token-based match
+        ignore_words = {"STATUS", "CHECK", "INVESTIGATE", "TRANSACTION", "PAYMENT", "WHAT", "ABOUT", "SHOW", "THE", "FOR"}
+        if any((tok in r_utr or tok in r_short or r_utr in tok or r_short in tok or tok in r_rrn) for tok in q_tokens if tok not in ignore_words):
             matched_rec = r
             break
 

@@ -262,21 +262,12 @@ body {
   transform: scale(0.9) !important;
 }
 
-/* ── CATALOGUE ITEM FLOATING ANIMATION ON HOVER ──────────────────────────── */
-@keyframes catalogItemHoverFloat {
-  0%, 100% {
-    transform: translateY(-4px);
-  }
-  50% {
-    transform: translateY(-13px);
-  }
-}
-
+/* ── CATALOGUE ITEM POP-UP ON HOVER ─────────────────────────────────────── */
 .catalog-card {
   border-radius: 0 !important;
-  transition: transform 0.35s ease,
-              box-shadow 0.35s ease,
-              border-color 0.25s ease !important;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s ease !important;
   will-change: transform, box-shadow;
   cursor: pointer;
 }
@@ -316,18 +307,18 @@ body {
 }
 
 .catalog-card:hover {
-  animation: catalogItemHoverFloat 2.4s ease-in-out infinite !important;
-  box-shadow: 0 18px 36px -6px rgba(234, 88, 12, 0.22),
-              0 8px 18px -2px rgba(15, 23, 42, 0.08),
+  transform: translateY(-5px) !important;
+  box-shadow: 0 14px 28px -4px rgba(234, 88, 12, 0.22),
+              0 6px 12px -2px rgba(15, 23, 42, 0.08),
               0 0 0 1.5px #ea580c !important;
   border-color: #ea580c !important;
   z-index: 10;
 }
 
 .catalog-card:hover .catalog-icon-box {
-  transform: scale(1.06) rotate(-2deg);
-  box-shadow: 0 8px 20px rgba(234, 88, 12, 0.22) !important;
-  border-color: #f97316 !important;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.2) !important;
+  border-color: #ea580c !important;
 }
 
 .catalog-icon-box {

@@ -856,6 +856,24 @@ def post_finacle_reversal(payload: Optional[Dict[str, Any]] = None):
     return res
 
 
+@app.post("/api/aeps/float-ledger")
+def post_aeps_float_ledger(payload: Optional[Dict[str, Any]] = None):
+    """BC Agent Float Ledger (GL-9904) replenishment on customer reversal."""
+    p = payload or {}
+    bc_id = str(p.get("bcId") or "UNKNOWN")
+    amt = float(p.get("amount") or 0.0)
+    add_audit("INFO", "AEPS_FLOAT_LEDGER_UPDATED", bc_id,
+              f"BC Agent {bc_id} float replenished by INR {amt:.2f} for {p.get('reversalCount', 0)} reversed txns")
+    return {
+        "success": True,
+        "status": "PROCESSED",
+        "bcId": bc_id,
+        "amount": amt,
+        "adjustment": p.get("adjustment") or "FLOAT_REPLENISH_ON_REVERSAL",
+        "timestamp": datetime.now().isoformat()
+    }
+
+
 @app.post("/api/recon/knockoff")
 def post_rail_knockoff(payload: Optional[Dict[str, Any]] = None):
     """AePS (GL-9904) / NETC (GL-9908) zero-delta knock-off journal from Process Studio."""
@@ -863,6 +881,11 @@ def post_rail_knockoff(payload: Optional[Dict[str, Any]] = None):
     rail = str(p.get("rail") or "").upper()
     if rail not in EXTERNAL_RAILS:
         raise HTTPException(status_code=400, detail="rail must be AEPS or NETC")
+
+    # Handle BC float ledger replenishment if directed to knockoff endpoint
+    if p.get("adjustment") == "FLOAT_REPLENISH_ON_REVERSAL":
+        return post_aeps_float_ledger(payload)
+
     entries = p.get("entries") or []
     try:
         dr = round(sum(float(e.get("amount") or 0) for e in entries if str(e.get("leg")).upper() == "DR"), 2)

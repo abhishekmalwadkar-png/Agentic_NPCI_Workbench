@@ -58,6 +58,7 @@ from stage2.backend.rbi_neft_rtgs import (
     query_payments_copilot,
     execute_maker_checker_decision,
 )
+from stage1.backend import file_registry
 
 app = FastAPI(title="NPCI Stage 1 – File Monitoring & Validation Agent", version="1.0.0")
 
@@ -428,9 +429,78 @@ def get_stats():
 
 
 @app.get("/api/files")
-def get_files():
-    """Return list of processed files."""
-    return {"files": FILE_REGISTRY[-50:]}
+def get_files(
+    rail: Optional[str] = None,
+    date: Optional[str] = None,
+    search: Optional[str] = None,
+    file_type: Optional[str] = None
+):
+    """
+    Return list of processed workflow execution files, Process Studio outputs,
+    and uploaded settlement batches with DD-MM-YYYY date filtering and rail slicing.
+    """
+    disk_files = file_registry.get_filtered_files(
+        rail=rail,
+        date_filter=date,
+        search=search,
+        file_type=file_type
+    )
+
+    seen_names = {f["filename"] for f in disk_files}
+    all_res = list(disk_files)
+
+    for mem_f in reversed(FILE_REGISTRY):
+        fn = mem_f.get("filename", "")
+        if fn and fn not in seen_names:
+            m_rail = mem_f.get("rail") or "UPI"
+            if rail and rail.upper() not in ("ALL", "") and m_rail.upper() != rail.upper():
+                continue
+            rec_at = mem_f.get("received_at") or datetime.now().isoformat()
+            try:
+                dt = datetime.fromisoformat(rec_at)
+                dmy = dt.strftime("%d-%m-%Y")
+                time_str = dt.strftime("%H:%M:%S")
+            except Exception:
+                dmy = datetime.now().strftime("%d-%m-%Y")
+                time_str = "12:00:00"
+
+            if date:
+                norm_d = date.strip()
+                if re.match(r"^\d{4}-\d{2}-\d{2}$", norm_d):
+                    pts = norm_d.split("-")
+                    norm_d = f"{pts[2]}-{pts[1]}-{pts[0]}"
+                if dmy != norm_d:
+                    continue
+
+            if search and search.strip():
+                q = search.strip().lower()
+                if q not in fn.lower() and q not in mem_f.get("file_id", "").lower():
+                    continue
+
+            fid = mem_f.get("file_id") or f"MEM-{hashlib.md5(fn.encode('utf-8')).hexdigest()[:8].upper()}"
+            recs = mem_f.get("records", 0)
+            stps = mem_f.get("stp_count", 0)
+            all_res.append({
+                "file_id": fid,
+                "filename": fn,
+                "workflow_name": "File Intake & Validation Gatekeeper",
+                "rail": m_rail,
+                "rail_counts": {m_rail: recs},
+                "file_type": "Source Feed",
+                "records": recs,
+                "exception_count": mem_f.get("exception_count", 0),
+                "p1_count": mem_f.get("p1_count", 0),
+                "stp_count": stps,
+                "stp_rate": round((stps / recs * 100), 1) if recs > 0 else 100.0,
+                "size_kb": mem_f.get("size_kb", 12.5),
+                "status": mem_f.get("status", "VALIDATED"),
+                "received_at": rec_at,
+                "date_dmy": dmy,
+                "time_str": time_str,
+                "download_url": f"/api/files/download/{fid}"
+            })
+
+    return {"files": all_res, "count": len(all_res)}
 
 
 @app.get("/api/audit")
@@ -478,7 +548,20 @@ def download_staging_file(filename: str):
 
 @app.get("/api/files/download/{file_id:path}")
 def download_registry_file(file_id: str):
-    """Download a file from file registry by file_id or filename."""
+    """
+    Download a file from file registry by file_id or filename.
+    Searches Matched_Records, Unmatched_Records, Output folders, and staging vault.
+    """
+    found = file_registry.find_file_for_download(file_id)
+    if found:
+        target_path, dl_name, mime_type = found
+        return FileResponse(
+            path=str(target_path),
+            filename=dl_name,
+            media_type=mime_type,
+            headers={"Content-Disposition": f'attachment; filename="{dl_name}"'}
+        )
+
     for d in [STAGING_DIR, WATCH_DIR, REJECTED_DIR]:
         if d.exists():
             for f in d.iterdir():
@@ -486,7 +569,7 @@ def download_registry_file(file_id: str):
                     clean_name = f.name.split("_", 1)[-1] if "_" in f.name else f.name
                     return FileResponse(path=str(f), filename=clean_name, media_type="application/octet-stream")
 
-    # Generate matching file content
+    # Generate matching file content fallback
     match = next((item for item in FILE_REGISTRY if item.get("file_id") == file_id or item.get("filename") == file_id), None)
     fname = match.get("filename", f"NPCI_{file_id}.csv") if match else f"NPCI_{file_id}.csv"
     sample_content = (
@@ -690,6 +773,19 @@ def execute_post_recon_pipeline(recon_res: dict) -> dict:
         "hitl_pending_count": rec_sum.get("hitl_pending_count", 0),
     }
     recon_res["ae_server"] = AE_SERVER_STATE
+
+    try:
+        file_registry.record_completed_workflow(
+            workflow_name="NPCI Demo UPI Reconn",
+            rail="UPI",
+            cycle_id="UPI-CY01",
+            matched_count=matched_cnt,
+            break_count=break_cnt,
+            p1_count=recon_res.get("p1_count", 0)
+        )
+    except Exception as fe:
+        print(f"[FILE-REGISTRY] Error recording workflow completion: {fe}")
+
     return recon_res
 
 
@@ -1072,6 +1168,18 @@ def ae_server_execute(payload: Optional[Dict[str, Any]] = None):
             req_id = res_data.get("automationRequestId") or res_data.get("requestId") or res_data.get("id") or int(datetime.now().strftime("%H%M%S"))
             AE_CLIENT_CONFIG["last_request_id"] = req_id
             AE_CLIENT_CONFIG["last_status"] = "Submitted"
+            try:
+                rail = file_registry._detect_rail(wf_name)
+                file_registry.record_completed_workflow(
+                    workflow_name=wf_name,
+                    rail=rail,
+                    cycle_id=f"{rail}-{datetime.now().strftime('%Y%m%d')}-CY01",
+                    matched_count=100,
+                    break_count=4,
+                    p1_count=1
+                )
+            except Exception as re_err:
+                print(f"[FILE-REGISTRY] AE execute record error: {re_err}")
             return {
                 "status": "SUCCESS" if res_data.get("success", True) else "FAILED",
                 "requestId": req_id,

@@ -366,84 +366,727 @@ function AuditLog({ logs, scopedRail, onDownloadFile }) {
   )
 }
 
-// ── File Registry Table ───────────────────────────────────────────────────────
-function FileTable({ files, onDownload }) {
+// ── File Registry Table (Multi-Rail, Date Filter DD-MM-YYYY, Direct AE Output Download) ──
+function FileTable({ files, onDownload, activeRailScope }) {
+  const [selectedRail, setSelectedRail] = useState(() => (activeRailScope && activeRailScope !== 'ALL' ? activeRailScope.toUpperCase() : 'ALL'))
+  const [dateFilter, setDateFilter] = useState('') // Stored as DD-MM-YYYY
+  const [searchQuery, setSearchQuery] = useState('')
+  const [typeFilter, setTypeFilter] = useState('ALL')
   const [page, setPage] = useState(1)
   const pageSize = 10
-  const reversed = files.slice().reverse()
-  const pagedFiles = reversed.slice((page - 1) * pageSize, page * pageSize)
+
+  // Keep rail synced if user navigates with rail parameter
+  useEffect(() => {
+    if (activeRailScope && activeRailScope !== 'ALL') {
+      setSelectedRail(activeRailScope.toUpperCase())
+    }
+  }, [activeRailScope])
+
+  // Current today string in DD-MM-YYYY
+  const todayDMY = useMemo(() => {
+    const d = new Date()
+    const dd = String(d.getDate()).padStart(2, '0')
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const yyyy = d.getFullYear()
+    return `${dd}-${mm}-${yyyy}`
+  }, [])
+
+  // Helper to extract DD-MM-YYYY from file object
+  const getFileDateDMY = f => {
+    if (f.date_dmy) return f.date_dmy
+    if (f.received_at) {
+      try {
+        const d = new Date(f.received_at)
+        if (!isNaN(d.getTime())) {
+          const dd = String(d.getDate()).padStart(2, '0')
+          const mm = String(d.getMonth() + 1).padStart(2, '0')
+          const yyyy = d.getFullYear()
+          return `${dd}-${mm}-${yyyy}`
+        }
+      } catch (e) { }
+    }
+    return todayDMY
+  }
+
+  // Helper to extract time string
+  const getFileTimeStr = f => {
+    if (f.time_str) return f.time_str
+    if (f.received_at) {
+      try {
+        const d = new Date(f.received_at)
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        }
+      } catch (e) { }
+    }
+    return '12:00:00'
+  }
+
+  // Normalize rail
+  const getFileRail = f => {
+    if (f.rail) return f.rail.toUpperCase()
+    const rKeys = Object.keys(f.rail_counts || {})
+    if (rKeys.length > 0) return rKeys[0].toUpperCase()
+    return 'UPI'
+  }
+
+  // Filtered files list
+  const filteredFiles = useMemo(() => {
+    return files.filter(f => {
+      // 1. Rail filter
+      const fRail = getFileRail(f)
+      if (selectedRail !== 'ALL' && fRail !== selectedRail) {
+        return false
+      }
+
+      // 2. Date filter (DD-MM-YYYY)
+      if (dateFilter) {
+        const fDate = getFileDateDMY(f)
+        if (fDate !== dateFilter) {
+          return false
+        }
+      }
+
+      // 3. Type filter
+      if (typeFilter !== 'ALL') {
+        const fType = (f.file_type || '').toUpperCase()
+        if (!fType.includes(typeFilter.toUpperCase())) {
+          return false
+        }
+      }
+
+      // 4. Search query
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase()
+        const fn = (f.filename || '').toLowerCase()
+        const fid = (f.file_id || '').toLowerCase()
+        const wf = (f.workflow_name || '').toLowerCase()
+        if (!fn.includes(q) && !fid.includes(q) && !wf.includes(q)) {
+          return false
+        }
+      }
+
+      return true
+    })
+  }, [files, selectedRail, dateFilter, typeFilter, searchQuery])
+
+  // Count per rail for tab badges
+  const railCounts = useMemo(() => {
+    const counts = { ALL: files.length, UPI: 0, IMPS: 0, AEPS: 0, NETC: 0, NEFT: 0, RTGS: 0 }
+    files.forEach(f => {
+      const r = getFileRail(f)
+      if (counts[r] !== undefined) counts[r]++
+      else counts.ALL++
+    })
+    return counts
+  }, [files])
+
+  // Pagination slice
+  const totalPages = Math.ceil(filteredFiles.length / pageSize) || 1
+  const currentPage = Math.min(page, totalPages)
+  const pagedFiles = filteredFiles.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
+  const isFiltered = selectedRail !== 'ALL' || dateFilter !== '' || searchQuery !== '' || typeFilter !== 'ALL'
+
+  const clearAllFilters = () => {
+    setSelectedRail('ALL')
+    setDateFilter('')
+    setSearchQuery('')
+    setTypeFilter('ALL')
+    setPage(1)
+  }
+
+  // Handle ISO date picker change (YYYY-MM-DD -> DD-MM-YYYY)
+  const handleDatePickerChange = e => {
+    const val = e.target.value
+    if (!val) {
+      setDateFilter('')
+      return
+    }
+    const [y, m, d] = val.split('-')
+    setDateFilter(`${d}-${m}-${y}`)
+    setPage(1)
+  }
+
+  // Convert current DD-MM-YYYY to YYYY-MM-DD for <input type="date">
+  const pickerIsoValue = useMemo(() => {
+    if (!dateFilter || !dateFilter.includes('-')) return ''
+    const [d, m, y] = dateFilter.split('-')
+    if (d && m && y && y.length === 4) {
+      return `${y}-${m}-${d}`
+    }
+    return ''
+  }, [dateFilter])
 
   return (
-    <div className="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>File ID</th>
-            <th>Filename</th>
-            <th>Rail(s)</th>
-            <th>Records</th>
-            <th>Exceptions</th>
-            <th>P1</th>
-            <th>STP%</th>
-            <th>Status</th>
-            <th>Received</th>
-          </tr>
-        </thead>
-        <tbody>
-          {pagedFiles.map((f, i) => {
-            const total = f.records || 1
-            const stp = Math.round((f.stp_count || 0) / total * 100)
-            const rails = Object.keys(f.rail_counts || {}).join(', ') || '—'
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* ── Toolbar: Rail Selector Pills + Search ── */}
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+        paddingBottom: 12,
+        borderBottom: '1px solid #e2e8f0'
+      }}>
+        {/* Rail Pills */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+          {['ALL', 'UPI', 'IMPS', 'AEPS', 'NETC', 'NEFT', 'RTGS'].map(r => {
+            const active = selectedRail === r
+            const count = railCounts[r] || 0
             return (
-              <tr key={i}>
-                <td><code style={{ fontSize: 11 }}>{f.file_id}</code></td>
-                <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <button
-                      onClick={() => onDownload && onDownload(f)}
-                      title={`Download ${f.filename}`}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: 28,
-                        height: 28,
-                        borderRadius: 6,
-                        border: '1.5px solid #cbd5e1',
-                        background: '#ffffff',
-                        color: '#0f172a',
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                        transition: 'all 0.15s ease'
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#ea580c'; e.currentTarget.style.color = '#ea580c'; e.currentTarget.style.background = '#fff7ed' }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.color = '#0f172a'; e.currentTarget.style.background = '#ffffff' }}
-                    >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="7 10 12 15 17 10" />
-                        <line x1="12" y1="15" x2="12" y2="3" />
-                      </svg>
-                    </button>
-                    <span style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>{f.filename}</span>
-                  </div>
-                </td>
-                <td>{rails}</td>
-                <td>{fmt(f.records)}</td>
-                <td style={{ color: f.exception_count > 0 ? 'var(--red)' : 'inherit', fontWeight: 600 }}>{fmt(f.exception_count)}</td>
-                <td style={{ color: f.p1_count > 0 ? 'var(--red)' : 'inherit', fontWeight: 600 }}>{fmt(f.p1_count)}</td>
-                <td>
-                  <span style={{ color: stp >= 95 ? 'var(--green)' : stp > 85 ? 'var(--amber)' : 'var(--red)', fontWeight: 700 }}>{stp}%</span>
-                </td>
-                <td><Badge type={f.status} /></td>
-                <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtDate(f.received_at)}</td>
-              </tr>
+              <button
+                key={r}
+                onClick={() => { setSelectedRail(r); setPage(1) }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '5px 12px',
+                  borderRadius: 20,
+                  fontSize: 12,
+                  fontWeight: active ? 700 : 500,
+                  border: active ? '1.5px solid #ea580c' : '1px solid #cbd5e1',
+                  background: active ? '#ea580c' : '#ffffff',
+                  color: active ? '#ffffff' : '#334155',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <span>{r}</span>
+                <span style={{
+                  fontSize: 10,
+                  padding: '1px 5px',
+                  borderRadius: 10,
+                  background: active ? 'rgba(255,255,255,0.25)' : '#f1f5f9',
+                  color: active ? '#ffffff' : '#64748b'
+                }}>
+                  {count}
+                </span>
+              </button>
             )
           })}
-          {!files.length && <tr><td colSpan={9} style={{ textAlign: 'center', color: 'var(--text-faint)', padding: 24 }}>No files uploaded yet</td></tr>}
-        </tbody>
-      </table>
-      <Pagination totalItems={files.length} pageSize={pageSize} currentPage={page} onPageChange={setPage} />
+        </div>
+
+        {/* Search Input */}
+        <div style={{ position: 'relative', width: 280 }}>
+          <input
+            type="text"
+            placeholder="Search filename or workflow..."
+            value={searchQuery}
+            onChange={e => { setSearchQuery(e.target.value); setPage(1) }}
+            style={{
+              width: '100%',
+              padding: '6px 10px 6px 30px',
+              fontSize: 12,
+              borderRadius: 6,
+              border: '1px solid #cbd5e1',
+              outline: 'none',
+              background: '#f8fafc'
+            }}
+          />
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#94a3b8"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)' }}
+          >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              style={{
+                position: 'absolute',
+                right: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                color: '#94a3b8',
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 'bold'
+              }}
+            >
+              ×
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Filter Row: DD-MM-YYYY Date Filter + File Type Filter + Filter Summary ── */}
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+        padding: '10px 14px',
+        background: '#f8fafc',
+        borderRadius: 8,
+        border: '1px solid #e2e8f0'
+      }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
+          {/* Date Filter Label & Picker */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              Date (DD-MM-YYYY):
+            </span>
+            <input
+              type="date"
+              value={pickerIsoValue}
+              onChange={handleDatePickerChange}
+              style={{
+                padding: '4px 8px',
+                fontSize: 12,
+                borderRadius: 6,
+                border: '1px solid #cbd5e1',
+                background: '#ffffff',
+                color: '#0f172a',
+                cursor: 'pointer'
+              }}
+            />
+          </div>
+
+          {/* Quick Date Buttons */}
+          <button
+            onClick={() => { setDateFilter(''); setPage(1) }}
+            style={{
+              padding: '4px 10px',
+              fontSize: 11,
+              borderRadius: 6,
+              border: dateFilter === '' ? '1.5px solid #ea580c' : '1px solid #cbd5e1',
+              background: dateFilter === '' ? '#fff7ed' : '#ffffff',
+              color: dateFilter === '' ? '#ea580c' : '#475569',
+              fontWeight: dateFilter === '' ? 700 : 500,
+              cursor: 'pointer'
+            }}
+          >
+            All Dates
+          </button>
+          <button
+            onClick={() => { setDateFilter(todayDMY); setPage(1) }}
+            style={{
+              padding: '4px 10px',
+              fontSize: 11,
+              borderRadius: 6,
+              border: dateFilter === todayDMY ? '1.5px solid #ea580c' : '1px solid #cbd5e1',
+              background: dateFilter === todayDMY ? '#fff7ed' : '#ffffff',
+              color: dateFilter === todayDMY ? '#ea580c' : '#475569',
+              fontWeight: dateFilter === todayDMY ? 700 : 500,
+              cursor: 'pointer'
+            }}
+          >
+            Today ({todayDMY})
+          </button>
+
+          {/* Active Date Badge if Selected */}
+          {dateFilter && (
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '3px 8px',
+              borderRadius: 6,
+              fontSize: 11,
+              fontWeight: 700,
+              background: '#ea580c',
+              color: '#ffffff'
+            }}>
+              Filtered: {dateFilter}
+              <button
+                onClick={() => setDateFilter('')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontSize: 12,
+                  marginLeft: 2
+                }}
+                title="Clear date filter"
+              >
+                ×
+              </button>
+            </span>
+          )}
+
+          {/* Divider */}
+          <span style={{ color: '#cbd5e1' }}>|</span>
+
+          {/* File Type Filter Dropdown */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>Type:</span>
+            <select
+              value={typeFilter}
+              onChange={e => { setTypeFilter(e.target.value); setPage(1) }}
+              style={{
+                padding: '4px 8px',
+                fontSize: 12,
+                borderRadius: 6,
+                border: '1px solid #cbd5e1',
+                background: '#ffffff',
+                color: '#0f172a',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="ALL">All File Types</option>
+              <option value="MATCHED">Matched STP</option>
+              <option value="UNMATCHED">Unmatched Exceptions</option>
+              <option value="LEDGER">Balanced Ledgers</option>
+              <option value="CBS">CBS Adjustments</option>
+              <option value="FEED">Source Feeds</option>
+              <option value="LIQUIDITY">Liquidity Returns</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Counter & Clear All Button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 11, color: '#64748b' }}>
+            Showing <strong>{filteredFiles.length}</strong> of <strong>{files.length}</strong> file{files.length === 1 ? '' : 's'}
+          </span>
+          {isFiltered && (
+            <button
+              onClick={clearAllFilters}
+              style={{
+                padding: '3px 8px',
+                fontSize: 11,
+                borderRadius: 4,
+                border: '1px solid #f87171',
+                background: '#fef2f2',
+                color: '#dc2626',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              Reset Filters
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Table Container ── */}
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style={{ width: 280 }}>Download &amp; Filename</th>
+              <th style={{ width: 110 }}>File ID</th>
+              <th style={{ width: 80 }}>Rail</th>
+              <th style={{ width: 140 }}>File Type</th>
+              <th style={{ width: 180 }}>Workflow Source</th>
+              <th style={{ textAlign: 'right', width: 90 }}>Records</th>
+              <th style={{ textAlign: 'right', width: 90 }}>Exceptions</th>
+              <th style={{ textAlign: 'right', width: 80 }}>P1</th>
+              <th style={{ textAlign: 'center', width: 80 }}>STP%</th>
+              <th style={{ width: 100 }}>Status</th>
+              <th style={{ width: 150 }}>Timestamp (DD-MM-YYYY)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pagedFiles.map((f, i) => {
+              const total = f.records || 1
+              const stp = f.stp_rate !== undefined ? f.stp_rate : Math.round(((f.stp_count || 0) / total) * 100)
+              const fRail = getFileRail(f)
+              const fDateDMY = getFileDateDMY(f)
+              const fTime = getFileTimeStr(f)
+              const isXlsx = (f.filename || '').toLowerCase().endsWith('.xlsx')
+
+              return (
+                <tr key={f.file_id || i}>
+                  {/* Download + Filename */}
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <button
+                        onClick={() => onDownload && onDownload(f)}
+                        title={`Download ${f.filename} directly from workflow registry`}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: 30,
+                          height: 30,
+                          borderRadius: 6,
+                          border: '1.5px solid #cbd5e1',
+                          background: '#ffffff',
+                          color: '#0f172a',
+                          cursor: 'pointer',
+                          flexShrink: 0,
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.borderColor = '#ea580c'
+                          e.currentTarget.style.color = '#ea580c'
+                          e.currentTarget.style.background = '#fff7ed'
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.borderColor = '#cbd5e1'
+                          e.currentTarget.style.color = '#0f172a'
+                          e.currentTarget.style.background = '#ffffff'
+                        }}
+                      >
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                      </button>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span
+                            style={{
+                              maxWidth: 210,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              fontWeight: 600,
+                              fontSize: 12,
+                              color: '#0f172a'
+                            }}
+                            title={f.filename}
+                          >
+                            {f.filename}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: 9,
+                              fontWeight: 700,
+                              padding: '1px 4px',
+                              borderRadius: 4,
+                              background: isXlsx ? '#dcfce7' : '#e0f2fe',
+                              color: isXlsx ? '#15803d' : '#0369a1',
+                              textTransform: 'uppercase'
+                            }}
+                          >
+                            {isXlsx ? 'XLSX' : 'CSV'}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: 10, color: '#64748b' }}>
+                          {f.size_kb ? `${f.size_kb} KB` : 'Direct AE Output'}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* File ID */}
+                  <td>
+                    <code style={{ fontSize: 11, background: '#f1f5f9', padding: '2px 5px', borderRadius: 4 }}>
+                      {f.file_id || 'FILE-001'}
+                    </code>
+                  </td>
+
+                  {/* Rail */}
+                  <td>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        padding: '2px 8px',
+                        borderRadius: 12,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        background:
+                          fRail === 'UPI' ? '#fff7ed' :
+                          fRail === 'IMPS' ? '#f5f3ff' :
+                          fRail === 'AEPS' ? '#eff6ff' :
+                          fRail === 'NETC' ? '#fefce8' :
+                          fRail === 'NEFT' ? '#f0fdf4' : '#faf5ff',
+                        color:
+                          fRail === 'UPI' ? '#c2410c' :
+                          fRail === 'IMPS' ? '#6d28d9' :
+                          fRail === 'AEPS' ? '#1d4ed8' :
+                          fRail === 'NETC' ? '#a16207' :
+                          fRail === 'NEFT' ? '#15803d' : '#7e22ce',
+                        border: `1px solid ${
+                          fRail === 'UPI' ? '#fed7aa' :
+                          fRail === 'IMPS' ? '#ddd6fe' :
+                          fRail === 'AEPS' ? '#bfdbfe' :
+                          fRail === 'NETC' ? '#fef08a' :
+                          fRail === 'NEFT' ? '#bbf7d0' : '#e9d5ff'
+                        }`
+                      }}
+                    >
+                      {fRail}
+                    </span>
+                  </td>
+
+                  {/* File Type */}
+                  <td>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        padding: '2px 6px',
+                        borderRadius: 4,
+                        background:
+                          (f.file_type || '').includes('Matched') ? '#f0fdf4' :
+                          (f.file_type || '').includes('Unmatched') ? '#fef2f2' :
+                          (f.file_type || '').includes('Ledger') ? '#ecfeff' :
+                          (f.file_type || '').includes('CBS') ? '#fdf4ff' : '#f8fafc',
+                        color:
+                          (f.file_type || '').includes('Matched') ? '#166534' :
+                          (f.file_type || '').includes('Unmatched') ? '#b91c1c' :
+                          (f.file_type || '').includes('Ledger') ? '#0e7490' :
+                          (f.file_type || '').includes('CBS') ? '#86198f' : '#475569'
+                      }}
+                    >
+                      {f.file_type || 'Settlement Batch'}
+                    </span>
+                  </td>
+
+                  {/* Workflow Source */}
+                  <td>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: '#334155',
+                        display: 'block',
+                        maxWidth: 170,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
+                      title={f.workflow_name || 'NPCI AutomationEdge Workflow'}
+                    >
+                      {f.workflow_name || 'NPCI AutomationEdge Workflow'}
+                    </span>
+                  </td>
+
+                  {/* Records */}
+                  <td style={{ textAlign: 'right', fontWeight: 600, fontSize: 12 }}>
+                    {fmt(f.records)}
+                  </td>
+
+                  {/* Exceptions */}
+                  <td style={{
+                    textAlign: 'right',
+                    fontWeight: 600,
+                    fontSize: 12,
+                    color: (f.exception_count || 0) > 0 ? 'var(--red)' : '#64748b'
+                  }}>
+                    {fmt(f.exception_count || 0)}
+                  </td>
+
+                  {/* P1 Risk */}
+                  <td style={{
+                    textAlign: 'right',
+                    fontWeight: 600,
+                    fontSize: 12,
+                    color: (f.p1_count || 0) > 0 ? 'var(--red)' : '#64748b'
+                  }}>
+                    {fmt(f.p1_count || 0)}
+                  </td>
+
+                  {/* STP% */}
+                  <td style={{ textAlign: 'center' }}>
+                    <span style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: stp >= 95 ? '#15803d' : stp >= 85 ? '#b45309' : '#b91c1c'
+                    }}>
+                      {stp}%
+                    </span>
+                  </td>
+
+                  {/* Status */}
+                  <td>
+                    <Badge type={f.status || 'COMPLETED'} />
+                  </td>
+
+                  {/* Timestamp in DD-MM-YYYY */}
+                  <td>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#0f172a' }}>
+                        {fDateDMY}
+                      </span>
+                      <span style={{ fontSize: 10, color: '#64748b' }}>
+                        {fTime}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+
+            {!filteredFiles.length && (
+              <tr>
+                <td colSpan={11} style={{ textAlign: 'center', padding: '36px 16px', color: '#64748b' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: '#334155' }}>
+                      No workflow output files match the current filters
+                    </div>
+                    <div style={{ fontSize: 11, color: '#64748b' }}>
+                      {dateFilter ? `No files found for date ${dateFilter}` : ''}
+                      {dateFilter && selectedRail !== 'ALL' ? ' and ' : ''}
+                      {selectedRail !== 'ALL' ? `rail ${selectedRail}` : ''}
+                    </div>
+                    {isFiltered && (
+                      <button
+                        onClick={clearAllFilters}
+                        style={{
+                          marginTop: 4,
+                          padding: '5px 12px',
+                          fontSize: 11,
+                          borderRadius: 6,
+                          background: '#ea580c',
+                          color: '#ffffff',
+                          border: 'none',
+                          fontWeight: 600,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Reset All Filters
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+
+        {filteredFiles.length > pageSize && (
+          <div style={{ marginTop: 12 }}>
+            <Pagination
+              totalItems={filteredFiles.length}
+              pageSize={pageSize}
+              currentPage={currentPage}
+              onPageChange={setPage}
+            />
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -3509,7 +4152,7 @@ export default function App() {
               <div className="page-title">File Registry</div>
               <div className="page-sub">Historical register of all processed settlement batches and cryptographic checksums</div>
             </div>
-            <div className="card"><FileTable files={files} onDownload={downloadRegistryFile} /></div>
+            <div className="card"><FileTable files={files} onDownload={downloadRegistryFile} activeRailScope={activeRailScope} /></div>
           </>}
 
           {/* === STAGING VAULT === */}

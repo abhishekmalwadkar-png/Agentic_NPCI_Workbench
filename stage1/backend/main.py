@@ -397,6 +397,11 @@ def get_stats():
             STATS["rail_volumes"]["UPI"] = total_recon
         if "rail_success_rates" in STATS:
             STATS["rail_success_rates"]["UPI"] = recon.get("stp_rate", 0.0)
+    elif STATS.get("total_records_ingested", 0) == 0:
+        if "rail_volumes" in STATS:
+            STATS["rail_volumes"]["UPI"] = 0
+        if "rail_success_rates" in STATS:
+            STATS["rail_success_rates"]["UPI"] = 0.0
 
     total_r = STATS["total_records_ingested"]
     stp_pct = round(STATS["stp_count"] / total_r * 100, 1) if total_r > 0 else 0
@@ -1908,7 +1913,10 @@ def system_clear_all():
     # 1. Clear physical directories
     matched_dir = WORKSPACE_ROOT / "stage1" / "Matched_Records"
     unmatched_dir = WORKSPACE_ROOT / "stage1" / "Unmatched_Records"
-    for dir_path in [WATCH_DIR, STAGING_DIR, REJECTED_DIR, matched_dir, unmatched_dir]:
+    aeps_output = WORKSPACE_ROOT / "stage1" / "AEPS_reconn" / "Output"
+    netc_output = WORKSPACE_ROOT / "stage1" / "NETC_reconn" / "Output"
+    imps_output = WORKSPACE_ROOT / "stage1" / "IMPS_Recon" / "Output"
+    for dir_path in [WATCH_DIR, STAGING_DIR, REJECTED_DIR, matched_dir, unmatched_dir, aeps_output, netc_output, imps_output]:
         if dir_path.exists():
             for f in dir_path.iterdir():
                 try:
@@ -2043,15 +2051,6 @@ def rail_catalog_try_now(rail_code: str = "UPI"):
     res = execute_rail_trial(rail_code)
     if res["status"] != "SUCCESS":
         raise HTTPException(status_code=400, detail=res["message"])
-    rc_up = rail_code.upper()
-    if "rail_volumes" in STATS and rc_up in STATS["rail_volumes"]:
-        sample_txns = res.get("results", {}).get("records_matched", 0) + res.get("results", {}).get("exceptions_detected", 0)
-        STATS["rail_volumes"][rc_up] = sample_txns
-        rate_str = res.get("results", {}).get("stp_match_rate", "95%").replace("%", "")
-        try:
-            STATS["rail_success_rates"][rc_up] = float(rate_str)
-        except Exception:
-            STATS["rail_success_rates"][rc_up] = 95.0
     return res
 
 

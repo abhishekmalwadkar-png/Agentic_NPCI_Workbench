@@ -976,17 +976,17 @@ export default function App() {
 
   const upiRecordVolume = (reconData?.total_records && reconData.total_records > 0)
     ? reconData.total_records
-    : (stats.rail_volumes?.UPI || (stats.total_records_ingested > 0 ? stats.total_records_ingested : 5))
+    : (hasData && stats.rail_volumes?.UPI ? stats.rail_volumes.UPI : (stats.total_records_ingested > 0 ? stats.total_records_ingested : 0))
 
   const railRecordCounts = {
     UPI: upiRecordVolume,
-    IMPS: (stats.rail_volumes?.IMPS) ?? (hasData ? 7431 : (activeRailScope === 'IMPS' ? 7431 : 0)),
-    NACH: (stats.rail_volumes?.NACH) ?? (hasData ? 6524 : (activeRailScope === 'NACH' ? 6524 : 0)),
-    AEPS: (stats.rail_volumes?.AEPS) ?? (hasData ? 1938 : (activeRailScope === 'AEPS' ? 1938 : 0)),
-    RUPAY: (stats.rail_volumes?.RUPAY) ?? (hasData ? 1461 : (activeRailScope === 'RUPAY' ? 1461 : 0)),
-    CTS: (stats.rail_volumes?.CTS) ?? (hasData ? 1511 : (activeRailScope === 'CTS' ? 1511 : 0)),
-    BBPS: (stats.rail_volumes?.BBPS) ?? (hasData ? 525 : (activeRailScope === 'BBPS' ? 525 : 0)),
-    NETC: (stats.rail_volumes?.NETC) ?? (hasData ? 1505 : (activeRailScope === 'NETC' ? 1505 : 0))
+    IMPS: (reconData?.rail === 'IMPS' && reconData?.total_records) ? reconData.total_records : (stats.rail_volumes?.IMPS || 0),
+    NACH: (reconData?.rail === 'NACH' && reconData?.total_records) ? reconData.total_records : (stats.rail_volumes?.NACH || 0),
+    AEPS: (reconData?.rail === 'AEPS' && reconData?.total_records) ? reconData.total_records : (stats.rail_volumes?.AEPS || 0),
+    RUPAY: (reconData?.rail === 'RUPAY' && reconData?.total_records) ? reconData.total_records : (stats.rail_volumes?.RUPAY || 0),
+    CTS: (reconData?.rail === 'CTS' && reconData?.total_records) ? reconData.total_records : (stats.rail_volumes?.CTS || 0),
+    BBPS: (reconData?.rail === 'BBPS' && reconData?.total_records) ? reconData.total_records : (stats.rail_volumes?.BBPS || 0),
+    NETC: (reconData?.rail === 'NETC' && reconData?.total_records) ? reconData.total_records : (stats.rail_volumes?.NETC || 0)
   }
 
   const railMetadata = {
@@ -1429,14 +1429,14 @@ export default function App() {
   const currentRailMeta = isScoped ? railMetadata[activeRailScope] : null
   const scopedRailVol = isScoped
     ? (railRecordCounts[activeRailScope.toUpperCase()] || 0)
-    : (hasData ? (stats.total_records_ingested || 5) : 0)
+    : (hasData ? (stats.total_records_ingested || 0) : 0)
   // Real recon figures exist for UPI and for rails whose Process Studio batch is loaded (reconData.rail matches)
   const railLive = isScoped && (activeRailScope.toUpperCase() === 'UPI' || (reconData?.rail || '').toUpperCase() === activeRailScope.toUpperCase())
   const scopedP1Count = isScoped
     ? (railLive && reconData?.p1_count !== undefined
         ? reconData.p1_count
         : (scopedRailVol > 0 ? Math.round(scopedRailVol * 0.048) : 0))
-    : (hasData ? (stats.p1_count ?? 4) : 0)
+    : (hasData ? (stats.p1_count ?? 0) : 0)
   const scopedP2Count = isScoped
     ? (railLive && reconData?.p2_count !== undefined
         ? reconData.p2_count

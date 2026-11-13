@@ -1316,12 +1316,13 @@ WATCHER_STATE = {
 
 _LAST_SEEN_MTIME = {"matched": 0.0, "unmatched": 0.0}
 _PROCESSED_BATCHES = set()
+_PROCESSED_IMPS_BATCHES = set()
 _LATEST_RECON_REQ_ID = 3425234
 
 
-def _find_active_or_latest_recon_instance() -> Optional[Dict[str, Any]]:
+def _find_active_or_latest_recon_instance(wf_name: str = "NPCI Demo UPI Reconn") -> Optional[Dict[str, Any]]:
     """
-    Discovers the latest request for 'NPCI Demo UPI Reconn' on AutomationEdge Server
+    Discovers the latest request for given workflow on AutomationEdge Server
     and checks if it is actively running or completed.
     """
     global _LATEST_RECON_REQ_ID
@@ -1347,7 +1348,7 @@ def _find_active_or_latest_recon_instance() -> Optional[Dict[str, Any]]:
                 consecutive_404 = 0
                 d = json.loads(res.read().decode("utf-8"))
                 _LATEST_RECON_REQ_ID = max(_LATEST_RECON_REQ_ID, curr)
-                if d.get("workflowName") == "NPCI Demo UPI Reconn":
+                if d.get("workflowName") == wf_name:
                     latest_recon = d
                     if d.get("status") in ["In Execution", "Executing", "Submitted", "New", "Pending"]:
                         return d
@@ -1363,23 +1364,23 @@ def _find_active_or_latest_recon_instance() -> Optional[Dict[str, Any]]:
     return latest_recon
 
 
-def wait_for_ae_recon_to_complete(batch_key: str, m_path: Optional[Path], u_path: Optional[Path], max_wait_sec: int = 180) -> bool:
+def wait_for_ae_recon_to_complete(batch_key: str, m_path: Optional[Path], u_path: Optional[Path], wf_name: str = "NPCI Demo UPI Reconn", max_wait_sec: int = 180) -> bool:
     """
-    Waits until 'NPCI Demo UPI Reconn' is fully completed:
+    Waits until the recon workflow is fully completed:
     1. Ensures output files are completely written, size is stable, and file locks are released.
     2. Polls AutomationEdge Server to confirm workflow instance status == 'Complete'.
     Does not allow downstream workflows to trigger while recon is still executing.
     """
-    print(f"[AE-WATCHER] Detected new batch: {batch_key}. Monitoring for 'NPCI Demo UPI Reconn' completion (status=Complete)...")
+    print(f"[AE-WATCHER] Detected new batch: {batch_key} ({wf_name}). Monitoring for completion (status=Complete)...")
     start_time = time.time()
 
     while time.time() - start_time < max_wait_sec:
-        recon_req = _find_active_or_latest_recon_instance()
+        recon_req = _find_active_or_latest_recon_instance(wf_name)
         req_status = recon_req.get("status") if recon_req else None
         req_id = recon_req.get("id") if recon_req else None
 
         if req_status in ["In Execution", "Executing", "Submitted", "New", "Pending"]:
-            print(f"[AE-WATCHER] 'NPCI Demo UPI Reconn' (Req {req_id}) is currently '{req_status}'. Waiting for 'Complete'... ({int(time.time()-start_time)}s elapsed)")
+            print(f"[AE-WATCHER] '{wf_name}' (Req {req_id}) is currently '{req_status}'. Waiting for 'Complete'... ({int(time.time()-start_time)}s elapsed)")
             time.sleep(3.0)
             continue
 
@@ -1401,29 +1402,30 @@ def wait_for_ae_recon_to_complete(batch_key: str, m_path: Optional[Path], u_path
                 break
 
         if not all_unlocked:
-            print(f"[AE-WATCHER] Output files for batch {batch_key} are still being written by Process Studio. Waiting... ({int(time.time()-start_time)}s elapsed)")
+            print(f"[AE-WATCHER] Output files for batch {batch_key} ({wf_name}) are still being written by Process Studio. Waiting... ({int(time.time()-start_time)}s elapsed)")
             time.sleep(3.0)
             continue
 
         # AE Server confirms Complete and files are unlocked
         time.sleep(2.0)
-        print(f"[AE-WATCHER] 'NPCI Demo UPI Reconn' (Req {req_id}) status = Complete confirmed! Files verified & unlocked ({int(time.time()-start_time)}s). Safe to trigger downstream tools.")
+        print(f"[AE-WATCHER] '{wf_name}' (Req {req_id}) status = Complete confirmed! Files verified & unlocked ({int(time.time()-start_time)}s). Safe to trigger downstream tools.")
         return True
 
-    print(f"[AE-WATCHER] Max wait time ({max_wait_sec}s) reached for batch {batch_key}. Proceeding.")
+    print(f"[AE-WATCHER] Max wait time ({max_wait_sec}s) reached for batch {batch_key} ({wf_name}). Proceeding.")
     return True
 
 
 def _autonomous_ae_watcher_loop():
     """
     Continuous Autonomous Agent Watcher with Batch Deduplication & Debounce:
-    Monitors stage1/Matched_Records and stage1/Unmatched_Records every 2 seconds.
-    When 'NPCI Demo UPI Reconn' writes new output files, the agent autonomously
+    Monitors stage1/Matched_Records, stage1/Unmatched_Records, and stage1/IMPS_Recon/Output every 2 seconds.
+    When a recon workflow writes new output files, the agent autonomously
     calls the downstream tools exactly once per batch.
     """
-    global _LAST_SEEN_MTIME, _PROCESSED_BATCHES, WATCHER_STATE
+    global _LAST_SEEN_MTIME, _PROCESSED_BATCHES, _PROCESSED_IMPS_BATCHES, WATCHER_STATE
     matched_dir = WORKSPACE_ROOT / "stage1" / "Matched_Records"
     unmatched_dir = WORKSPACE_ROOT / "stage1" / "Unmatched_Records"
+    imps_output_dir = WORKSPACE_ROOT / "stage1" / "IMPS_Recon" / "Output"
 
     # Pre-populate already existing batches on startup so old files don't re-trigger
     if matched_dir.exists():
@@ -1431,12 +1433,20 @@ def _autonomous_ae_watcher_loop():
             if f.is_file() and not f.name.startswith(".") and f.name != ".gitkeep":
                 _PROCESSED_BATCHES.add(f.stem.replace("Matched_Records_", ""))
 
+    if imps_output_dir.exists():
+        for f in imps_output_dir.iterdir():
+            if f.is_file() and f.name.startswith("Matched_Records_IMPS_") and f.name.endswith(".xlsx"):
+                _PROCESSED_IMPS_BATCHES.add(f.stem.replace("Matched_Records_IMPS_", ""))
+
     while True:
         try:
             time.sleep(2.0)
             if not WATCHER_STATE["is_watching"]:
                 continue
 
+            # ─────────────────────────────────────────────────────────────
+            # 1. CHECK FOR NEW UPI 4-WAY RECON BATCHES
+            # ─────────────────────────────────────────────────────────────
             m_files = sorted(
                 [f for f in matched_dir.iterdir() if f.is_file() and not f.name.startswith(".") and f.name != ".gitkeep"],
                 key=lambda f: f.stat().st_mtime,
@@ -1449,92 +1459,172 @@ def _autonomous_ae_watcher_loop():
                 reverse=True
             ) if unmatched_dir.exists() else []
 
-            if not m_files:
-                continue
+            if m_files:
+                latest_batch_key = m_files[0].stem.replace("Matched_Records_", "")
 
-            # Extract batch ID e.g. 20261030_154536
-            latest_batch_key = m_files[0].stem.replace("Matched_Records_", "")
+                # If this batch has not been processed yet
+                if latest_batch_key not in _PROCESSED_BATCHES:
+                    wait_for_ae_recon_to_complete(
+                        batch_key=latest_batch_key,
+                        m_path=m_files[0] if m_files else None,
+                        u_path=u_files[0] if u_files else None,
+                        wf_name="NPCI Demo UPI Reconn",
+                        max_wait_sec=180
+                    )
 
-            # If this batch has not been processed yet
-            if latest_batch_key not in _PROCESSED_BATCHES:
-                # Crucial Fix: Wait for 'NPCI Demo UPI Reconn' to reach status == 'Complete' on AE Server
-                # and verify output files are completely written and unlocked by Process Studio
-                wait_for_ae_recon_to_complete(
-                    batch_key=latest_batch_key,
-                    m_path=m_files[0] if m_files else None,
-                    u_path=u_files[0] if u_files else None,
-                    max_wait_sec=180
-                )
+                    _PROCESSED_BATCHES.add(latest_batch_key)
 
-                # Register batch key after confirmed completion to prevent duplicate triggers
-                _PROCESSED_BATCHES.add(latest_batch_key)
+                    # Re-fetch file list after settle
+                    m_files = sorted(
+                        [f for f in matched_dir.iterdir() if f.is_file() and not f.name.startswith(".") and f.name != ".gitkeep"],
+                        key=lambda f: f.stat().st_mtime,
+                        reverse=True
+                    )
+                    u_files = sorted(
+                        [f for f in unmatched_dir.iterdir() if f.is_file() and not f.name.startswith(".") and f.name != ".gitkeep"],
+                        key=lambda f: f.stat().st_mtime,
+                        reverse=True
+                    )
 
-                # Re-fetch file list after settle
-                m_files = sorted(
-                    [f for f in matched_dir.iterdir() if f.is_file() and not f.name.startswith(".") and f.name != ".gitkeep"],
+                    latest_m_path = str(m_files[0].resolve()) if m_files else ""
+                    latest_u_path = str(u_files[0].resolve()) if u_files else ""
+
+                    print(f"[AE-WATCHER-UPI] Detected new batch: {latest_batch_key}. Triggering downstream workflows...")
+
+                    # 1. Trigger AE Server Workflow: NPCI Demo GL-KnockOff
+                    try:
+                        gl_res = ae_server_execute({
+                            "workflow_name": "NPCI Demo GL-KnockOff",
+                            "params": [
+                                {"name": "NPCI_URL", "value": os.getenv("NPCI_URL", "http://localhost:8000/api/recon/run")},
+                                {"name": "Matched_File_Path", "value": latest_m_path}
+                            ]
+                        })
+                        print(f"[AE-WATCHER-UPI] Triggered NPCI Demo GL-KnockOff: Req {gl_res.get('requestId')}")
+                    except Exception as ae_e1:
+                        print(f"[AE-WATCHER-UPI] GL-KnockOff Error: {ae_e1}")
+
+                    # 2. Trigger AE Server Workflow: NPCI Demo UPI AI Dispatcher
+                    try:
+                        ai_res = ae_server_execute({
+                            "workflow_name": "NPCI Demo UPI AI Dispatcher",
+                            "params": [
+                                {"name": "UnMatched_File_Path", "value": latest_u_path},
+                                {"name": "NPCI_URL", "value": os.getenv("NPCI_URL", "http://localhost:8000/api/recon/run")},
+                                {"name": "NPCI_QUEUE_URL", "value": os.getenv("NPCI_QUEUE_URL", "http://localhost:8000/api/hitl/queue")}
+                            ]
+                        })
+                        print(f"[AE-WATCHER-UPI] Triggered NPCI Demo UPI AI Dispatcher: Req {ai_res.get('requestId')}")
+                    except Exception as ae_e2:
+                        print(f"[AE-WATCHER-UPI] AI Dispatcher Error: {ae_e2}")
+
+                    # 3. Trigger AE Server Workflow: NPCI Demo UPI-CBS
+                    try:
+                        cbs_res = ae_server_execute({
+                            "workflow_name": "NPCI Demo UPI-CBS",
+                            "params": []
+                        })
+                        print(f"[AE-WATCHER-UPI] Triggered NPCI Demo UPI-CBS: Req {cbs_res.get('requestId')}")
+                    except Exception as ae_e3:
+                        print(f"[AE-WATCHER-UPI] UPI-CBS Error: {ae_e3}")
+
+                    # 4. Execute Orchestrator Agent downstream toolchain
+                    orch = get_orchestrator()
+                    res = orch.execute_ae_triggered_toolchain(workflow_name="NPCI Demo UPI Reconn")
+
+                    WATCHER_STATE["last_triggered_at"] = datetime.now().isoformat()
+                    WATCHER_STATE["last_matched_file"] = m_files[0].name if m_files else ""
+                    WATCHER_STATE["last_unmatched_file"] = u_files[0].name if u_files else ""
+                    WATCHER_STATE["total_triggers"] += 1
+                    WATCHER_STATE["tools_executed_count"] += 4
+
+                    add_audit("INFO", "ORCHESTRATOR_AGENT_AUTO_TRIGGER", "AUTONOMOUS_WATCHER",
+                              f"Detected new batch {latest_batch_key} from 'NPCI Demo UPI Reconn'. AE Server Workflows & downstream tools triggered exactly once.")
+
+            # ─────────────────────────────────────────────────────────────
+            # 2. CHECK FOR NEW IMPS 4-WAY RECON BATCHES
+            # ─────────────────────────────────────────────────────────────
+            if imps_output_dir.exists():
+                imps_m_files = sorted(
+                    [f for f in imps_output_dir.iterdir() if f.is_file() and f.name.startswith("Matched_Records_IMPS_") and f.name.endswith(".xlsx")],
                     key=lambda f: f.stat().st_mtime,
                     reverse=True
                 )
-                u_files = sorted(
-                    [f for f in unmatched_dir.iterdir() if f.is_file() and not f.name.startswith(".") and f.name != ".gitkeep"],
+                imps_u_files = sorted(
+                    [f for f in imps_output_dir.iterdir() if f.is_file() and f.name.startswith("Unmatched_Records_IMPS_") and f.name.endswith(".xlsx")],
                     key=lambda f: f.stat().st_mtime,
                     reverse=True
                 )
 
-                latest_m_path = str(m_files[0].resolve()) if m_files else ""
-                latest_u_path = str(u_files[0].resolve()) if u_files else ""
+                if imps_m_files:
+                    latest_imps_key = imps_m_files[0].stem.replace("Matched_Records_IMPS_", "")
 
-                print(f"[AE-WATCHER] Detected new batch: {latest_batch_key}. Triggering downstream workflows...")
+                    if latest_imps_key not in _PROCESSED_IMPS_BATCHES:
+                        wait_for_ae_recon_to_complete(
+                            batch_key=latest_imps_key,
+                            m_path=imps_m_files[0],
+                            u_path=imps_u_files[0] if imps_u_files else None,
+                            wf_name="NPCI Demo IMPS 4 Way Recon",
+                            max_wait_sec=180
+                        )
 
-                # 1. Trigger AE Server Workflow: NPCI Demo GL-KnockOff
-                try:
-                    gl_res = ae_server_execute({
-                        "workflow_name": "NPCI Demo GL-KnockOff",
-                        "params": [
-                            {"name": "NPCI_URL", "value": os.getenv("NPCI_URL", "http://localhost:8000/api/recon/run")},
-                            {"name": "Matched_File_Path", "value": latest_m_path}
-                        ]
-                    })
-                    print(f"[AE-WATCHER] Triggered NPCI Demo GL-KnockOff: Req {gl_res.get('requestId')}")
-                except Exception as ae_e1:
-                    print(f"[AE-WATCHER] GL-KnockOff Error: {ae_e1}")
+                        _PROCESSED_IMPS_BATCHES.add(latest_imps_key)
 
-                # 2. Trigger AE Server Workflow: NPCI Demo UPI AI Dispatcher
-                try:
-                    ai_res = ae_server_execute({
-                        "workflow_name": "NPCI Demo UPI AI Dispatcher",
-                        "params": [
-                            {"name": "UnMatched_File_Path", "value": latest_u_path},
-                            {"name": "NPCI_URL", "value": os.getenv("NPCI_URL", "http://localhost:8000/api/recon/run")},
-                            {"name": "NPCI_QUEUE_URL", "value": os.getenv("NPCI_QUEUE_URL", "http://localhost:8000/api/hitl/queue")}
-                        ]
-                    })
-                    print(f"[AE-WATCHER] Triggered NPCI Demo UPI AI Dispatcher: Req {ai_res.get('requestId')}")
-                except Exception as ae_e2:
-                    print(f"[AE-WATCHER] AI Dispatcher Error: {ae_e2}")
+                        # Re-fetch after settle
+                        imps_m_files = sorted([f for f in imps_output_dir.iterdir() if f.is_file() and f.name.startswith("Matched_Records_IMPS_") and f.name.endswith(".xlsx")], key=lambda f: f.stat().st_mtime, reverse=True)
+                        imps_u_files = sorted([f for f in imps_output_dir.iterdir() if f.is_file() and f.name.startswith("Unmatched_Records_IMPS_") and f.name.endswith(".xlsx")], key=lambda f: f.stat().st_mtime, reverse=True)
 
-                # 3. Trigger AE Server Workflow: NPCI Demo UPI-CBS
-                try:
-                    cbs_res = ae_server_execute({
-                        "workflow_name": "NPCI Demo UPI-CBS",
-                        "params": []
-                    })
-                    print(f"[AE-WATCHER] Triggered NPCI Demo UPI-CBS: Req {cbs_res.get('requestId')}")
-                except Exception as ae_e3:
-                    print(f"[AE-WATCHER] UPI-CBS Error: {ae_e3}")
+                        latest_imps_m_path = str(imps_m_files[0].resolve()) if imps_m_files else ""
+                        latest_imps_u_path = str(imps_u_files[0].resolve()) if imps_u_files else ""
 
-                # 4. Execute Orchestrator Agent downstream toolchain
-                orch = get_orchestrator()
-                res = orch.execute_ae_triggered_toolchain(workflow_name="NPCI Demo UPI Reconn")
+                        print(f"[AE-WATCHER-IMPS] Detected new IMPS batch: {latest_imps_key}. Triggering downstream IMPS workflows...")
 
-                WATCHER_STATE["last_triggered_at"] = datetime.now().isoformat()
-                WATCHER_STATE["last_matched_file"] = m_files[0].name if m_files else ""
-                WATCHER_STATE["last_unmatched_file"] = u_files[0].name if u_files else ""
-                WATCHER_STATE["total_triggers"] += 1
-                WATCHER_STATE["tools_executed_count"] += 4
+                        # 1. Trigger AE Server Workflow: NPCI Demo IMPS NetSettlement KnockOff
+                        try:
+                            ns_res = ae_server_execute({
+                                "workflow_name": "NPCI Demo IMPS NetSettlement KnockOff",
+                                "params": [
+                                    {"name": "INPUT_MATCHED_FILE", "value": latest_imps_m_path},
+                                    {"name": "CYCLE_ID", "value": f"IMPS-{latest_imps_key}"}
+                                ]
+                            })
+                            print(f"[AE-WATCHER-IMPS] Triggered NPCI Demo IMPS NetSettlement KnockOff: Req {ns_res.get('requestId')}")
+                        except Exception as ae_e1:
+                            print(f"[AE-WATCHER-IMPS] IMPS NetSettlement KnockOff Error: {ae_e1}")
 
-                add_audit("INFO", "ORCHESTRATOR_AGENT_AUTO_TRIGGER", "AUTONOMOUS_WATCHER",
-                          f"Detected new batch {latest_batch_key} from 'NPCI Demo UPI Reconn'. AE Server Workflows & downstream tools triggered exactly once.")
+                        # 2. Trigger AE Server Workflow: NPCI Demo IMPS AI Dispatcher
+                        try:
+                            disp_res = ae_server_execute({
+                                "workflow_name": "NPCI Demo IMPS AI Dispatcher",
+                                "params": [
+                                    {"name": "INPUT_BREAKS_FILE", "value": latest_imps_u_path},
+                                    {"name": "HITL_API_ENDPOINT", "value": os.getenv("NPCI_QUEUE_URL", "http://localhost:8000/api/hitl/queue")}
+                                ]
+                            })
+                            print(f"[AE-WATCHER-IMPS] Triggered NPCI Demo IMPS AI Dispatcher: Req {disp_res.get('requestId')}")
+                        except Exception as ae_e2:
+                            print(f"[AE-WATCHER-IMPS] IMPS AI Dispatcher Error: {ae_e2}")
+
+                        # 3. Trigger AE Server Workflow: NPCI Demo IMPS RC91 Timeout AutoReturn
+                        try:
+                            rc91_res = ae_server_execute({
+                                "workflow_name": "NPCI Demo IMPS RC91 Timeout AutoReturn",
+                                "params": [
+                                    {"name": "INPUT_BREAKS_FILE", "value": latest_imps_u_path},
+                                    {"name": "FINACLE_API_ENDPOINT", "value": f"{os.getenv('BACKEND_BASE_URL', 'http://localhost:8000')}/api/finacle/reversal"}
+                                ]
+                            })
+                            print(f"[AE-WATCHER-IMPS] Triggered NPCI Demo IMPS RC91 Timeout AutoReturn: Req {rc91_res.get('requestId')}")
+                        except Exception as ae_e3:
+                            print(f"[AE-WATCHER-IMPS] IMPS RC91 Timeout AutoReturn Error: {ae_e3}")
+
+                        WATCHER_STATE["last_triggered_at"] = datetime.now().isoformat()
+                        WATCHER_STATE["total_triggers"] += 1
+                        WATCHER_STATE["tools_executed_count"] += 3
+
+                        add_audit("INFO", "ORCHESTRATOR_AGENT_IMPS_TRIGGER", "AUTONOMOUS_WATCHER",
+                                  f"Detected new IMPS batch {latest_imps_key} from 'NPCI Demo IMPS 4 Way Recon'. Triggered NetSettlement KnockOff, AI Dispatcher, and RC91 AutoReturn on AE Server.")
+
         except Exception as e:
             time.sleep(3.0)
 

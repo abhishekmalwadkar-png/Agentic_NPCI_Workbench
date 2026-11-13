@@ -22,7 +22,7 @@ def _load_env_file():
                     line = line.strip()
                     if line and not line.startswith("#") and "=" in line:
                         k, v = line.split("=", 1)
-                        os.environ.setdefault(k.strip(), v.strip())
+                        os.environ[k.strip()] = v.strip()
 
 _load_env_file()
 from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
@@ -1635,7 +1635,8 @@ def _autonomous_ae_watcher_loop():
                                 "workflow_name": "NPCI Demo IMPS AI Dispatcher",
                                 "params": [
                                     {"name": "INPUT_BREAKS_FILE", "value": latest_imps_u_path},
-                                    {"name": "HITL_API_ENDPOINT", "value": os.getenv("NPCI_QUEUE_URL", "http://localhost:8000/api/hitl/queue")}
+                                    {"name": "HITL_API_ENDPOINT", "value": os.getenv("NPCI_QUEUE_URL", "http://localhost:8000/api/hitl/queue")},
+                                    {"name": "HITL_THRESHOLD", "value": os.getenv("IMPS_HITL_THRESHOLD", "50000")}
                                 ]
                             })
                             print(f"[AE-WATCHER-IMPS] Triggered NPCI Demo IMPS AI Dispatcher: Req {disp_res.get('requestId')}")
@@ -1648,7 +1649,8 @@ def _autonomous_ae_watcher_loop():
                                 "workflow_name": "NPCI Demo IMPS RC91 Timeout AutoReturn",
                                 "params": [
                                     {"name": "INPUT_BREAKS_FILE", "value": latest_imps_u_path},
-                                    {"name": "FINACLE_API_ENDPOINT", "value": f"{os.getenv('BACKEND_BASE_URL', 'http://localhost:8000')}/api/finacle/reversal"}
+                                    {"name": "FINACLE_API_ENDPOINT", "value": f"{os.getenv('BACKEND_BASE_URL', 'http://localhost:8000')}/api/finacle/reversal"},
+                                    {"name": "AUTO_REFUND_THRESHOLD", "value": os.getenv("IMPS_AUTO_REFUND_THRESHOLD", "50000")}
                                 ]
                             })
                             print(f"[AE-WATCHER-IMPS] Triggered NPCI Demo IMPS RC91 Timeout AutoReturn: Req {rc91_res.get('requestId')}")
@@ -1720,7 +1722,10 @@ def _autonomous_ae_watcher_loop():
                                 "params": [
                                     {"name": "UnMatched_File_Path", "value": latest_aeps_u_path},
                                     {"name": "NPCI_URL", "value": os.getenv("NPCI_URL", "http://localhost:8000/api/recon/run")},
-                                    {"name": "NPCI_QUEUE_URL", "value": os.getenv("NPCI_QUEUE_URL", "http://localhost:8000/api/hitl/queue")}
+                                    {"name": "NPCI_QUEUE_URL", "value": os.getenv("NPCI_QUEUE_URL", "http://localhost:8000/api/hitl/queue")},
+                                    {"name": "AUTO_REVERSAL_LIMIT", "value": os.getenv("AEPS_AUTO_REVERSAL_LIMIT", "5000")},
+                                    {"name": "HITL_THRESHOLD", "value": os.getenv("AEPS_HITL_THRESHOLD", "10000")},
+                                    {"name": "RBI_TAT_DAYS", "value": os.getenv("AEPS_RBI_TAT_DAYS", "1")}
                                 ]
                             })
                             print(f"[AE-WATCHER-AEPS] Triggered NPCI Demo AEPS AI Dispatcher: Req {disp_res.get('requestId')}")
@@ -1788,7 +1793,7 @@ def _autonomous_ae_watcher_loop():
                                 "workflow_name": "NPCI Demo NETC Settlement KnockOff",
                                 "params": [
                                     {"name": "Matched_File_Path", "value": latest_netc_m_path},
-                                    {"name": "ACQUIRER_INTERCHANGE_PCT", "value": "0.15"}
+                                    {"name": "ACQUIRER_INTERCHANGE_PCT", "value": os.getenv("NETC_ACQUIRER_INTERCHANGE_PCT", "0.15")}
                                 ]
                             })
                             print(f"[AE-WATCHER-NETC] Triggered NPCI Demo NETC Settlement KnockOff: Req {ko_res.get('requestId')}")
@@ -1801,9 +1806,9 @@ def _autonomous_ae_watcher_loop():
                                 "workflow_name": "NPCI Demo AI Dispatcher",
                                 "params": [
                                     {"name": "UnMatched_File_Path", "value": latest_netc_u_path},
-                                    {"name": "AUTO_REFUND_LIMIT", "value": "1000"},
-                                    {"name": "HITL_THRESHOLD", "value": "5000"},
-                                    {"name": "REFUND_SLA_MINUTES", "value": "5"}
+                                    {"name": "AUTO_REFUND_LIMIT", "value": os.getenv("NETC_AUTO_REFUND_LIMIT", "1000")},
+                                    {"name": "HITL_THRESHOLD", "value": os.getenv("NETC_HITL_THRESHOLD", "5000")},
+                                    {"name": "REFUND_SLA_MINUTES", "value": os.getenv("NETC_REFUND_SLA_MINUTES", "5")}
                                 ]
                             })
                             print(f"[AE-WATCHER-NETC] Triggered NPCI Demo AI Dispatcher: Req {disp_res.get('requestId')}")

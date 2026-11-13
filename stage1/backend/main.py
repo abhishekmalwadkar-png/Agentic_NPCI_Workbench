@@ -1317,6 +1317,7 @@ WATCHER_STATE = {
 _LAST_SEEN_MTIME = {"matched": 0.0, "unmatched": 0.0}
 _PROCESSED_BATCHES = set()
 _PROCESSED_IMPS_BATCHES = set()
+_PROCESSED_AEPS_BATCHES = set()
 _LATEST_RECON_REQ_ID = 3425234
 
 
@@ -1422,10 +1423,11 @@ def _autonomous_ae_watcher_loop():
     When a recon workflow writes new output files, the agent autonomously
     calls the downstream tools exactly once per batch.
     """
-    global _LAST_SEEN_MTIME, _PROCESSED_BATCHES, _PROCESSED_IMPS_BATCHES, WATCHER_STATE
+    global _LAST_SEEN_MTIME, _PROCESSED_BATCHES, _PROCESSED_IMPS_BATCHES, _PROCESSED_AEPS_BATCHES, WATCHER_STATE
     matched_dir = WORKSPACE_ROOT / "stage1" / "Matched_Records"
     unmatched_dir = WORKSPACE_ROOT / "stage1" / "Unmatched_Records"
     imps_output_dir = WORKSPACE_ROOT / "stage1" / "IMPS_Recon" / "Output"
+    aeps_output_dir = WORKSPACE_ROOT / "stage1" / "AEPS_reconn" / "Output"
 
     # Pre-populate already existing batches on startup so old files don't re-trigger
     if matched_dir.exists():
@@ -1437,6 +1439,11 @@ def _autonomous_ae_watcher_loop():
         for f in imps_output_dir.iterdir():
             if f.is_file() and f.name.startswith("Matched_Records_IMPS_") and f.name.endswith(".xlsx"):
                 _PROCESSED_IMPS_BATCHES.add(f.stem.replace("Matched_Records_IMPS_", ""))
+
+    if aeps_output_dir.exists():
+        for f in aeps_output_dir.iterdir():
+            if f.is_file() and f.name.startswith("Matched_AePS_Records_") and f.name.endswith(".xlsx"):
+                _PROCESSED_AEPS_BATCHES.add(f.stem.replace("Matched_AePS_Records_", ""))
 
     while True:
         try:
@@ -1624,6 +1631,92 @@ def _autonomous_ae_watcher_loop():
 
                         add_audit("INFO", "ORCHESTRATOR_AGENT_IMPS_TRIGGER", "AUTONOMOUS_WATCHER",
                                   f"Detected new IMPS batch {latest_imps_key} from 'NPCI Demo IMPS 4 Way Recon'. Triggered NetSettlement KnockOff, AI Dispatcher, and RC91 AutoReturn on AE Server.")
+
+            # ─────────────────────────────────────────────────────────────
+            # 3. CHECK FOR NEW AEPS 4-WAY RECON BATCHES
+            # ─────────────────────────────────────────────────────────────
+            if aeps_output_dir.exists():
+                aeps_m_files = sorted(
+                    [f for f in aeps_output_dir.iterdir() if f.is_file() and f.name.startswith("Matched_AePS_Records_") and f.name.endswith(".xlsx")],
+                    key=lambda f: f.stat().st_mtime,
+                    reverse=True
+                )
+                aeps_u_files = sorted(
+                    [f for f in aeps_output_dir.iterdir() if f.is_file() and f.name.startswith("Unmatched_AePS_Records_") and f.name.endswith(".xlsx")],
+                    key=lambda f: f.stat().st_mtime,
+                    reverse=True
+                )
+
+                if aeps_m_files:
+                    latest_aeps_key = aeps_m_files[0].stem.replace("Matched_AePS_Records_", "")
+
+                    if latest_aeps_key not in _PROCESSED_AEPS_BATCHES:
+                        wait_for_ae_recon_to_complete(
+                            batch_key=latest_aeps_key,
+                            m_path=aeps_m_files[0],
+                            u_path=aeps_u_files[0] if aeps_u_files else None,
+                            wf_name="NPCI Demo AEPS Recon",
+                            max_wait_sec=180
+                        )
+
+                        _PROCESSED_AEPS_BATCHES.add(latest_aeps_key)
+
+                        # Re-fetch after settle
+                        aeps_m_files = sorted([f for f in aeps_output_dir.iterdir() if f.is_file() and f.name.startswith("Matched_AePS_Records_") and f.name.endswith(".xlsx")], key=lambda f: f.stat().st_mtime, reverse=True)
+                        aeps_u_files = sorted([f for f in aeps_output_dir.iterdir() if f.is_file() and f.name.startswith("Unmatched_AePS_Records_") and f.name.endswith(".xlsx")], key=lambda f: f.stat().st_mtime, reverse=True)
+
+                        latest_aeps_m_path = str(aeps_m_files[0].resolve()) if aeps_m_files else ""
+                        latest_aeps_u_path = str(aeps_u_files[0].resolve()) if aeps_u_files else ""
+
+                        print(f"[AE-WATCHER-AEPS] Detected new AePS batch: {latest_aeps_key}. Triggering downstream AePS workflows...")
+
+                        # 1. Trigger AE Server Workflow: NPCI Demo AEPS GL_KnockOff
+                        try:
+                            gl_res = ae_server_execute({
+                                "workflow_name": "NPCI Demo AEPS GL_KnockOff",
+                                "params": [
+                                    {"name": "Matched_File_Path", "value": latest_aeps_m_path},
+                                    {"name": "NPCI_URL", "value": os.getenv("NPCI_URL", "http://localhost:8000/api/recon/run")}
+                                ]
+                            })
+                            print(f"[AE-WATCHER-AEPS] Triggered NPCI Demo AEPS GL_KnockOff: Req {gl_res.get('requestId')}")
+                        except Exception as ae_e1:
+                            print(f"[AE-WATCHER-AEPS] AePS GL_KnockOff Error: {ae_e1}")
+
+                        # 2. Trigger AE Server Workflow: NPCI Demo AEPS AI Dispatcher
+                        try:
+                            disp_res = ae_server_execute({
+                                "workflow_name": "NPCI Demo AEPS AI Dispatcher",
+                                "params": [
+                                    {"name": "UnMatched_File_Path", "value": latest_aeps_u_path},
+                                    {"name": "NPCI_URL", "value": os.getenv("NPCI_URL", "http://localhost:8000/api/recon/run")},
+                                    {"name": "NPCI_QUEUE_URL", "value": os.getenv("NPCI_QUEUE_URL", "http://localhost:8000/api/hitl/queue")}
+                                ]
+                            })
+                            print(f"[AE-WATCHER-AEPS] Triggered NPCI Demo AEPS AI Dispatcher: Req {disp_res.get('requestId')}")
+                        except Exception as ae_e2:
+                            print(f"[AE-WATCHER-AEPS] AePS AI Dispatcher Error: {ae_e2}")
+
+                        # 3. Trigger AE Server Workflow: NPCI Demo AEPS CBS Execution
+                        try:
+                            cbs_res = ae_server_execute({
+                                "workflow_name": "NPCI Demo AEPS CBS Execution",
+                                "params": [
+                                    {"name": "NPCI_Queue_url", "value": os.getenv("NPCI_QUEUE_URL", "http://localhost:8000/api/hitl/queue")},
+                                    {"name": "CBS_CREDIT_API_URL", "value": f"{os.getenv('BACKEND_BASE_URL', 'http://localhost:8000')}/api/hitl/approve"}
+                                ]
+                            })
+                            print(f"[AE-WATCHER-AEPS] Triggered NPCI Demo AEPS CBS Execution: Req {cbs_res.get('requestId')}")
+                        except Exception as ae_e3:
+                            print(f"[AE-WATCHER-AEPS] AePS CBS Execution Error: {ae_e3}")
+
+                        WATCHER_STATE["last_triggered_at"] = datetime.now().isoformat()
+                        WATCHER_STATE["total_triggers"] += 1
+                        WATCHER_STATE["tools_executed_count"] += 3
+
+                        add_audit("INFO", "ORCHESTRATOR_AGENT_AEPS_TRIGGER", "AUTONOMOUS_WATCHER",
+                                  f"Detected new AePS batch {latest_aeps_key} from 'NPCI Demo AEPS Recon'. Triggered GL_KnockOff, AI Dispatcher, and CBS Execution on AE Server.")
+
 
         except Exception as e:
             time.sleep(3.0)

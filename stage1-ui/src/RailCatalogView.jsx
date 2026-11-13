@@ -118,15 +118,15 @@ export default function RailCatalogView({
 
   return (
     <div>
-      {/* ── 1. Hero Catalog Banner with Light Orange Shade (White to Orange) ── */}
+      {/* ── 1. Hero Catalog Banner with Richer Darker Orange Accent ── */}
       <div className="page-header" style={{
-        background: 'linear-gradient(135deg, #ffffff 0%, #fff7ed 45%, #fed7aa 100%)',
-        border: '1px solid #fdba74',
+        background: 'linear-gradient(135deg, #fff7ed 0%, #fed7aa 55%, #fdba74 100%)',
+        border: '1.5px solid #ea580c',
         color: '#0f172a',
         padding: '14px 20px',
         borderRadius: 0,
         marginBottom: 14,
-        boxShadow: '0 2px 10px rgba(234, 88, 12, 0.06)',
+        boxShadow: '0 3px 12px rgba(234, 88, 12, 0.12)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -139,19 +139,20 @@ export default function RailCatalogView({
               NPCI Payment Rail Solution Catalog
             </span>
             <span style={{
-              background: '#ffedd5',
-              border: '1px solid #ea580c',
-              color: '#c2410c',
+              background: '#ea580c',
+              border: '1px solid #c2410c',
+              color: '#ffffff',
               fontSize: 10,
               fontWeight: 800,
               padding: '2px 8px',
-              borderRadius: 0
+              borderRadius: 0,
+              letterSpacing: '0.3px'
             }}>
               8 Modular Rail Suites
             </span>
           </div>
-          <div style={{ fontSize: 12, color: '#334155', marginTop: 4, maxWidth: 840, lineHeight: 1.4 }}>
-            Each NPCI rail has its own dedicated automation suite. Select any rail catalog to subscribe, and click <b style={{ color: '#0f172a' }}>Try Now</b> to test automated clearing, 4-way reconciliation, and Finacle reversals.
+          <div style={{ fontSize: 12, color: '#1e293b', marginTop: 4, maxWidth: 840, lineHeight: 1.4, fontWeight: 500 }}>
+            Each NPCI rail has its own dedicated automation suite. Select any rail catalog to subscribe, and click <b style={{ color: '#9a3412' }}>Try Now</b> to test automated clearing, 4-way reconciliation, and Finacle reversals.
           </div>
         </div>
 
@@ -163,10 +164,10 @@ export default function RailCatalogView({
               alignItems: 'center',
               gap: 6,
               background: '#ffffff',
-              border: '1px solid #fed7aa',
+              border: '1.5px solid #ea580c',
               padding: '4px 10px',
               borderRadius: 0,
-              boxShadow: '0 1px 4px rgba(234, 88, 12, 0.06)',
+              boxShadow: '0 2px 6px rgba(234, 88, 12, 0.12)',
               cursor: 'default'
             }}
           >
@@ -174,18 +175,18 @@ export default function RailCatalogView({
               width: 18,
               height: 18,
               borderRadius: 0,
-              background: '#ffedd5',
+              background: '#fed7aa',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#ea580c'
+              color: '#c2410c'
             }}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                 <polyline points="22 4 12 14.01 9 11.01" />
               </svg>
             </div>
-            <span style={{ fontSize: 11.5, fontWeight: 800, color: '#c2410c' }}>
+            <span style={{ fontSize: 11.5, fontWeight: 800, color: '#9a3412' }}>
               {catalogs.filter(c => c.subscription_status === 'SUBSCRIBED').length}/{catalogs.length || 8} Active
             </span>
           </div>
@@ -283,18 +284,18 @@ export default function RailCatalogView({
               {/* Bottom Action Area: Preserving Try Now & Subscribe buttons */}
               <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10, marginTop: 12 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  {/* TRY NOW BUTTON - Light Orange */}
+                  {/* TRY NOW BUTTON - Darker Rich Orange */}
                   <button
                     className="btn btn-try-now"
                     style={{
                       fontSize: 11.5,
-                      fontWeight: 700,
+                      fontWeight: 800,
                       padding: '6px 10px',
-                      background: '#ffedd5',
-                      border: '1.2px solid #fdba74',
-                      color: '#c2410c',
+                      background: isRunningThis ? '#fed7aa' : 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+                      border: '1px solid #9a3412',
+                      color: '#ffffff',
                       justifyContent: 'center',
-                      boxShadow: '0 1px 2px rgba(234, 88, 12, 0.08)',
+                      boxShadow: '0 2px 6px rgba(234, 88, 12, 0.28)',
                       borderRadius: 0,
                       cursor: 'pointer'
                     }}
@@ -313,9 +314,9 @@ export default function RailCatalogView({
                       padding: '6px 8px',
                       justifyContent: 'center',
                       background: isSubscribed ? '#f8fafc' : '#ffffff',
-                      color: isSubscribed ? '#64748b' : '#c2410c',
-                      borderColor: isSubscribed ? '#e2e8f0' : '#fed7aa',
-                      boxShadow: isSubscribed ? 'none' : '0 1px 2px rgba(234, 88, 12, 0.06)',
+                      color: isSubscribed ? '#64748b' : '#9a3412',
+                      borderColor: isSubscribed ? '#e2e8f0' : '#ea580c',
+                      boxShadow: isSubscribed ? 'none' : '0 1px 3px rgba(234, 88, 12, 0.1)',
                       borderRadius: 0
                     }}
                     onClick={() => handleToggleSubscribe(rail)}

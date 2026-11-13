@@ -1341,6 +1341,7 @@ _LAST_SEEN_MTIME = {"matched": 0.0, "unmatched": 0.0}
 _PROCESSED_BATCHES = set()
 _PROCESSED_IMPS_BATCHES = set()
 _PROCESSED_AEPS_BATCHES = set()
+_PROCESSED_NETC_BATCHES = set()
 _LATEST_RECON_REQ_ID = 3425234
 
 
@@ -1446,11 +1447,12 @@ def _autonomous_ae_watcher_loop():
     When a recon workflow writes new output files, the agent autonomously
     calls the downstream tools exactly once per batch.
     """
-    global _LAST_SEEN_MTIME, _PROCESSED_BATCHES, _PROCESSED_IMPS_BATCHES, _PROCESSED_AEPS_BATCHES, WATCHER_STATE
+    global _LAST_SEEN_MTIME, _PROCESSED_BATCHES, _PROCESSED_IMPS_BATCHES, _PROCESSED_AEPS_BATCHES, _PROCESSED_NETC_BATCHES, WATCHER_STATE
     matched_dir = WORKSPACE_ROOT / "stage1" / "Matched_Records"
     unmatched_dir = WORKSPACE_ROOT / "stage1" / "Unmatched_Records"
     imps_output_dir = WORKSPACE_ROOT / "stage1" / "IMPS_Recon" / "Output"
     aeps_output_dir = WORKSPACE_ROOT / "stage1" / "AEPS_reconn" / "Output"
+    netc_output_dir = WORKSPACE_ROOT / "stage1" / "NETC_reconn" / "Output"
 
     # Pre-populate already existing batches on startup so old files don't re-trigger
     if matched_dir.exists():
@@ -1467,6 +1469,11 @@ def _autonomous_ae_watcher_loop():
         for f in aeps_output_dir.iterdir():
             if f.is_file() and f.name.startswith("Matched_AePS_Records_") and f.name.endswith(".xlsx"):
                 _PROCESSED_AEPS_BATCHES.add(f.stem.replace("Matched_AePS_Records_", ""))
+
+    if netc_output_dir.exists():
+        for f in netc_output_dir.iterdir():
+            if f.is_file() and f.name.startswith("Matched_NETC_Records_") and f.name.endswith(".xlsx"):
+                _PROCESSED_NETC_BATCHES.add(f.stem.replace("Matched_NETC_Records_", ""))
 
     while True:
         try:
@@ -1736,6 +1743,90 @@ def _autonomous_ae_watcher_loop():
 
                         add_audit("INFO", "ORCHESTRATOR_AGENT_AEPS_TRIGGER", "AUTONOMOUS_WATCHER",
                                   f"Detected new AePS batch {latest_aeps_key} from 'NPCI Demo AEPS Recon'. Triggered GL_KnockOff, AI Dispatcher, and CBS Execution on AE Server.")
+
+            # ─────────────────────────────────────────────────────────────
+            # 4. CHECK FOR NEW NETC FASTAG 4-WAY RECON BATCHES
+            # ─────────────────────────────────────────────────────────────
+            if netc_output_dir.exists():
+                netc_m_files = sorted(
+                    [f for f in netc_output_dir.iterdir() if f.is_file() and f.name.startswith("Matched_NETC_Records_") and f.name.endswith(".xlsx")],
+                    key=lambda f: f.stat().st_mtime,
+                    reverse=True
+                )
+                netc_u_files = sorted(
+                    [f for f in netc_output_dir.iterdir() if f.is_file() and f.name.startswith("Unmatched_NETC_Records_") and f.name.endswith(".xlsx")],
+                    key=lambda f: f.stat().st_mtime,
+                    reverse=True
+                )
+
+                if netc_m_files:
+                    latest_netc_key = netc_m_files[0].stem.replace("Matched_NETC_Records_", "")
+
+                    if latest_netc_key not in _PROCESSED_NETC_BATCHES:
+                        wait_for_ae_recon_to_complete(
+                            batch_key=latest_netc_key,
+                            m_path=netc_m_files[0],
+                            u_path=netc_u_files[0] if netc_u_files else None,
+                            wf_name="NPCI DEMO NETC Recon",
+                            max_wait_sec=180
+                        )
+
+                        _PROCESSED_NETC_BATCHES.add(latest_netc_key)
+
+                        # Re-fetch after settle
+                        netc_m_files = sorted([f for f in netc_output_dir.iterdir() if f.is_file() and f.name.startswith("Matched_NETC_Records_") and f.name.endswith(".xlsx")], key=lambda f: f.stat().st_mtime, reverse=True)
+                        netc_u_files = sorted([f for f in netc_output_dir.iterdir() if f.is_file() and f.name.startswith("Unmatched_NETC_Records_") and f.name.endswith(".xlsx")], key=lambda f: f.stat().st_mtime, reverse=True)
+
+                        latest_netc_m_path = str(netc_m_files[0].resolve()) if netc_m_files else ""
+                        latest_netc_u_path = str(netc_u_files[0].resolve()) if netc_u_files else ""
+
+                        print(f"[AE-WATCHER-NETC] Detected new NETC batch: {latest_netc_key}. Triggering downstream NETC workflows...")
+
+                        # 1. Trigger AE Server Workflow: NPCI Demo NETC Settlement KnockOff
+                        try:
+                            ko_res = ae_server_execute({
+                                "workflow_name": "NPCI Demo NETC Settlement KnockOff",
+                                "params": [
+                                    {"name": "Matched_File_Path", "value": latest_netc_m_path},
+                                    {"name": "ACQUIRER_INTERCHANGE_PCT", "value": "0.15"}
+                                ]
+                            })
+                            print(f"[AE-WATCHER-NETC] Triggered NPCI Demo NETC Settlement KnockOff: Req {ko_res.get('requestId')}")
+                        except Exception as ae_e1:
+                            print(f"[AE-WATCHER-NETC] NETC Settlement KnockOff Error: {ae_e1}")
+
+                        # 2. Trigger AE Server Workflow: NPCI Demo AI Dispatcher (NETC DualTrack Dispatcher)
+                        try:
+                            disp_res = ae_server_execute({
+                                "workflow_name": "NPCI Demo AI Dispatcher",
+                                "params": [
+                                    {"name": "UnMatched_File_Path", "value": latest_netc_u_path},
+                                    {"name": "AUTO_REFUND_LIMIT", "value": "1000"},
+                                    {"name": "HITL_THRESHOLD", "value": "5000"},
+                                    {"name": "REFUND_SLA_MINUTES", "value": "5"}
+                                ]
+                            })
+                            print(f"[AE-WATCHER-NETC] Triggered NPCI Demo AI Dispatcher: Req {disp_res.get('requestId')}")
+                        except Exception as ae_e2:
+                            print(f"[AE-WATCHER-NETC] NETC AI Dispatcher Error: {ae_e2}")
+
+                        # 3. Trigger AE Server Workflow: NPCI Demo NETC Reversal
+                        try:
+                            rev_res = ae_server_execute({
+                                "workflow_name": "NPCI Demo NETC Reversal",
+                                "params": []
+                            })
+                            print(f"[AE-WATCHER-NETC] Triggered NPCI Demo NETC Reversal: Req {rev_res.get('requestId')}")
+                        except Exception as ae_e3:
+                            print(f"[AE-WATCHER-NETC] NETC Reversal Error: {ae_e3}")
+
+                        WATCHER_STATE["last_triggered_at"] = datetime.now().isoformat()
+                        WATCHER_STATE["total_triggers"] += 1
+                        WATCHER_STATE["tools_executed_count"] += 3
+
+                        add_audit("INFO", "ORCHESTRATOR_AGENT_NETC_TRIGGER", "AUTONOMOUS_WATCHER",
+                                  f"Detected new NETC batch {latest_netc_key} from 'NPCI DEMO NETC Recon'. Triggered Settlement KnockOff, AI Dispatcher, and NETC Reversal on AE Server.")
+
 
 
         except Exception as e:

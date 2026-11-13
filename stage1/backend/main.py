@@ -1703,7 +1703,8 @@ def _autonomous_ae_watcher_loop():
                                 "workflow_name": "NPCI Demo AEPS CBS Execution",
                                 "params": [
                                     {"name": "NPCI_Queue_url", "value": os.getenv("NPCI_QUEUE_URL", "http://localhost:8000/api/hitl/queue")},
-                                    {"name": "CBS_CREDIT_API_URL", "value": f"{os.getenv('BACKEND_BASE_URL', 'http://localhost:8000')}/api/hitl/approve"}
+                                    {"name": "CBS_CREDIT_API_URL", "value": f"{os.getenv('BACKEND_BASE_URL', 'http://localhost:8000')}/api/hitl/approve"},
+                                    {"name": "FLOAT_LEDGER_API_URL", "value": f"{os.getenv('BACKEND_BASE_URL', 'http://localhost:8000')}/api/recon/knockoff"}
                                 ]
                             })
                             print(f"[AE-WATCHER-AEPS] Triggered NPCI Demo AEPS CBS Execution: Req {cbs_res.get('requestId')}")

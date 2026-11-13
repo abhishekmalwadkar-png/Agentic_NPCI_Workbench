@@ -1,31 +1,31 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <transformation>
   <info>
     <name>NETC_FASTag_4Way_Reconciliation_Engine</name>
     <description>NETC FASTag 4-way reconciliation of plaza RFID reads, NPCI mapper clearing, FASTag wallet CBS and GL-9908 with multi-antenna double-debit detection.</description>
-    <extended_description/>
-    <trans_version/>
+    <extended_description />
+    <trans_version />
     <trans_type>Normal</trans_type>
     <created_user>PS Copilot</created_user>
-    <created_date>2026&#x2f;11&#x2f;12 10&#x3a;00&#x3a;00.000</created_date>
+    <created_date>2026/11/12 10:00:00.000</created_date>
     <modified_user>-</modified_user>
-    <modified_date>2026&#x2f;11&#x2f;12 10&#x3a;00&#x3a;00.000</modified_date>
+    <modified_date>2026/11/12 10:00:00.000</modified_date>
     <fileHash>00000000000000000000000000000000</fileHash>
     <stepEntryHash>00000000000000000000000000000000</stepEntryHash>
 
     <format_version>2</format_version>
-    <directory>&#x2f;</directory>
+    <directory>/</directory>
     <parameters>
       <parameter>
         <name>INPUT_DIR</name>
         <description>Folder holding the NETC inbound feeds (1 XML + 3 CSV)</description>
-        <param_description/>
+        <param_description />
         <type>String</type>
         <uiControlType>TextBox</uiControlType>
-        <list_of_values/>
-        <valueSeparator/>
-        <queryName/>
-        <queryMappings/>
+        <list_of_values />
+        <valueSeparator />
+        <queryName />
+        <queryMappings />
         <default_value>D:/NPCI-Workbench/stage1/NETC_reconn</default_value>
         <secret>N</secret>
         <optional>Y</optional>
@@ -34,13 +34,13 @@
       <parameter>
         <name>OUTPUT_DIR</name>
         <description>Folder for Matched / Unmatched NETC xlsx outputs</description>
-        <param_description/>
+        <param_description />
         <type>String</type>
         <uiControlType>TextBox</uiControlType>
-        <list_of_values/>
-        <valueSeparator/>
-        <queryName/>
-        <queryMappings/>
+        <list_of_values />
+        <valueSeparator />
+        <queryName />
+        <queryMappings />
         <default_value>D:/NPCI-Workbench/stage1/NETC_reconn/Output</default_value>
         <secret>N</secret>
         <optional>Y</optional>
@@ -49,13 +49,13 @@
       <parameter>
         <name>DOUBLE_READ_WINDOW_SEC</name>
         <description>Window in seconds for multi-antenna double-read detection (strictly below)</description>
-        <param_description/>
+        <param_description />
         <type>String</type>
         <uiControlType>TextBox</uiControlType>
-        <list_of_values/>
-        <valueSeparator/>
-        <queryName/>
-        <queryMappings/>
+        <list_of_values />
+        <valueSeparator />
+        <queryName />
+        <queryMappings />
         <default_value>60</default_value>
         <secret>N</secret>
         <optional>Y</optional>
@@ -64,13 +64,13 @@
       <parameter>
         <name>CYCLE_ID</name>
         <description>Clearing cycle identifier (informational, stamped in the result)</description>
-        <param_description/>
+        <param_description />
         <type>String</type>
         <uiControlType>TextBox</uiControlType>
-        <list_of_values/>
-        <valueSeparator/>
-        <queryName/>
-        <queryMappings/>
+        <list_of_values />
+        <valueSeparator />
+        <queryName />
+        <queryMappings />
         <default_value>NETC-20261112-CY01</default_value>
         <secret>N</secret>
         <optional>Y</optional>
@@ -96,7 +96,7 @@
     </slaveservers>
     <clusterschemas>
     </clusterschemas>
-    <key_for_session_key>H4sIAAAAAAAA&#x2f;wMAAAAAAAAAAAA&#x3d;</key_for_session_key>
+    <key_for_session_key>H4sIAAAAAAAA/wMAAAAAAAAAAAA=</key_for_session_key>
     <is_key_private>N</is_key_private>
   </info>
   <order>
@@ -105,9 +105,6 @@
     <hop><from>FR_Feeds_Present</from><to>DUM_Feed_Fanout</to><enabled>Y</enabled><visible>Y</visible></hop>
     <hop><from>FR_Feeds_Present</from><to>WTL_Missing_Feeds</to><enabled>Y</enabled><visible>Y</visible></hop>
     <hop><from>DUM_Feed_Fanout</from><to>XML_Read_Plaza_RFID</to><enabled>Y</enabled><visible>Y</visible></hop>
-    <hop><from>DUM_Feed_Fanout</from><to>CSV_Read_NETC_Mapper</to><enabled>Y</enabled><visible>Y</visible></hop>
-    <hop><from>DUM_Feed_Fanout</from><to>CSV_Read_FASTag_Wallet</to><enabled>Y</enabled><visible>Y</visible></hop>
-    <hop><from>DUM_Feed_Fanout</from><to>CSV_Read_GL9908_Pool</to><enabled>Y</enabled><visible>Y</visible></hop>
     <hop><from>XML_Read_Plaza_RFID</from><to>SR_Sort_Plaza_EPC_Time</to><enabled>Y</enabled><visible>Y</visible></hop>
     <hop><from>SR_Sort_Plaza_EPC_Time</from><to>MJSV_Detect_MultiAntenna_Reads</to><enabled>Y</enabled><visible>Y</visible></hop>
     <hop><from>MJSV_Detect_MultiAntenna_Reads</from><to>SR_Sort_Plaza_Key</to><enabled>Y</enabled><visible>Y</visible></hop>
@@ -141,24 +138,24 @@
   <step>
     <name>RG_Run_Trigger</name>
     <type>RowGenerator</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <fields>
-      <field><name>f_trigger</name><type>String</type><format/><currency/><decimal/><group/><nullif>RUN</nullif><length>-1</length><precision>-1</precision><set_empty_string>N</set_empty_string></field>
+      <field><name>f_trigger</name><type>String</type><format /><currency /><decimal /><group /><nullif>RUN</nullif><length>-1</length><precision>-1</precision><set_empty_string>N</set_empty_string></field>
     </fields>
     <limit>1</limit>
     <never_ending>N</never_ending>
     <interval_in_ms>5000</interval_in_ms>
     <row_time_field>now</row_time_field>
     <last_time_field>FiveSecondsAgo</last_time_field>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -175,14 +172,14 @@
   <step>
     <name>MJSV_Validate_Feeds</name>
     <type>ScriptValueMod</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <compatible>N</compatible>
     <optimizationLevel>9</optimizationLevel>
@@ -190,7 +187,34 @@
       <jsScript>
         <jsScript_type>0</jsScript_type>
         <jsScript_name>Script 1</jsScript_name>
-        <jsScript_script>function txt(v) { return (v == null) ? &#x22;&#x22; : String(v).replace(/^\s+|\s+$/g, &#x22;&#x22;); }&#xd;&#xa;function num(v) { var t = txt(v).replace(/,/g, &#x22;&#x22;); if (t == &#x22;&#x22;) { return null; } var n = parseFloat(t); return isNaN(n) ? null : n; }&#xd;&#xa;function r2(n) { return Math.round(n * 100) / 100; }&#xd;&#xa;function esc(v) { return txt(v).replace(/\\/g, &#x22;\\\\&#x22;).replace(/&#x22;/g, &#x22;\\\&#x22;&#x22;).replace(/[\r\n\t]+/g, &#x22; &#x22;); }&#xd;&#xa;function money(v) { var n = num(v); return (n == null) ? &#x22;0.00&#x22; : n.toFixed(2); }&#xd;&#xa;function jnum(v) { var n = num(v); return (n == null) ? &#x22;null&#x22; : String(r2(n)); }&#xd;&#xa;function nowTs(p) { return String(new java.text.SimpleDateFormat(p).format(new java.util.Date())); }&#xd;&#xa;function sha256(s) { var md = java.security.MessageDigest.getInstance(&#x22;SHA-256&#x22;); var d = md.digest(new java.lang.String(s).getBytes(&#x22;UTF-8&#x22;)); var h = &#x22;&#x22;; for (var i = 0; i &lt; d.length; i++) { var b = (d[i] &amp; 0xff).toString(16); if (b.length &lt; 2) { b = &#x22;0&#x22; + b; } h = h + b; } return h; }&#xd;&#xa;function pv(name) { var token = &#x22;$&#x22; + &#x22;{Internal.Entry.Current.Directory}&#x22;; var base = String(getVariable(&#x22;Internal.Entry.Current.Directory&#x22;, &#x22;&#x22;)); return txt(String(getVariable(name, &#x22;&#x22;)).split(token).join(base)); }&#xd;&#xa;function dirOf(name) { return pv(name).replace(/\\/g, &#x22;/&#x22;).replace(/\/+$/, &#x22;&#x22;); }&#xd;&#xa;function fileOk(p) { if (txt(p) == &#x22;&#x22;) { return false; } var f = new java.io.File(txt(p)); return f.exists() &amp;&amp; f.isFile() &amp;&amp; f.length() &gt; 0; }&#xd;&#xa;function urlOk(u) { return /^https?:\/\/\S+$/i.test(txt(u)); }&#xd;&#xa;function enc(v) { return String(java.net.URLEncoder.encode(txt(v), &#x22;UTF-8&#x22;)); }&#xd;&#xa;function withQuery(base, q) { var b = txt(base); return b + ((b.indexOf(&#x22;?&#x22;) &gt;= 0) ? &#x22;&amp;&#x22; : &#x22;?&#x22;) + q; }&#xd;&#xa;function pnum(name, dflt) { var n = num(pv(name)); return (n == null) ? dflt : n; }&#xd;&#xa;&#xd;&#xa;var inDir = dirOf(&#x22;INPUT_DIR&#x22;);&#xd;&#xa;var f_plaza_file = inDir + &#x22;/Plaza_Lane_RFID_Trans.xml&#x22;;&#xd;&#xa;var f_mapper_file = inDir + &#x22;/NPCI_NETC_Mapper_Clearing.csv&#x22;;&#xd;&#xa;var f_wallet_file = inDir + &#x22;/FASTag_Wallet_CBS_Dump.csv&#x22;;&#xd;&#xa;var f_gl_file = inDir + &#x22;/NETC_Concessionaire_GL9908.csv&#x22;;&#xd;&#xa;var missing = [];&#xd;&#xa;if (!fileOk(f_plaza_file)) { missing.push(&#x22;Plaza_Lane_RFID_Trans.xml&#x22;); }&#xd;&#xa;if (!fileOk(f_mapper_file)) { missing.push(&#x22;NPCI_NETC_Mapper_Clearing.csv&#x22;); }&#xd;&#xa;if (!fileOk(f_wallet_file)) { missing.push(&#x22;FASTag_Wallet_CBS_Dump.csv&#x22;); }&#xd;&#xa;if (!fileOk(f_gl_file)) { missing.push(&#x22;NETC_Concessionaire_GL9908.csv&#x22;); }&#xd;&#xa;var f_feeds_ok = (missing.length == 0) ? &#x22;Y&#x22; : &#x22;N&#x22;;&#xd;&#xa;var f_missing_feeds = (missing.length == 0) ? &#x22;&#x22; : (&#x22;Missing or empty feed(s) in &#x22; + inDir + &#x22;: &#x22; + missing.join(&#x22;, &#x22;));</jsScript_script>
+        <jsScript_script>function txt(v) { return (v == null) ? "" : String(v).replace(/^\s+|\s+$/g, ""); }
+function num(v) { var t = txt(v).replace(/,/g, ""); if (t == "") { return null; } var n = parseFloat(t); return isNaN(n) ? null : n; }
+function r2(n) { return Math.round(n * 100) / 100; }
+function esc(v) { return txt(v).replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/[\r\n\t]+/g, " "); }
+function money(v) { var n = num(v); return (n == null) ? "0.00" : n.toFixed(2); }
+function jnum(v) { var n = num(v); return (n == null) ? "null" : String(r2(n)); }
+function nowTs(p) { return String(new java.text.SimpleDateFormat(p).format(new java.util.Date())); }
+function sha256(s) { var md = java.security.MessageDigest.getInstance("SHA-256"); var d = md.digest(new java.lang.String(s).getBytes("UTF-8")); var h = ""; for (var i = 0; i &lt; d.length; i++) { var b = (d[i] &amp; 0xff).toString(16); if (b.length &lt; 2) { b = "0" + b; } h = h + b; } return h; }
+function pv(name) { var token = "$" + "{Internal.Entry.Current.Directory}"; var base = String(getVariable("Internal.Entry.Current.Directory", "")); return txt(String(getVariable(name, "")).split(token).join(base)); }
+function dirOf(name) { return pv(name).replace(/\\/g, "/").replace(/\/+$/, ""); }
+function fileOk(p) { if (txt(p) == "") { return false; } var f = new java.io.File(txt(p)); return f.exists() &amp;&amp; f.isFile() &amp;&amp; f.length() &gt; 0; }
+function urlOk(u) { return /^https?:\/\/\S+$/i.test(txt(u)); }
+function enc(v) { return String(java.net.URLEncoder.encode(txt(v), "UTF-8")); }
+function withQuery(base, q) { var b = txt(base); return b + ((b.indexOf("?") &gt;= 0) ? "&amp;" : "?") + q; }
+function pnum(name, dflt) { var n = num(pv(name)); return (n == null) ? dflt : n; }
+
+var inDir = dirOf("INPUT_DIR");
+var f_plaza_file = inDir + "/Plaza_Lane_RFID_Trans.xml";
+var f_mapper_file = inDir + "/NPCI_NETC_Mapper_Clearing.csv";
+var f_wallet_file = inDir + "/FASTag_Wallet_CBS_Dump.csv";
+var f_gl_file = inDir + "/NETC_Concessionaire_GL9908.csv";
+var missing = [];
+if (!fileOk(f_plaza_file)) { missing.push("Plaza_Lane_RFID_Trans.xml"); }
+if (!fileOk(f_mapper_file)) { missing.push("NPCI_NETC_Mapper_Clearing.csv"); }
+if (!fileOk(f_wallet_file)) { missing.push("FASTag_Wallet_CBS_Dump.csv"); }
+if (!fileOk(f_gl_file)) { missing.push("NETC_Concessionaire_GL9908.csv"); }
+var f_feeds_ok = (missing.length == 0) ? "Y" : "N";
+var f_missing_feeds = (missing.length == 0) ? "" : ("Missing or empty feed(s) in " + inDir + ": " + missing.join(", "));</jsScript_script>
       </jsScript>
     </jsScripts>
     <fields>
@@ -201,7 +225,7 @@
       <field><name>f_feeds_ok</name><rename>f_feeds_ok</rename><type>String</type><length>-1</length><precision>-1</precision><replace>N</replace></field>
       <field><name>f_missing_feeds</name><rename>f_missing_feeds</rename><type>String</type><length>-1</length><precision>-1</precision><replace>N</replace></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -218,14 +242,14 @@
   <step>
     <name>FR_Feeds_Present</name>
     <type>FilterRows</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <send_true_to>DUM_Feed_Fanout</send_true_to>
     <send_false_to>WTL_Missing_Feeds</send_false_to>
@@ -233,12 +257,12 @@
       <condition>
         <negated>N</negated>
         <leftvalue>f_feeds_ok</leftvalue>
-        <function>&#x3d;</function>
-        <rightvalue/>
-        <value><name>constant</name><type>String</type><text>Y</text><length>-1</length><precision>-1</precision><isnull>N</isnull><mask/></value>
+        <function>=</function>
+        <rightvalue />
+        <value><name>constant</name><type>String</type><text>Y</text><length>-1</length><precision>-1</precision><isnull>N</isnull><mask /></value>
       </condition>
     </compare>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -255,17 +279,17 @@
   <step>
     <name>DUM_Feed_Fanout</name>
     <type>Dummy</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>N</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
 
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -282,14 +306,14 @@
   <step>
     <name>WTL_Missing_Feeds</name>
     <type>WriteToLog</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <loglevel>log_level_error</loglevel>
     <displayHeader>Y</displayHeader>
@@ -301,7 +325,7 @@
         <name>f_missing_feeds</name>
       </field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -318,17 +342,17 @@
   <step>
     <name>XML_Read_Plaza_RFID</name>
     <type>getXMLData</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <include>N</include>
-    <include_field/>
+    <include_field />
     <rownum>N</rownum>
     <addresultfile>N</addresultfile>
     <namespaceaware>N</namespaceaware>
@@ -338,38 +362,38 @@
     <usetoken>N</usetoken>
     <IsIgnoreEmptyFile>N</IsIgnoreEmptyFile>
     <doNotFailIfNoFile>N</doNotFailIfNoFile>
-    <rownum_field/>
+    <rownum_field />
     <encoding>UTF-8</encoding>
     <file>
-      <name/>
-      <filemask/>
-      <exclude_filemask/>
+      <name />
+      <filemask />
+      <exclude_filemask />
       <file_required>N</file_required>
       <include_subfolders>N</include_subfolders>
     </file>
     <fields>
-      <field><name>TAG_ID</name><xpath>TAG_ID</xpath><element_type>node</element_type><result_type>valueof</result_type><type>String</type><format/><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type><repeat>N</repeat></field>
-      <field><name>PLAZA_EPC</name><xpath>EPC</xpath><element_type>node</element_type><result_type>valueof</result_type><type>String</type><format/><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type><repeat>N</repeat></field>
-      <field><name>PLAZA_ID</name><xpath>PLAZA_ID</xpath><element_type>node</element_type><result_type>valueof</result_type><type>String</type><format/><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type><repeat>N</repeat></field>
-      <field><name>LANE_ID</name><xpath>LANE_ID</xpath><element_type>node</element_type><result_type>valueof</result_type><type>String</type><format/><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type><repeat>N</repeat></field>
-      <field><name>READER_TIMESTAMP</name><xpath>READER_TIMESTAMP</xpath><element_type>node</element_type><result_type>valueof</result_type><type>String</type><format/><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type><repeat>N</repeat></field>
-      <field><name>TOLL_AMOUNT</name><xpath>AMOUNT</xpath><element_type>node</element_type><result_type>valueof</result_type><type>Number</type><format/><currency/><decimal>.</decimal><group/><length>15</length><precision>2</precision><trim_type>both</trim_type><repeat>N</repeat></field>
+      <field><name>TAG_ID</name><xpath>TAG_ID</xpath><element_type>node</element_type><result_type>valueof</result_type><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type><repeat>N</repeat></field>
+      <field><name>PLAZA_EPC</name><xpath>EPC</xpath><element_type>node</element_type><result_type>valueof</result_type><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type><repeat>N</repeat></field>
+      <field><name>PLAZA_ID</name><xpath>PLAZA_ID</xpath><element_type>node</element_type><result_type>valueof</result_type><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type><repeat>N</repeat></field>
+      <field><name>LANE_ID</name><xpath>LANE_ID</xpath><element_type>node</element_type><result_type>valueof</result_type><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type><repeat>N</repeat></field>
+      <field><name>READER_TIMESTAMP</name><xpath>READER_TIMESTAMP</xpath><element_type>node</element_type><result_type>valueof</result_type><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type><repeat>N</repeat></field>
+      <field><name>TOLL_AMOUNT</name><xpath>AMOUNT</xpath><element_type>node</element_type><result_type>valueof</result_type><type>Number</type><format /><currency /><decimal>.</decimal><group /><length>15</length><precision>2</precision><trim_type>both</trim_type><repeat>N</repeat></field>
     </fields>
     <limit>0</limit>
     <loopxpath>/PlazaLaneRFIDTransactions/Transaction</loopxpath>
     <IsInFields>Y</IsInFields>
     <IsAFile>Y</IsAFile>
     <XmlField>f_plaza_file</XmlField>
-    <prunePath/>
-    <shortFileFieldName/>
-    <pathFieldName/>
-    <hiddenFieldName/>
-    <lastModificationTimeFieldName/>
-    <uriNameFieldName/>
-    <rootUriNameFieldName/>
-    <extensionFieldName/>
-    <sizeFieldName/>
-    <cluster_schema/>
+    <prunePath />
+    <shortFileFieldName />
+    <pathFieldName />
+    <hiddenFieldName />
+    <lastModificationTimeFieldName />
+    <uriNameFieldName />
+    <rootUriNameFieldName />
+    <extensionFieldName />
+    <sizeFieldName />
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -386,21 +410,21 @@
   <step>
     <name>CSV_Read_NETC_Mapper</name>
     <type>CsvInput</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
-    <filename/>
-    <filename_field>f_mapper_file</filename_field>
-    <rownum_field/>
+    <filename>/NETC_Toll_Plaza_Settlement_Master.csv</filename>
+    <filename_field />
+    <rownum_field />
     <include_filename>N</include_filename>
     <separator>,</separator>
-    <enclosure>&#x22;</enclosure>
+    <enclosure>"</enclosure>
     <header>Y</header>
     <buffer_size>50000</buffer_size>
     <lazy_conversion>N</lazy_conversion>
@@ -409,13 +433,13 @@
     <newline_possible>N</newline_possible>
     <encoding>UTF-8</encoding>
     <fields>
-      <field><name>EPC</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
-      <field><name>TXN_ID</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
-      <field><name>RRN</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
-      <field><name>MAPPER_STATUS</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
-      <field><name>ACQUIRER_ID</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>EPC</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>TXN_ID</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>RRN</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>MAPPER_STATUS</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>ACQUIRER_ID</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -432,21 +456,21 @@
   <step>
     <name>CSV_Read_FASTag_Wallet</name>
     <type>CsvInput</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
-    <filename/>
-    <filename_field>f_wallet_file</filename_field>
-    <rownum_field/>
+    <filename>/FASTag_Wallet_Host_Dump.csv</filename>
+    <filename_field />
+    <rownum_field />
     <include_filename>N</include_filename>
     <separator>,</separator>
-    <enclosure>&#x22;</enclosure>
+    <enclosure>"</enclosure>
     <header>Y</header>
     <buffer_size>50000</buffer_size>
     <lazy_conversion>N</lazy_conversion>
@@ -455,13 +479,13 @@
     <newline_possible>N</newline_possible>
     <encoding>UTF-8</encoding>
     <fields>
-      <field><name>WALLET_EPC</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
-      <field><name>WALLET_RRN</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
-      <field><name>WALLET_DEBIT_STATUS</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
-      <field><name>WALLET_BALANCE</name><type>Number</type><format>#.##</format><currency/><decimal>.</decimal><group/><length>15</length><precision>2</precision><trim_type>both</trim_type></field>
-      <field><name>ACC_NO</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>WALLET_EPC</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>WALLET_RRN</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>WALLET_DEBIT_STATUS</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>WALLET_BALANCE</name><type>Number</type><format>#.##</format><currency /><decimal>.</decimal><group /><length>15</length><precision>2</precision><trim_type>both</trim_type></field>
+      <field><name>ACC_NO</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -478,21 +502,21 @@
   <step>
     <name>CSV_Read_GL9908_Pool</name>
     <type>CsvInput</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
-    <filename/>
-    <filename_field>f_gl_file</filename_field>
-    <rownum_field/>
+    <filename>/NETC_Settlement_Pool_GL9908.csv</filename>
+    <filename_field />
+    <rownum_field />
     <include_filename>N</include_filename>
     <separator>,</separator>
-    <enclosure>&#x22;</enclosure>
+    <enclosure>"</enclosure>
     <header>Y</header>
     <buffer_size>50000</buffer_size>
     <lazy_conversion>N</lazy_conversion>
@@ -501,11 +525,11 @@
     <newline_possible>N</newline_possible>
     <encoding>UTF-8</encoding>
     <fields>
-      <field><name>GL_RRN</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
-      <field><name>GL_AMOUNT</name><type>Number</type><format>#.##</format><currency/><decimal>.</decimal><group/><length>15</length><precision>2</precision><trim_type>both</trim_type></field>
-      <field><name>SETTLEMENT_STATUS</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>GL_RRN</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>GL_AMOUNT</name><type>Number</type><format>#.##</format><currency /><decimal>.</decimal><group /><length>15</length><precision>2</precision><trim_type>both</trim_type></field>
+      <field><name>SETTLEMENT_STATUS</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -522,27 +546,27 @@
   <step>
     <name>SR_Sort_Plaza_EPC_Time</name>
     <type>SortRows</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <directory>%%java.io.tmpdir%%</directory>
     <prefix>netc_p</prefix>
     <sort_size>1000000</sort_size>
-    <free_memory/>
+    <free_memory />
     <compress>N</compress>
-    <compress_variable/>
+    <compress_variable />
     <unique_rows>N</unique_rows>
     <fields>
       <field><name>PLAZA_EPC</name><ascending>Y</ascending><case_sensitive>N</case_sensitive><presorted>N</presorted></field>
       <field><name>READER_TIMESTAMP</name><ascending>Y</ascending><case_sensitive>N</case_sensitive><presorted>N</presorted></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -559,14 +583,14 @@
   <step>
     <name>MJSV_Detect_MultiAntenna_Reads</name>
     <type>ScriptValueMod</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <compatible>N</compatible>
     <optimizationLevel>9</optimizationLevel>
@@ -574,12 +598,46 @@
       <jsScript>
         <jsScript_type>0</jsScript_type>
         <jsScript_name>Script 1</jsScript_name>
-        <jsScript_script>function txt(v) { return (v == null) ? &#x22;&#x22; : String(v).replace(/^\s+|\s+$/g, &#x22;&#x22;); }&#xd;&#xa;function num(v) { var t = txt(v).replace(/,/g, &#x22;&#x22;); if (t == &#x22;&#x22;) { return null; } var n = parseFloat(t); return isNaN(n) ? null : n; }&#xd;&#xa;function r2(n) { return Math.round(n * 100) / 100; }&#xd;&#xa;function esc(v) { return txt(v).replace(/\\/g, &#x22;\\\\&#x22;).replace(/&#x22;/g, &#x22;\\\&#x22;&#x22;).replace(/[\r\n\t]+/g, &#x22; &#x22;); }&#xd;&#xa;function money(v) { var n = num(v); return (n == null) ? &#x22;0.00&#x22; : n.toFixed(2); }&#xd;&#xa;function jnum(v) { var n = num(v); return (n == null) ? &#x22;null&#x22; : String(r2(n)); }&#xd;&#xa;function nowTs(p) { return String(new java.text.SimpleDateFormat(p).format(new java.util.Date())); }&#xd;&#xa;function sha256(s) { var md = java.security.MessageDigest.getInstance(&#x22;SHA-256&#x22;); var d = md.digest(new java.lang.String(s).getBytes(&#x22;UTF-8&#x22;)); var h = &#x22;&#x22;; for (var i = 0; i &lt; d.length; i++) { var b = (d[i] &amp; 0xff).toString(16); if (b.length &lt; 2) { b = &#x22;0&#x22; + b; } h = h + b; } return h; }&#xd;&#xa;function pv(name) { var token = &#x22;$&#x22; + &#x22;{Internal.Entry.Current.Directory}&#x22;; var base = String(getVariable(&#x22;Internal.Entry.Current.Directory&#x22;, &#x22;&#x22;)); return txt(String(getVariable(name, &#x22;&#x22;)).split(token).join(base)); }&#xd;&#xa;function dirOf(name) { return pv(name).replace(/\\/g, &#x22;/&#x22;).replace(/\/+$/, &#x22;&#x22;); }&#xd;&#xa;function fileOk(p) { if (txt(p) == &#x22;&#x22;) { return false; } var f = new java.io.File(txt(p)); return f.exists() &amp;&amp; f.isFile() &amp;&amp; f.length() &gt; 0; }&#xd;&#xa;function urlOk(u) { return /^https?:\/\/\S+$/i.test(txt(u)); }&#xd;&#xa;function enc(v) { return String(java.net.URLEncoder.encode(txt(v), &#x22;UTF-8&#x22;)); }&#xd;&#xa;function withQuery(base, q) { var b = txt(base); return b + ((b.indexOf(&#x22;?&#x22;) &gt;= 0) ? &#x22;&amp;&#x22; : &#x22;?&#x22;) + q; }&#xd;&#xa;function pnum(name, dflt) { var n = num(pv(name)); return (n == null) ? dflt : n; }&#xd;&#xa;&#xd;&#xa;function parseTs(s) { var t = txt(s).replace(&#x22;T&#x22;, &#x22; &#x22;); if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(t)) { return null; } return new java.text.SimpleDateFormat(&#x22;yyyy-MM-dd HH:mm:ss&#x22;).parse(t.substring(0, 19)).getTime(); }&#xd;&#xa;&#xd;&#xa;var epc = txt(PLAZA_EPC).toUpperCase();&#xd;&#xa;var plaza = txt(PLAZA_ID);&#xd;&#xa;var lane = txt(LANE_ID);&#xd;&#xa;var ts = parseTs(READER_TIMESTAMP);&#xd;&#xa;var windowSec = pnum(&#x22;DOUBLE_READ_WINDOW_SEC&#x22;, 60);&#xd;&#xa;var DOUBLE_READ_FLAG = &#x22;N&#x22;; var DOUBLE_READ_TYPE = &#x22;&#x22;; var READ_GAP_SEC = null; var PREV_LANE_ID = &#x22;&#x22;;&#xd;&#xa;if (epc == g_prevEpc) { g_seq = g_seq + 1; } else { g_seq = 1; }&#xd;&#xa;if (epc == g_prevEpc &amp;&amp; plaza == g_prevPlaza &amp;&amp; ts != null &amp;&amp; g_prevTs != null) {&#xd;&#xa;  READ_GAP_SEC = (ts - g_prevTs) / 1000;&#xd;&#xa;  if (READ_GAP_SEC &gt;= 0 &amp;&amp; READ_GAP_SEC &lt; windowSec) {&#xd;&#xa;    DOUBLE_READ_FLAG = &#x22;Y&#x22;; PREV_LANE_ID = g_prevLane;&#xd;&#xa;    DOUBLE_READ_TYPE = (lane != g_prevLane) ? &#x22;ADJACENT_ANTENNA&#x22; : &#x22;SAME_ANTENNA_REPEAT&#x22;;&#xd;&#xa;  }&#xd;&#xa;}&#xd;&#xa;var PLAZA_SEQ = g_seq;&#xd;&#xa;var PLAZA_EPC_KEY = epc;&#xd;&#xa;g_prevEpc = epc; g_prevPlaza = plaza; g_prevLane = lane; g_prevTs = ts;</jsScript_script>
+        <jsScript_script>function txt(v) { return (v == null) ? "" : String(v).replace(/^\s+|\s+$/g, ""); }
+function num(v) { var t = txt(v).replace(/,/g, ""); if (t == "") { return null; } var n = parseFloat(t); return isNaN(n) ? null : n; }
+function r2(n) { return Math.round(n * 100) / 100; }
+function esc(v) { return txt(v).replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/[\r\n\t]+/g, " "); }
+function money(v) { var n = num(v); return (n == null) ? "0.00" : n.toFixed(2); }
+function jnum(v) { var n = num(v); return (n == null) ? "null" : String(r2(n)); }
+function nowTs(p) { return String(new java.text.SimpleDateFormat(p).format(new java.util.Date())); }
+function sha256(s) { var md = java.security.MessageDigest.getInstance("SHA-256"); var d = md.digest(new java.lang.String(s).getBytes("UTF-8")); var h = ""; for (var i = 0; i &lt; d.length; i++) { var b = (d[i] &amp; 0xff).toString(16); if (b.length &lt; 2) { b = "0" + b; } h = h + b; } return h; }
+function pv(name) { var token = "$" + "{Internal.Entry.Current.Directory}"; var base = String(getVariable("Internal.Entry.Current.Directory", "")); return txt(String(getVariable(name, "")).split(token).join(base)); }
+function dirOf(name) { return pv(name).replace(/\\/g, "/").replace(/\/+$/, ""); }
+function fileOk(p) { if (txt(p) == "") { return false; } var f = new java.io.File(txt(p)); return f.exists() &amp;&amp; f.isFile() &amp;&amp; f.length() &gt; 0; }
+function urlOk(u) { return /^https?:\/\/\S+$/i.test(txt(u)); }
+function enc(v) { return String(java.net.URLEncoder.encode(txt(v), "UTF-8")); }
+function withQuery(base, q) { var b = txt(base); return b + ((b.indexOf("?") &gt;= 0) ? "&amp;" : "?") + q; }
+function pnum(name, dflt) { var n = num(pv(name)); return (n == null) ? dflt : n; }
+
+function parseTs(s) { var t = txt(s).replace("T", " "); if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(t)) { return null; } return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(t.substring(0, 19)).getTime(); }
+
+var epc = txt(PLAZA_EPC).toUpperCase();
+var plaza = txt(PLAZA_ID);
+var lane = txt(LANE_ID);
+var ts = parseTs(READER_TIMESTAMP);
+var windowSec = pnum("DOUBLE_READ_WINDOW_SEC", 60);
+var DOUBLE_READ_FLAG = "N"; var DOUBLE_READ_TYPE = ""; var READ_GAP_SEC = null; var PREV_LANE_ID = "";
+if (epc == g_prevEpc) { g_seq = g_seq + 1; } else { g_seq = 1; }
+if (epc == g_prevEpc &amp;&amp; plaza == g_prevPlaza &amp;&amp; ts != null &amp;&amp; g_prevTs != null) {
+  READ_GAP_SEC = (ts - g_prevTs) / 1000;
+  if (READ_GAP_SEC &gt;= 0 &amp;&amp; READ_GAP_SEC &lt; windowSec) {
+    DOUBLE_READ_FLAG = "Y"; PREV_LANE_ID = g_prevLane;
+    DOUBLE_READ_TYPE = (lane != g_prevLane) ? "ADJACENT_ANTENNA" : "SAME_ANTENNA_REPEAT";
+  }
+}
+var PLAZA_SEQ = g_seq;
+var PLAZA_EPC_KEY = epc;
+g_prevEpc = epc; g_prevPlaza = plaza; g_prevLane = lane; g_prevTs = ts;</jsScript_script>
       </jsScript>
       <jsScript>
         <jsScript_type>1</jsScript_type>
         <jsScript_name>Start Script</jsScript_name>
-        <jsScript_script>var g_prevEpc = &#x22;&#x22;; var g_prevPlaza = &#x22;&#x22;; var g_prevLane = &#x22;&#x22;; var g_prevTs = null; var g_seq = 0;</jsScript_script>
+        <jsScript_script>var g_prevEpc = ""; var g_prevPlaza = ""; var g_prevLane = ""; var g_prevTs = null; var g_seq = 0;</jsScript_script>
       </jsScript>
     </jsScripts>
     <fields>
@@ -590,7 +648,7 @@
       <field><name>PLAZA_SEQ</name><rename>PLAZA_SEQ</rename><type>Integer</type><length>9</length><precision>0</precision><replace>N</replace></field>
       <field><name>PLAZA_EPC_KEY</name><rename>PLAZA_EPC_KEY</rename><type>String</type><length>-1</length><precision>-1</precision><replace>N</replace></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -607,27 +665,27 @@
   <step>
     <name>SR_Sort_Plaza_Key</name>
     <type>SortRows</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <directory>%%java.io.tmpdir%%</directory>
     <prefix>netc_pk</prefix>
     <sort_size>1000000</sort_size>
-    <free_memory/>
+    <free_memory />
     <compress>N</compress>
-    <compress_variable/>
+    <compress_variable />
     <unique_rows>N</unique_rows>
     <fields>
       <field><name>PLAZA_EPC_KEY</name><ascending>Y</ascending><case_sensitive>N</case_sensitive><presorted>N</presorted></field>
       <field><name>PLAZA_SEQ</name><ascending>Y</ascending><case_sensitive>N</case_sensitive><presorted>N</presorted></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -644,27 +702,27 @@
   <step>
     <name>SR_Sort_Mapper_EPC_Txn</name>
     <type>SortRows</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <directory>%%java.io.tmpdir%%</directory>
     <prefix>netc_m</prefix>
     <sort_size>1000000</sort_size>
-    <free_memory/>
+    <free_memory />
     <compress>N</compress>
-    <compress_variable/>
+    <compress_variable />
     <unique_rows>N</unique_rows>
     <fields>
       <field><name>EPC</name><ascending>Y</ascending><case_sensitive>N</case_sensitive><presorted>N</presorted></field>
       <field><name>TXN_ID</name><ascending>Y</ascending><case_sensitive>N</case_sensitive><presorted>N</presorted></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -681,14 +739,14 @@
   <step>
     <name>MJSV_Sequence_Mapper_EPC</name>
     <type>ScriptValueMod</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <compatible>N</compatible>
     <optimizationLevel>9</optimizationLevel>
@@ -696,19 +754,39 @@
       <jsScript>
         <jsScript_type>0</jsScript_type>
         <jsScript_name>Script 1</jsScript_name>
-        <jsScript_script>function txt(v) { return (v == null) ? &#x22;&#x22; : String(v).replace(/^\s+|\s+$/g, &#x22;&#x22;); }&#xd;&#xa;function num(v) { var t = txt(v).replace(/,/g, &#x22;&#x22;); if (t == &#x22;&#x22;) { return null; } var n = parseFloat(t); return isNaN(n) ? null : n; }&#xd;&#xa;function r2(n) { return Math.round(n * 100) / 100; }&#xd;&#xa;function esc(v) { return txt(v).replace(/\\/g, &#x22;\\\\&#x22;).replace(/&#x22;/g, &#x22;\\\&#x22;&#x22;).replace(/[\r\n\t]+/g, &#x22; &#x22;); }&#xd;&#xa;function money(v) { var n = num(v); return (n == null) ? &#x22;0.00&#x22; : n.toFixed(2); }&#xd;&#xa;function jnum(v) { var n = num(v); return (n == null) ? &#x22;null&#x22; : String(r2(n)); }&#xd;&#xa;function nowTs(p) { return String(new java.text.SimpleDateFormat(p).format(new java.util.Date())); }&#xd;&#xa;function sha256(s) { var md = java.security.MessageDigest.getInstance(&#x22;SHA-256&#x22;); var d = md.digest(new java.lang.String(s).getBytes(&#x22;UTF-8&#x22;)); var h = &#x22;&#x22;; for (var i = 0; i &lt; d.length; i++) { var b = (d[i] &amp; 0xff).toString(16); if (b.length &lt; 2) { b = &#x22;0&#x22; + b; } h = h + b; } return h; }&#xd;&#xa;function pv(name) { var token = &#x22;$&#x22; + &#x22;{Internal.Entry.Current.Directory}&#x22;; var base = String(getVariable(&#x22;Internal.Entry.Current.Directory&#x22;, &#x22;&#x22;)); return txt(String(getVariable(name, &#x22;&#x22;)).split(token).join(base)); }&#xd;&#xa;function dirOf(name) { return pv(name).replace(/\\/g, &#x22;/&#x22;).replace(/\/+$/, &#x22;&#x22;); }&#xd;&#xa;function fileOk(p) { if (txt(p) == &#x22;&#x22;) { return false; } var f = new java.io.File(txt(p)); return f.exists() &amp;&amp; f.isFile() &amp;&amp; f.length() &gt; 0; }&#xd;&#xa;function urlOk(u) { return /^https?:\/\/\S+$/i.test(txt(u)); }&#xd;&#xa;function enc(v) { return String(java.net.URLEncoder.encode(txt(v), &#x22;UTF-8&#x22;)); }&#xd;&#xa;function withQuery(base, q) { var b = txt(base); return b + ((b.indexOf(&#x22;?&#x22;) &gt;= 0) ? &#x22;&amp;&#x22; : &#x22;?&#x22;) + q; }&#xd;&#xa;function pnum(name, dflt) { var n = num(pv(name)); return (n == null) ? dflt : n; }&#xd;&#xa;&#xd;&#xa;var mEpc = txt(EPC).toUpperCase();&#xd;&#xa;if (mEpc == g_mPrevEpc) { g_mSeq = g_mSeq + 1; } else { g_mSeq = 1; }&#xd;&#xa;var MAPPER_SEQ = g_mSeq;&#xd;&#xa;var EPC_KEY = mEpc;&#xd;&#xa;g_mPrevEpc = mEpc;</jsScript_script>
+        <jsScript_script>function txt(v) { return (v == null) ? "" : String(v).replace(/^\s+|\s+$/g, ""); }
+function num(v) { var t = txt(v).replace(/,/g, ""); if (t == "") { return null; } var n = parseFloat(t); return isNaN(n) ? null : n; }
+function r2(n) { return Math.round(n * 100) / 100; }
+function esc(v) { return txt(v).replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/[\r\n\t]+/g, " "); }
+function money(v) { var n = num(v); return (n == null) ? "0.00" : n.toFixed(2); }
+function jnum(v) { var n = num(v); return (n == null) ? "null" : String(r2(n)); }
+function nowTs(p) { return String(new java.text.SimpleDateFormat(p).format(new java.util.Date())); }
+function sha256(s) { var md = java.security.MessageDigest.getInstance("SHA-256"); var d = md.digest(new java.lang.String(s).getBytes("UTF-8")); var h = ""; for (var i = 0; i &lt; d.length; i++) { var b = (d[i] &amp; 0xff).toString(16); if (b.length &lt; 2) { b = "0" + b; } h = h + b; } return h; }
+function pv(name) { var token = "$" + "{Internal.Entry.Current.Directory}"; var base = String(getVariable("Internal.Entry.Current.Directory", "")); return txt(String(getVariable(name, "")).split(token).join(base)); }
+function dirOf(name) { return pv(name).replace(/\\/g, "/").replace(/\/+$/, ""); }
+function fileOk(p) { if (txt(p) == "") { return false; } var f = new java.io.File(txt(p)); return f.exists() &amp;&amp; f.isFile() &amp;&amp; f.length() &gt; 0; }
+function urlOk(u) { return /^https?:\/\/\S+$/i.test(txt(u)); }
+function enc(v) { return String(java.net.URLEncoder.encode(txt(v), "UTF-8")); }
+function withQuery(base, q) { var b = txt(base); return b + ((b.indexOf("?") &gt;= 0) ? "&amp;" : "?") + q; }
+function pnum(name, dflt) { var n = num(pv(name)); return (n == null) ? dflt : n; }
+
+var mEpc = txt(EPC).toUpperCase();
+if (mEpc == g_mPrevEpc) { g_mSeq = g_mSeq + 1; } else { g_mSeq = 1; }
+var MAPPER_SEQ = g_mSeq;
+var EPC_KEY = mEpc;
+g_mPrevEpc = mEpc;</jsScript_script>
       </jsScript>
       <jsScript>
         <jsScript_type>1</jsScript_type>
         <jsScript_name>Start Script</jsScript_name>
-        <jsScript_script>var g_mPrevEpc = &#x22;&#x22;; var g_mSeq = 0;</jsScript_script>
+        <jsScript_script>var g_mPrevEpc = ""; var g_mSeq = 0;</jsScript_script>
       </jsScript>
     </jsScripts>
     <fields>
       <field><name>MAPPER_SEQ</name><rename>MAPPER_SEQ</rename><type>Integer</type><length>9</length><precision>0</precision><replace>N</replace></field>
       <field><name>EPC_KEY</name><rename>EPC_KEY</rename><type>String</type><length>-1</length><precision>-1</precision><replace>N</replace></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -725,27 +803,27 @@
   <step>
     <name>SR_Sort_Mapper_Key</name>
     <type>SortRows</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <directory>%%java.io.tmpdir%%</directory>
     <prefix>netc_mk</prefix>
     <sort_size>1000000</sort_size>
-    <free_memory/>
+    <free_memory />
     <compress>N</compress>
-    <compress_variable/>
+    <compress_variable />
     <unique_rows>N</unique_rows>
     <fields>
       <field><name>EPC_KEY</name><ascending>Y</ascending><case_sensitive>N</case_sensitive><presorted>N</presorted></field>
       <field><name>MAPPER_SEQ</name><ascending>Y</ascending><case_sensitive>N</case_sensitive><presorted>N</presorted></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -762,14 +840,14 @@
   <step>
     <name>MJ_Join_Plaza_On_EPC</name>
     <type>MergeJoin</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <join_type>LEFT OUTER</join_type>
     <step1>SR_Sort_Mapper_Key</step1>
@@ -782,7 +860,7 @@
       <key>PLAZA_EPC_KEY</key>
       <key>PLAZA_SEQ</key>
     </keys_2>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -799,26 +877,26 @@
   <step>
     <name>SR_Sort_Cleared_RRN</name>
     <type>SortRows</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <directory>%%java.io.tmpdir%%</directory>
     <prefix>netc_r</prefix>
     <sort_size>1000000</sort_size>
-    <free_memory/>
+    <free_memory />
     <compress>N</compress>
-    <compress_variable/>
+    <compress_variable />
     <unique_rows>N</unique_rows>
     <fields>
       <field><name>RRN</name><ascending>Y</ascending><case_sensitive>N</case_sensitive><presorted>N</presorted></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -835,26 +913,26 @@
   <step>
     <name>SR_Sort_Wallet_RRN</name>
     <type>SortRows</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <directory>%%java.io.tmpdir%%</directory>
     <prefix>netc_w</prefix>
     <sort_size>1000000</sort_size>
-    <free_memory/>
+    <free_memory />
     <compress>N</compress>
-    <compress_variable/>
+    <compress_variable />
     <unique_rows>N</unique_rows>
     <fields>
       <field><name>WALLET_RRN</name><ascending>Y</ascending><case_sensitive>N</case_sensitive><presorted>N</presorted></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -871,26 +949,26 @@
   <step>
     <name>SR_Sort_GL_RRN</name>
     <type>SortRows</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <directory>%%java.io.tmpdir%%</directory>
     <prefix>netc_g</prefix>
     <sort_size>1000000</sort_size>
-    <free_memory/>
+    <free_memory />
     <compress>N</compress>
-    <compress_variable/>
+    <compress_variable />
     <unique_rows>N</unique_rows>
     <fields>
       <field><name>GL_RRN</name><ascending>Y</ascending><case_sensitive>N</case_sensitive><presorted>N</presorted></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -907,14 +985,14 @@
   <step>
     <name>MJ_Join_Wallet_On_RRN</name>
     <type>MergeJoin</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <join_type>LEFT OUTER</join_type>
     <step1>SR_Sort_Cleared_RRN</step1>
@@ -925,7 +1003,7 @@
     <keys_2>
       <key>WALLET_RRN</key>
     </keys_2>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -942,14 +1020,14 @@
   <step>
     <name>MJ_Join_GL9908_On_RRN</name>
     <type>MergeJoin</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <join_type>LEFT OUTER</join_type>
     <step1>MJ_Join_Wallet_On_RRN</step1>
@@ -960,7 +1038,7 @@
     <keys_2>
       <key>GL_RRN</key>
     </keys_2>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -977,14 +1055,14 @@
   <step>
     <name>MJSV_Classify_4Way</name>
     <type>ScriptValueMod</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <compatible>N</compatible>
     <optimizationLevel>9</optimizationLevel>
@@ -992,7 +1070,52 @@
       <jsScript>
         <jsScript_type>0</jsScript_type>
         <jsScript_name>Script 1</jsScript_name>
-        <jsScript_script>function txt(v) { return (v == null) ? &#x22;&#x22; : String(v).replace(/^\s+|\s+$/g, &#x22;&#x22;); }&#xd;&#xa;function num(v) { var t = txt(v).replace(/,/g, &#x22;&#x22;); if (t == &#x22;&#x22;) { return null; } var n = parseFloat(t); return isNaN(n) ? null : n; }&#xd;&#xa;function r2(n) { return Math.round(n * 100) / 100; }&#xd;&#xa;function esc(v) { return txt(v).replace(/\\/g, &#x22;\\\\&#x22;).replace(/&#x22;/g, &#x22;\\\&#x22;&#x22;).replace(/[\r\n\t]+/g, &#x22; &#x22;); }&#xd;&#xa;function money(v) { var n = num(v); return (n == null) ? &#x22;0.00&#x22; : n.toFixed(2); }&#xd;&#xa;function jnum(v) { var n = num(v); return (n == null) ? &#x22;null&#x22; : String(r2(n)); }&#xd;&#xa;function nowTs(p) { return String(new java.text.SimpleDateFormat(p).format(new java.util.Date())); }&#xd;&#xa;function sha256(s) { var md = java.security.MessageDigest.getInstance(&#x22;SHA-256&#x22;); var d = md.digest(new java.lang.String(s).getBytes(&#x22;UTF-8&#x22;)); var h = &#x22;&#x22;; for (var i = 0; i &lt; d.length; i++) { var b = (d[i] &amp; 0xff).toString(16); if (b.length &lt; 2) { b = &#x22;0&#x22; + b; } h = h + b; } return h; }&#xd;&#xa;function pv(name) { var token = &#x22;$&#x22; + &#x22;{Internal.Entry.Current.Directory}&#x22;; var base = String(getVariable(&#x22;Internal.Entry.Current.Directory&#x22;, &#x22;&#x22;)); return txt(String(getVariable(name, &#x22;&#x22;)).split(token).join(base)); }&#xd;&#xa;function dirOf(name) { return pv(name).replace(/\\/g, &#x22;/&#x22;).replace(/\/+$/, &#x22;&#x22;); }&#xd;&#xa;function fileOk(p) { if (txt(p) == &#x22;&#x22;) { return false; } var f = new java.io.File(txt(p)); return f.exists() &amp;&amp; f.isFile() &amp;&amp; f.length() &gt; 0; }&#xd;&#xa;function urlOk(u) { return /^https?:\/\/\S+$/i.test(txt(u)); }&#xd;&#xa;function enc(v) { return String(java.net.URLEncoder.encode(txt(v), &#x22;UTF-8&#x22;)); }&#xd;&#xa;function withQuery(base, q) { var b = txt(base); return b + ((b.indexOf(&#x22;?&#x22;) &gt;= 0) ? &#x22;&amp;&#x22; : &#x22;?&#x22;) + q; }&#xd;&#xa;function pnum(name, dflt) { var n = num(pv(name)); return (n == null) ? dflt : n; }&#xd;&#xa;&#xd;&#xa;var mapperStatus = txt(MAPPER_STATUS).toUpperCase();&#xd;&#xa;var walletStatus = txt(WALLET_DEBIT_STATUS).toUpperCase();&#xd;&#xa;var settle = txt(SETTLEMENT_STATUS).toUpperCase();&#xd;&#xa;var plazaPresent = (txt(PLAZA_ID) != &#x22;&#x22;);&#xd;&#xa;var walletPresent = (txt(WALLET_RRN) != &#x22;&#x22;);&#xd;&#xa;var glPresent = (txt(GL_RRN) != &#x22;&#x22;);&#xd;&#xa;var walletDebited = (walletStatus == &#x22;DEBITED&#x22;);&#xd;&#xa;var toll = num(TOLL_AMOUNT);&#xd;&#xa;var glAmt = num(GL_AMOUNT);&#xd;&#xa;var bal = num(WALLET_BALANCE);&#xd;&#xa;var TXN_AMOUNT = (toll != null) ? toll : ((glAmt != null) ? glAmt : 0);&#xd;&#xa;var AMOUNT_VARIANCE = (toll != null &amp;&amp; glAmt != null) ? r2(toll - glAmt) : null;&#xd;&#xa;var absVar = (AMOUNT_VARIANCE == null) ? null : Math.abs(AMOUNT_VARIANCE);&#xd;&#xa;var BREAK_CATEGORY = &#x22;&#x22;; var BREAK_REASON = &#x22;&#x22;; var EXCEPTION_SEVERITY = &#x22;NONE&#x22;;&#xd;&#xa;if (!plazaPresent &amp;&amp; walletDebited) { BREAK_CATEGORY = &#x22;WALLET_DEBIT_NO_PLAZA_CLEARANCE&#x22;; BREAK_REASON = &#x22;Wallet debited INR &#x22; + money(TXN_AMOUNT) + &#x22; but no plaza RFID read for EPC &#x22; + txt(EPC); EXCEPTION_SEVERITY = &#x22;HIGH&#x22;; }&#xd;&#xa;else if (!plazaPresent) { BREAK_CATEGORY = &#x22;MISSING_PLAZA_READ&#x22;; BREAK_REASON = &#x22;Mapper txn without plaza RFID read&#x22;; EXCEPTION_SEVERITY = &#x22;MEDIUM&#x22;; }&#xd;&#xa;else if (txt(DOUBLE_READ_FLAG) == &#x22;Y&#x22; &amp;&amp; walletDebited) { BREAK_CATEGORY = &#x22;MULTI_ANTENNA_DOUBLE_DEBIT&#x22;; BREAK_REASON = txt(DOUBLE_READ_TYPE) + &#x22; re-read at &#x22; + txt(PLAZA_ID) + &#x22; lane &#x22; + txt(LANE_ID) + &#x22; &#x22; + txt(READ_GAP_SEC) + &#x22;s after lane &#x22; + txt(PREV_LANE_ID) + &#x22; - duplicate wallet debit&#x22;; EXCEPTION_SEVERITY = &#x22;HIGH&#x22;; }&#xd;&#xa;else if (!walletPresent) { BREAK_CATEGORY = &#x22;MISSING_IN_WALLET_CBS&#x22;; BREAK_REASON = &#x22;RRN absent in FASTag wallet CBS dump&#x22;; EXCEPTION_SEVERITY = &#x22;HIGH&#x22;; }&#xd;&#xa;else if (txt(WALLET_EPC).toUpperCase() != txt(EPC).toUpperCase()) { BREAK_CATEGORY = &#x22;EPC_MISMATCH&#x22;; BREAK_REASON = &#x22;Wallet EPC &#x22; + txt(WALLET_EPC) + &#x22; differs from mapper EPC &#x22; + txt(EPC); EXCEPTION_SEVERITY = &#x22;HIGH&#x22;; }&#xd;&#xa;else if (mapperStatus == &#x22;BLACKLISTED&#x22; &amp;&amp; walletDebited) { BREAK_CATEGORY = &#x22;BLACKLISTED_TAG_PASSAGE&#x22;; BREAK_REASON = &#x22;Blacklisted tag allowed passage and debited&#x22;; EXCEPTION_SEVERITY = &#x22;CRITICAL&#x22;; }&#xd;&#xa;else if (bal != null &amp;&amp; bal &lt; 0) { BREAK_CATEGORY = &#x22;LOW_BALANCE_OVERDRAFT&#x22;; BREAK_REASON = &#x22;Wallet overdrawn to INR &#x22; + money(bal) + &#x22; after toll&#x22;; EXCEPTION_SEVERITY = &#x22;HIGH&#x22;; }&#xd;&#xa;else if (!walletDebited) { BREAK_CATEGORY = &#x22;WALLET_DEBIT_FAILED&#x22;; BREAK_REASON = &#x22;Wallet status &#x22; + walletStatus + &#x22; while plaza cleared the vehicle&#x22;; EXCEPTION_SEVERITY = &#x22;MEDIUM&#x22;; }&#xd;&#xa;else if (!glPresent) { BREAK_CATEGORY = &#x22;MISSING_IN_CONCESSIONAIRE_GL&#x22;; BREAK_REASON = &#x22;No GL-9908 concessionaire pool entry&#x22;; EXCEPTION_SEVERITY = &#x22;HIGH&#x22;; }&#xd;&#xa;else if (absVar == null || absVar &gt; 0.001) { BREAK_CATEGORY = &#x22;CONCESSIONAIRE_FEE_DISPUTE&#x22;; BREAK_REASON = &#x22;Plaza toll &#x22; + money(toll) + &#x22; vs GL-9908 &#x22; + money(glAmt) + &#x22; - variance &#x22; + money(AMOUNT_VARIANCE); EXCEPTION_SEVERITY = &#x22;HIGH&#x22;; }&#xd;&#xa;else if (settle != &#x22;SETTLED&#x22;) { BREAK_CATEGORY = &#x22;SETTLEMENT_PENDING&#x22;; BREAK_REASON = &#x22;GL-9908 settlement status &#x22; + settle; EXCEPTION_SEVERITY = &#x22;LOW&#x22;; }&#xd;&#xa;else if (mapperStatus == &#x22;ACCEPTED&#x22;) { BREAK_CATEGORY = &#x22;MATCHED_STP&#x22;; BREAK_REASON = &#x22;4-way match - plaza, mapper, wallet and GL-9908 agree&#x22;; }&#xd;&#xa;else { BREAK_CATEGORY = &#x22;STATUS_MISMATCH&#x22;; BREAK_REASON = &#x22;Mapper &#x22; + mapperStatus + &#x22; / wallet &#x22; + walletStatus + &#x22; / GL &#x22; + settle; EXCEPTION_SEVERITY = &#x22;MEDIUM&#x22;; }&#xd;&#xa;var IS_MATCHED = (BREAK_CATEGORY == &#x22;MATCHED_STP&#x22;) ? &#x22;Y&#x22; : &#x22;N&#x22;;&#xd;&#xa;var MATCH_FLAG = (IS_MATCHED == &#x22;Y&#x22;) ? 1 : 0;&#xd;&#xa;var RECON_RUN_TS = nowTs(&#x22;yyyy-MM-dd HH:mm:ss&#x22;);</jsScript_script>
+        <jsScript_script>function txt(v) { return (v == null) ? "" : String(v).replace(/^\s+|\s+$/g, ""); }
+function num(v) { var t = txt(v).replace(/,/g, ""); if (t == "") { return null; } var n = parseFloat(t); return isNaN(n) ? null : n; }
+function r2(n) { return Math.round(n * 100) / 100; }
+function esc(v) { return txt(v).replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/[\r\n\t]+/g, " "); }
+function money(v) { var n = num(v); return (n == null) ? "0.00" : n.toFixed(2); }
+function jnum(v) { var n = num(v); return (n == null) ? "null" : String(r2(n)); }
+function nowTs(p) { return String(new java.text.SimpleDateFormat(p).format(new java.util.Date())); }
+function sha256(s) { var md = java.security.MessageDigest.getInstance("SHA-256"); var d = md.digest(new java.lang.String(s).getBytes("UTF-8")); var h = ""; for (var i = 0; i &lt; d.length; i++) { var b = (d[i] &amp; 0xff).toString(16); if (b.length &lt; 2) { b = "0" + b; } h = h + b; } return h; }
+function pv(name) { var token = "$" + "{Internal.Entry.Current.Directory}"; var base = String(getVariable("Internal.Entry.Current.Directory", "")); return txt(String(getVariable(name, "")).split(token).join(base)); }
+function dirOf(name) { return pv(name).replace(/\\/g, "/").replace(/\/+$/, ""); }
+function fileOk(p) { if (txt(p) == "") { return false; } var f = new java.io.File(txt(p)); return f.exists() &amp;&amp; f.isFile() &amp;&amp; f.length() &gt; 0; }
+function urlOk(u) { return /^https?:\/\/\S+$/i.test(txt(u)); }
+function enc(v) { return String(java.net.URLEncoder.encode(txt(v), "UTF-8")); }
+function withQuery(base, q) { var b = txt(base); return b + ((b.indexOf("?") &gt;= 0) ? "&amp;" : "?") + q; }
+function pnum(name, dflt) { var n = num(pv(name)); return (n == null) ? dflt : n; }
+
+var mapperStatus = txt(MAPPER_STATUS).toUpperCase();
+var walletStatus = txt(WALLET_DEBIT_STATUS).toUpperCase();
+var settle = txt(SETTLEMENT_STATUS).toUpperCase();
+var plazaPresent = (txt(PLAZA_ID) != "");
+var walletPresent = (txt(WALLET_RRN) != "");
+var glPresent = (txt(GL_RRN) != "");
+var walletDebited = (walletStatus == "DEBITED");
+var toll = num(TOLL_AMOUNT);
+var glAmt = num(GL_AMOUNT);
+var bal = num(WALLET_BALANCE);
+var TXN_AMOUNT = (toll != null) ? toll : ((glAmt != null) ? glAmt : 0);
+var AMOUNT_VARIANCE = (toll != null &amp;&amp; glAmt != null) ? r2(toll - glAmt) : null;
+var absVar = (AMOUNT_VARIANCE == null) ? null : Math.abs(AMOUNT_VARIANCE);
+var BREAK_CATEGORY = ""; var BREAK_REASON = ""; var EXCEPTION_SEVERITY = "NONE";
+if (!plazaPresent &amp;&amp; walletDebited) { BREAK_CATEGORY = "WALLET_DEBIT_NO_PLAZA_CLEARANCE"; BREAK_REASON = "Wallet debited INR " + money(TXN_AMOUNT) + " but no plaza RFID read for EPC " + txt(EPC); EXCEPTION_SEVERITY = "HIGH"; }
+else if (!plazaPresent) { BREAK_CATEGORY = "MISSING_PLAZA_READ"; BREAK_REASON = "Mapper txn without plaza RFID read"; EXCEPTION_SEVERITY = "MEDIUM"; }
+else if (txt(DOUBLE_READ_FLAG) == "Y" &amp;&amp; walletDebited) { BREAK_CATEGORY = "MULTI_ANTENNA_DOUBLE_DEBIT"; BREAK_REASON = txt(DOUBLE_READ_TYPE) + " re-read at " + txt(PLAZA_ID) + " lane " + txt(LANE_ID) + " " + txt(READ_GAP_SEC) + "s after lane " + txt(PREV_LANE_ID) + " - duplicate wallet debit"; EXCEPTION_SEVERITY = "HIGH"; }
+else if (!walletPresent) { BREAK_CATEGORY = "MISSING_IN_WALLET_CBS"; BREAK_REASON = "RRN absent in FASTag wallet CBS dump"; EXCEPTION_SEVERITY = "HIGH"; }
+else if (txt(WALLET_EPC).toUpperCase() != txt(EPC).toUpperCase()) { BREAK_CATEGORY = "EPC_MISMATCH"; BREAK_REASON = "Wallet EPC " + txt(WALLET_EPC) + " differs from mapper EPC " + txt(EPC); EXCEPTION_SEVERITY = "HIGH"; }
+else if (mapperStatus == "BLACKLISTED" &amp;&amp; walletDebited) { BREAK_CATEGORY = "BLACKLISTED_TAG_PASSAGE"; BREAK_REASON = "Blacklisted tag allowed passage and debited"; EXCEPTION_SEVERITY = "CRITICAL"; }
+else if (bal != null &amp;&amp; bal &lt; 0) { BREAK_CATEGORY = "LOW_BALANCE_OVERDRAFT"; BREAK_REASON = "Wallet overdrawn to INR " + money(bal) + " after toll"; EXCEPTION_SEVERITY = "HIGH"; }
+else if (!walletDebited) { BREAK_CATEGORY = "WALLET_DEBIT_FAILED"; BREAK_REASON = "Wallet status " + walletStatus + " while plaza cleared the vehicle"; EXCEPTION_SEVERITY = "MEDIUM"; }
+else if (!glPresent) { BREAK_CATEGORY = "MISSING_IN_CONCESSIONAIRE_GL"; BREAK_REASON = "No GL-9908 concessionaire pool entry"; EXCEPTION_SEVERITY = "HIGH"; }
+else if (absVar == null || absVar &gt; 0.001) { BREAK_CATEGORY = "CONCESSIONAIRE_FEE_DISPUTE"; BREAK_REASON = "Plaza toll " + money(toll) + " vs GL-9908 " + money(glAmt) + " - variance " + money(AMOUNT_VARIANCE); EXCEPTION_SEVERITY = "HIGH"; }
+else if (settle != "SETTLED") { BREAK_CATEGORY = "SETTLEMENT_PENDING"; BREAK_REASON = "GL-9908 settlement status " + settle; EXCEPTION_SEVERITY = "LOW"; }
+else if (mapperStatus == "ACCEPTED") { BREAK_CATEGORY = "MATCHED_STP"; BREAK_REASON = "4-way match - plaza, mapper, wallet and GL-9908 agree"; }
+else { BREAK_CATEGORY = "STATUS_MISMATCH"; BREAK_REASON = "Mapper " + mapperStatus + " / wallet " + walletStatus + " / GL " + settle; EXCEPTION_SEVERITY = "MEDIUM"; }
+var IS_MATCHED = (BREAK_CATEGORY == "MATCHED_STP") ? "Y" : "N";
+var MATCH_FLAG = (IS_MATCHED == "Y") ? 1 : 0;
+var RECON_RUN_TS = nowTs("yyyy-MM-dd HH:mm:ss");</jsScript_script>
       </jsScript>
     </jsScripts>
     <fields>
@@ -1005,7 +1128,7 @@
       <field><name>MATCH_FLAG</name><rename>MATCH_FLAG</rename><type>Integer</type><length>9</length><precision>0</precision><replace>N</replace></field>
       <field><name>RECON_RUN_TS</name><rename>RECON_RUN_TS</rename><type>String</type><length>-1</length><precision>-1</precision><replace>N</replace></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -1022,14 +1145,14 @@
   <step>
     <name>MJSV_Flag_Double_Debit</name>
     <type>ScriptValueMod</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <compatible>N</compatible>
     <optimizationLevel>9</optimizationLevel>
@@ -1037,13 +1160,13 @@
       <jsScript>
         <jsScript_type>0</jsScript_type>
         <jsScript_name>Script 1</jsScript_name>
-        <jsScript_script>var DOUBLE_DEBIT_FLAG = (String(BREAK_CATEGORY) == &#x22;MULTI_ANTENNA_DOUBLE_DEBIT&#x22;) ? 1 : 0;</jsScript_script>
+        <jsScript_script>var DOUBLE_DEBIT_FLAG = (String(BREAK_CATEGORY) == "MULTI_ANTENNA_DOUBLE_DEBIT") ? 1 : 0;</jsScript_script>
       </jsScript>
     </jsScripts>
     <fields>
       <field><name>DOUBLE_DEBIT_FLAG</name><rename>DOUBLE_DEBIT_FLAG</rename><type>Integer</type><length>9</length><precision>0</precision><replace>N</replace></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -1060,14 +1183,14 @@
   <step>
     <name>FR_Is_Matched_STP</name>
     <type>FilterRows</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <send_true_to>XLW_Matched_NETC</send_true_to>
     <send_false_to>XLW_Unmatched_NETC</send_false_to>
@@ -1075,12 +1198,12 @@
       <condition>
         <negated>N</negated>
         <leftvalue>IS_MATCHED</leftvalue>
-        <function>&#x3d;</function>
-        <rightvalue/>
-        <value><name>constant</name><type>String</type><text>Y</text><length>-1</length><precision>-1</precision><isnull>N</isnull><mask/></value>
+        <function>=</function>
+        <rightvalue />
+        <value><name>constant</name><type>String</type><text>Y</text><length>-1</length><precision>-1</precision><isnull>N</isnull><mask /></value>
       </condition>
     </compare>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -1097,14 +1220,14 @@
   <step>
     <name>XLW_Matched_NETC</name>
     <type>TypeExitExcelWriterStep</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <header>Y</header>
     <footer>N</footer>
@@ -1133,7 +1256,7 @@
       <stream_data>N</stream_data>
       <protect_sheet>N</protect_sheet>
       <password>Encrypted </password>
-      <protected_by/>
+      <protected_by />
       <splitevery>0</splitevery>
       <if_file_exists>new</if_file_exists>
       <if_sheet_exists>new</if_sheet_exists>
@@ -1142,38 +1265,38 @@
       <enabled>N</enabled>
       <sheet_enabled>N</sheet_enabled>
       <hidden>N</hidden>
-      <filename/>
-      <sheetname/>
+      <filename />
+      <sheetname />
     </template>
     <fields>
-      <field><name>RRN</name><type>String</type><format></format><title>RRN</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>TXN_ID</name><type>String</type><format></format><title>TXN_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>EPC</name><type>String</type><format></format><title>EPC</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>TAG_ID</name><type>String</type><format></format><title>TAG_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>PLAZA_ID</name><type>String</type><format></format><title>PLAZA_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>LANE_ID</name><type>String</type><format></format><title>LANE_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>READER_TIMESTAMP</name><type>String</type><format></format><title>READER_TIMESTAMP</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>ACQUIRER_ID</name><type>String</type><format></format><title>ACQUIRER_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>MAPPER_STATUS</name><type>String</type><format></format><title>MAPPER_STATUS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>TOLL_AMOUNT</name><type>Number</type><format>0.00</format><title>TOLL_AMOUNT</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>WALLET_DEBIT_STATUS</name><type>String</type><format></format><title>WALLET_DEBIT_STATUS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>WALLET_BALANCE</name><type>Number</type><format>0.00</format><title>WALLET_BALANCE</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>ACC_NO</name><type>String</type><format></format><title>ACC_NO</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>GL_AMOUNT</name><type>Number</type><format>0.00</format><title>GL_AMOUNT</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>SETTLEMENT_STATUS</name><type>String</type><format></format><title>SETTLEMENT_STATUS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>DOUBLE_READ_FLAG</name><type>String</type><format></format><title>DOUBLE_READ_FLAG</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>DOUBLE_READ_TYPE</name><type>String</type><format></format><title>DOUBLE_READ_TYPE</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>READ_GAP_SEC</name><type>Number</type><format>0.00</format><title>READ_GAP_SEC</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>PREV_LANE_ID</name><type>String</type><format></format><title>PREV_LANE_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>TXN_AMOUNT</name><type>Number</type><format>0.00</format><title>TXN_AMOUNT</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>AMOUNT_VARIANCE</name><type>Number</type><format>0.00</format><title>AMOUNT_VARIANCE</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>BREAK_CATEGORY</name><type>String</type><format></format><title>BREAK_CATEGORY</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>BREAK_REASON</name><type>String</type><format></format><title>BREAK_REASON</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>EXCEPTION_SEVERITY</name><type>String</type><format></format><title>EXCEPTION_SEVERITY</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>IS_MATCHED</name><type>String</type><format></format><title>IS_MATCHED</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>RECON_RUN_TS</name><type>String</type><format></format><title>RECON_RUN_TS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
+      <field><name>RRN</name><type>String</type><format /><title>RRN</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>TXN_ID</name><type>String</type><format /><title>TXN_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>EPC</name><type>String</type><format /><title>EPC</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>TAG_ID</name><type>String</type><format /><title>TAG_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>PLAZA_ID</name><type>String</type><format /><title>PLAZA_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>LANE_ID</name><type>String</type><format /><title>LANE_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>READER_TIMESTAMP</name><type>String</type><format /><title>READER_TIMESTAMP</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>ACQUIRER_ID</name><type>String</type><format /><title>ACQUIRER_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>MAPPER_STATUS</name><type>String</type><format /><title>MAPPER_STATUS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>TOLL_AMOUNT</name><type>Number</type><format>0.00</format><title>TOLL_AMOUNT</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>WALLET_DEBIT_STATUS</name><type>String</type><format /><title>WALLET_DEBIT_STATUS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>WALLET_BALANCE</name><type>Number</type><format>0.00</format><title>WALLET_BALANCE</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>ACC_NO</name><type>String</type><format /><title>ACC_NO</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>GL_AMOUNT</name><type>Number</type><format>0.00</format><title>GL_AMOUNT</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>SETTLEMENT_STATUS</name><type>String</type><format /><title>SETTLEMENT_STATUS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>DOUBLE_READ_FLAG</name><type>String</type><format /><title>DOUBLE_READ_FLAG</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>DOUBLE_READ_TYPE</name><type>String</type><format /><title>DOUBLE_READ_TYPE</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>READ_GAP_SEC</name><type>Number</type><format>0.00</format><title>READ_GAP_SEC</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>PREV_LANE_ID</name><type>String</type><format /><title>PREV_LANE_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>TXN_AMOUNT</name><type>Number</type><format>0.00</format><title>TXN_AMOUNT</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>AMOUNT_VARIANCE</name><type>Number</type><format>0.00</format><title>AMOUNT_VARIANCE</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>BREAK_CATEGORY</name><type>String</type><format /><title>BREAK_CATEGORY</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>BREAK_REASON</name><type>String</type><format /><title>BREAK_REASON</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>EXCEPTION_SEVERITY</name><type>String</type><format /><title>EXCEPTION_SEVERITY</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>IS_MATCHED</name><type>String</type><format /><title>IS_MATCHED</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>RECON_RUN_TS</name><type>String</type><format /><title>RECON_RUN_TS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -1190,14 +1313,14 @@
   <step>
     <name>XLW_Unmatched_NETC</name>
     <type>TypeExitExcelWriterStep</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <header>Y</header>
     <footer>N</footer>
@@ -1226,7 +1349,7 @@
       <stream_data>N</stream_data>
       <protect_sheet>N</protect_sheet>
       <password>Encrypted </password>
-      <protected_by/>
+      <protected_by />
       <splitevery>0</splitevery>
       <if_file_exists>new</if_file_exists>
       <if_sheet_exists>new</if_sheet_exists>
@@ -1235,38 +1358,38 @@
       <enabled>N</enabled>
       <sheet_enabled>N</sheet_enabled>
       <hidden>N</hidden>
-      <filename/>
-      <sheetname/>
+      <filename />
+      <sheetname />
     </template>
     <fields>
-      <field><name>RRN</name><type>String</type><format></format><title>RRN</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>TXN_ID</name><type>String</type><format></format><title>TXN_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>EPC</name><type>String</type><format></format><title>EPC</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>TAG_ID</name><type>String</type><format></format><title>TAG_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>PLAZA_ID</name><type>String</type><format></format><title>PLAZA_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>LANE_ID</name><type>String</type><format></format><title>LANE_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>READER_TIMESTAMP</name><type>String</type><format></format><title>READER_TIMESTAMP</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>ACQUIRER_ID</name><type>String</type><format></format><title>ACQUIRER_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>MAPPER_STATUS</name><type>String</type><format></format><title>MAPPER_STATUS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>TOLL_AMOUNT</name><type>Number</type><format>0.00</format><title>TOLL_AMOUNT</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>WALLET_DEBIT_STATUS</name><type>String</type><format></format><title>WALLET_DEBIT_STATUS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>WALLET_BALANCE</name><type>Number</type><format>0.00</format><title>WALLET_BALANCE</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>ACC_NO</name><type>String</type><format></format><title>ACC_NO</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>GL_AMOUNT</name><type>Number</type><format>0.00</format><title>GL_AMOUNT</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>SETTLEMENT_STATUS</name><type>String</type><format></format><title>SETTLEMENT_STATUS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>DOUBLE_READ_FLAG</name><type>String</type><format></format><title>DOUBLE_READ_FLAG</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>DOUBLE_READ_TYPE</name><type>String</type><format></format><title>DOUBLE_READ_TYPE</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>READ_GAP_SEC</name><type>Number</type><format>0.00</format><title>READ_GAP_SEC</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>PREV_LANE_ID</name><type>String</type><format></format><title>PREV_LANE_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>TXN_AMOUNT</name><type>Number</type><format>0.00</format><title>TXN_AMOUNT</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>AMOUNT_VARIANCE</name><type>Number</type><format>0.00</format><title>AMOUNT_VARIANCE</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>BREAK_CATEGORY</name><type>String</type><format></format><title>BREAK_CATEGORY</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>BREAK_REASON</name><type>String</type><format></format><title>BREAK_REASON</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>EXCEPTION_SEVERITY</name><type>String</type><format></format><title>EXCEPTION_SEVERITY</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>IS_MATCHED</name><type>String</type><format></format><title>IS_MATCHED</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>RECON_RUN_TS</name><type>String</type><format></format><title>RECON_RUN_TS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
+      <field><name>RRN</name><type>String</type><format /><title>RRN</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>TXN_ID</name><type>String</type><format /><title>TXN_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>EPC</name><type>String</type><format /><title>EPC</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>TAG_ID</name><type>String</type><format /><title>TAG_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>PLAZA_ID</name><type>String</type><format /><title>PLAZA_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>LANE_ID</name><type>String</type><format /><title>LANE_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>READER_TIMESTAMP</name><type>String</type><format /><title>READER_TIMESTAMP</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>ACQUIRER_ID</name><type>String</type><format /><title>ACQUIRER_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>MAPPER_STATUS</name><type>String</type><format /><title>MAPPER_STATUS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>TOLL_AMOUNT</name><type>Number</type><format>0.00</format><title>TOLL_AMOUNT</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>WALLET_DEBIT_STATUS</name><type>String</type><format /><title>WALLET_DEBIT_STATUS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>WALLET_BALANCE</name><type>Number</type><format>0.00</format><title>WALLET_BALANCE</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>ACC_NO</name><type>String</type><format /><title>ACC_NO</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>GL_AMOUNT</name><type>Number</type><format>0.00</format><title>GL_AMOUNT</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>SETTLEMENT_STATUS</name><type>String</type><format /><title>SETTLEMENT_STATUS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>DOUBLE_READ_FLAG</name><type>String</type><format /><title>DOUBLE_READ_FLAG</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>DOUBLE_READ_TYPE</name><type>String</type><format /><title>DOUBLE_READ_TYPE</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>READ_GAP_SEC</name><type>Number</type><format>0.00</format><title>READ_GAP_SEC</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>PREV_LANE_ID</name><type>String</type><format /><title>PREV_LANE_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>TXN_AMOUNT</name><type>Number</type><format>0.00</format><title>TXN_AMOUNT</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>AMOUNT_VARIANCE</name><type>Number</type><format>0.00</format><title>AMOUNT_VARIANCE</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>BREAK_CATEGORY</name><type>String</type><format /><title>BREAK_CATEGORY</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>BREAK_REASON</name><type>String</type><format /><title>BREAK_REASON</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>EXCEPTION_SEVERITY</name><type>String</type><format /><title>EXCEPTION_SEVERITY</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>IS_MATCHED</name><type>String</type><format /><title>IS_MATCHED</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>RECON_RUN_TS</name><type>String</type><format /><title>RECON_RUN_TS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -1283,32 +1406,32 @@
   <step>
     <name>GB_Recon_Summary</name>
     <type>GroupBy</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <all_rows>N</all_rows>
     <ignore_aggregate>N</ignore_aggregate>
-    <field_ignore/>
+    <field_ignore />
     <directory>%%java.io.tmpdir%%</directory>
     <prefix>netc_grp</prefix>
     <add_linenr>N</add_linenr>
-    <linenr_fieldname/>
+    <linenr_fieldname />
     <give_back_row>Y</give_back_row>
     <group>
 
     </group>
     <fields>
-      <field><aggregate>f_total_rows</aggregate><subject>RRN</subject><type>COUNT_ALL</type><valuefield/></field>
-      <field><aggregate>f_matched_rows</aggregate><subject>MATCH_FLAG</subject><type>SUM</type><valuefield/></field>
-      <field><aggregate>f_double_debits</aggregate><subject>DOUBLE_DEBIT_FLAG</subject><type>SUM</type><valuefield/></field>
+      <field><aggregate>f_total_rows</aggregate><subject>RRN</subject><type>COUNT_ALL</type><valuefield /></field>
+      <field><aggregate>f_matched_rows</aggregate><subject>MATCH_FLAG</subject><type>SUM</type><valuefield /></field>
+      <field><aggregate>f_double_debits</aggregate><subject>DOUBLE_DEBIT_FLAG</subject><type>SUM</type><valuefield /></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -1325,14 +1448,14 @@
   <step>
     <name>MJSV_Build_Recon_Result</name>
     <type>ScriptValueMod</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <compatible>N</compatible>
     <optimizationLevel>9</optimizationLevel>
@@ -1340,7 +1463,45 @@
       <jsScript>
         <jsScript_type>0</jsScript_type>
         <jsScript_name>Script 1</jsScript_name>
-        <jsScript_script>function txt(v) { return (v == null) ? &#x22;&#x22; : String(v).replace(/^\s+|\s+$/g, &#x22;&#x22;); }&#xd;&#xa;function num(v) { var t = txt(v).replace(/,/g, &#x22;&#x22;); if (t == &#x22;&#x22;) { return null; } var n = parseFloat(t); return isNaN(n) ? null : n; }&#xd;&#xa;function r2(n) { return Math.round(n * 100) / 100; }&#xd;&#xa;function esc(v) { return txt(v).replace(/\\/g, &#x22;\\\\&#x22;).replace(/&#x22;/g, &#x22;\\\&#x22;&#x22;).replace(/[\r\n\t]+/g, &#x22; &#x22;); }&#xd;&#xa;function money(v) { var n = num(v); return (n == null) ? &#x22;0.00&#x22; : n.toFixed(2); }&#xd;&#xa;function jnum(v) { var n = num(v); return (n == null) ? &#x22;null&#x22; : String(r2(n)); }&#xd;&#xa;function nowTs(p) { return String(new java.text.SimpleDateFormat(p).format(new java.util.Date())); }&#xd;&#xa;function sha256(s) { var md = java.security.MessageDigest.getInstance(&#x22;SHA-256&#x22;); var d = md.digest(new java.lang.String(s).getBytes(&#x22;UTF-8&#x22;)); var h = &#x22;&#x22;; for (var i = 0; i &lt; d.length; i++) { var b = (d[i] &amp; 0xff).toString(16); if (b.length &lt; 2) { b = &#x22;0&#x22; + b; } h = h + b; } return h; }&#xd;&#xa;function pv(name) { var token = &#x22;$&#x22; + &#x22;{Internal.Entry.Current.Directory}&#x22;; var base = String(getVariable(&#x22;Internal.Entry.Current.Directory&#x22;, &#x22;&#x22;)); return txt(String(getVariable(name, &#x22;&#x22;)).split(token).join(base)); }&#xd;&#xa;function dirOf(name) { return pv(name).replace(/\\/g, &#x22;/&#x22;).replace(/\/+$/, &#x22;&#x22;); }&#xd;&#xa;function fileOk(p) { if (txt(p) == &#x22;&#x22;) { return false; } var f = new java.io.File(txt(p)); return f.exists() &amp;&amp; f.isFile() &amp;&amp; f.length() &gt; 0; }&#xd;&#xa;function urlOk(u) { return /^https?:\/\/\S+$/i.test(txt(u)); }&#xd;&#xa;function enc(v) { return String(java.net.URLEncoder.encode(txt(v), &#x22;UTF-8&#x22;)); }&#xd;&#xa;function withQuery(base, q) { var b = txt(base); return b + ((b.indexOf(&#x22;?&#x22;) &gt;= 0) ? &#x22;&amp;&#x22; : &#x22;?&#x22;) + q; }&#xd;&#xa;function pnum(name, dflt) { var n = num(pv(name)); return (n == null) ? dflt : n; }&#xd;&#xa;&#xd;&#xa;function latest(dir, prefix, since) { var d = new java.io.File(dir); var list = d.listFiles(); var best = null; if (list == null) { return &#x22;&#x22;; } for (var i = 0; i &lt; list.length; i++) { var f = list[i]; var n = String(f.getName()); if (n.indexOf(prefix) == 0 &amp;&amp; /\.xlsx$/i.test(n) &amp;&amp; f.lastModified() &gt;= since) { if (best == null || f.lastModified() &gt; best.lastModified()) { best = f; } } } return (best == null) ? &#x22;&#x22; : String(best.getAbsolutePath()).replace(/\\/g, &#x22;/&#x22;); }&#xd;&#xa;&#xd;&#xa;var inDir = dirOf(&#x22;INPUT_DIR&#x22;);&#xd;&#xa;var outDir = dirOf(&#x22;OUTPUT_DIR&#x22;);&#xd;&#xa;var cycle = pv(&#x22;CYCLE_ID&#x22;);&#xd;&#xa;var feeds = [&#x22;Plaza_Lane_RFID_Trans.xml&#x22;, &#x22;NPCI_NETC_Mapper_Clearing.csv&#x22;, &#x22;FASTag_Wallet_CBS_Dump.csv&#x22;, &#x22;NETC_Concessionaire_GL9908.csv&#x22;];&#xd;&#xa;var missing = [];&#xd;&#xa;for (var i = 0; i &lt; feeds.length; i++) { if (!fileOk(inDir + &#x22;/&#x22; + feeds[i])) { missing.push(feeds[i]); } }&#xd;&#xa;var total = num(f_total_rows) || 0;&#xd;&#xa;var matched = num(f_matched_rows) || 0;&#xd;&#xa;var dbl = num(f_double_debits) || 0;&#xd;&#xa;var f_total_txns = total.toFixed(0);&#xd;&#xa;var f_matched_txns = matched.toFixed(0);&#xd;&#xa;var f_break_txns = (total - matched).toFixed(0);&#xd;&#xa;var f_double_debit_txns = dbl.toFixed(0);&#xd;&#xa;var f_matched_file = latest(outDir, &#x22;Matched_NETC_Records_&#x22;, g_runStart);&#xd;&#xa;var f_unmatched_file = latest(outDir, &#x22;Unmatched_NETC_Records_&#x22;, g_runStart);&#xd;&#xa;var files = []; if (f_matched_file != &#x22;&#x22;) { files.push(f_matched_file); } if (f_unmatched_file != &#x22;&#x22;) { files.push(f_unmatched_file); }&#xd;&#xa;var f_result_files = files.join(&#x22;,&#x22;);&#xd;&#xa;var f_success = &#x22;true&#x22;; var f_status = &#x22;Complete&#x22;; var f_message = &#x22;&#x22;;&#xd;&#xa;if (missing.length &gt; 0) { f_success = &#x22;false&#x22;; f_status = &#x22;Failure&#x22;; f_message = &#x22;NETC recon aborted - missing or empty inbound feed(s): &#x22; + missing.join(&#x22;, &#x22;); }&#xd;&#xa;else if (total == 0) { f_status = &#x22;Diverted&#x22;; f_message = &#x22;NETC recon - no clearing records found in NPCI_NETC_Mapper_Clearing.csv&#x22;; }&#xd;&#xa;else { f_message = &#x22;NETC FASTag 4-way recon &#x22; + cycle + &#x22; - &#x22; + f_total_txns + &#x22; txns / &#x22; + f_matched_txns + &#x22; matched STP / &#x22; + f_break_txns + &#x22; exceptions (&#x22; + f_double_debit_txns + &#x22; multi-antenna double debits)&#x22;; }</jsScript_script>
+        <jsScript_script>function txt(v) { return (v == null) ? "" : String(v).replace(/^\s+|\s+$/g, ""); }
+function num(v) { var t = txt(v).replace(/,/g, ""); if (t == "") { return null; } var n = parseFloat(t); return isNaN(n) ? null : n; }
+function r2(n) { return Math.round(n * 100) / 100; }
+function esc(v) { return txt(v).replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/[\r\n\t]+/g, " "); }
+function money(v) { var n = num(v); return (n == null) ? "0.00" : n.toFixed(2); }
+function jnum(v) { var n = num(v); return (n == null) ? "null" : String(r2(n)); }
+function nowTs(p) { return String(new java.text.SimpleDateFormat(p).format(new java.util.Date())); }
+function sha256(s) { var md = java.security.MessageDigest.getInstance("SHA-256"); var d = md.digest(new java.lang.String(s).getBytes("UTF-8")); var h = ""; for (var i = 0; i &lt; d.length; i++) { var b = (d[i] &amp; 0xff).toString(16); if (b.length &lt; 2) { b = "0" + b; } h = h + b; } return h; }
+function pv(name) { var token = "$" + "{Internal.Entry.Current.Directory}"; var base = String(getVariable("Internal.Entry.Current.Directory", "")); return txt(String(getVariable(name, "")).split(token).join(base)); }
+function dirOf(name) { return pv(name).replace(/\\/g, "/").replace(/\/+$/, ""); }
+function fileOk(p) { if (txt(p) == "") { return false; } var f = new java.io.File(txt(p)); return f.exists() &amp;&amp; f.isFile() &amp;&amp; f.length() &gt; 0; }
+function urlOk(u) { return /^https?:\/\/\S+$/i.test(txt(u)); }
+function enc(v) { return String(java.net.URLEncoder.encode(txt(v), "UTF-8")); }
+function withQuery(base, q) { var b = txt(base); return b + ((b.indexOf("?") &gt;= 0) ? "&amp;" : "?") + q; }
+function pnum(name, dflt) { var n = num(pv(name)); return (n == null) ? dflt : n; }
+
+function latest(dir, prefix, since) { var d = new java.io.File(dir); var list = d.listFiles(); var best = null; if (list == null) { return ""; } for (var i = 0; i &lt; list.length; i++) { var f = list[i]; var n = String(f.getName()); if (n.indexOf(prefix) == 0 &amp;&amp; /\.xlsx$/i.test(n) &amp;&amp; f.lastModified() &gt;= since) { if (best == null || f.lastModified() &gt; best.lastModified()) { best = f; } } } return (best == null) ? "" : String(best.getAbsolutePath()).replace(/\\/g, "/"); }
+
+var inDir = dirOf("INPUT_DIR");
+var outDir = dirOf("OUTPUT_DIR");
+var cycle = pv("CYCLE_ID");
+var feeds = ["Plaza_Lane_RFID_Trans.xml", "NPCI_NETC_Mapper_Clearing.csv", "FASTag_Wallet_CBS_Dump.csv", "NETC_Concessionaire_GL9908.csv"];
+var missing = [];
+for (var i = 0; i &lt; feeds.length; i++) { if (!fileOk(inDir + "/" + feeds[i])) { missing.push(feeds[i]); } }
+var total = num(f_total_rows) || 0;
+var matched = num(f_matched_rows) || 0;
+var dbl = num(f_double_debits) || 0;
+var f_total_txns = total.toFixed(0);
+var f_matched_txns = matched.toFixed(0);
+var f_break_txns = (total - matched).toFixed(0);
+var f_double_debit_txns = dbl.toFixed(0);
+var f_matched_file = latest(outDir, "Matched_NETC_Records_", g_runStart);
+var f_unmatched_file = latest(outDir, "Unmatched_NETC_Records_", g_runStart);
+var files = []; if (f_matched_file != "") { files.push(f_matched_file); } if (f_unmatched_file != "") { files.push(f_unmatched_file); }
+var f_result_files = files.join(",");
+var f_success = "true"; var f_status = "Complete"; var f_message = "";
+if (missing.length &gt; 0) { f_success = "false"; f_status = "Failure"; f_message = "NETC recon aborted - missing or empty inbound feed(s): " + missing.join(", "); }
+else if (total == 0) { f_status = "Diverted"; f_message = "NETC recon - no clearing records found in NPCI_NETC_Mapper_Clearing.csv"; }
+else { f_message = "NETC FASTag 4-way recon " + cycle + " - " + f_total_txns + " txns / " + f_matched_txns + " matched STP / " + f_break_txns + " exceptions (" + f_double_debit_txns + " multi-antenna double debits)"; }</jsScript_script>
       </jsScript>
       <jsScript>
         <jsScript_type>1</jsScript_type>
@@ -1360,7 +1521,7 @@
       <field><name>f_status</name><rename>f_status</rename><type>String</type><length>-1</length><precision>-1</precision><replace>N</replace></field>
       <field><name>f_message</name><rename>f_message</rename><type>String</type><length>-1</length><precision>-1</precision><replace>N</replace></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -1377,26 +1538,26 @@
   <step>
     <name>SWR_Recon_Result</name>
     <type>SetWorkflowResult</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <success>f_success</success>
     <status>f_status</status>
     <message>f_message</message>
     <operationsTotal>0</operationsTotal>
     <operationsPerformed>0</operationsPerformed>
-    <attribute1/>
-    <attribute2/>
-    <attribute3/>
-    <attribute4/>
-    <attribute5/>
-    <attribute6/>
+    <attribute1 />
+    <attribute2 />
+    <attribute3 />
+    <attribute4 />
+    <attribute5 />
+    <attribute6 />
     <fileNames>f_result_files</fileNames>
     <failureReason>UNKNOWN</failureReason>
     <outputFields>
@@ -1407,7 +1568,7 @@
       <field><name>o_matched_file</name><type>String</type><displayName>Matched_File_Path</displayName><value>f_matched_file</value></field>
       <field><name>o_unmatched_file</name><type>String</type><displayName>UnMatched_File_Path</displayName><value>f_unmatched_file</value></field>
     </outputFields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -1424,14 +1585,14 @@
   <step>
     <name>WTL_Plaza_Row_Error</name>
     <type>WriteToLog</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <loglevel>log_level_error</loglevel>
     <displayHeader>Y</displayHeader>
@@ -1452,7 +1613,7 @@
         <name>ERR_DESCRIPTION</name>
       </field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -1469,14 +1630,14 @@
   <step>
     <name>WTL_Mapper_Row_Error</name>
     <type>WriteToLog</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <loglevel>log_level_error</loglevel>
     <displayHeader>Y</displayHeader>
@@ -1497,7 +1658,7 @@
         <name>ERR_DESCRIPTION</name>
       </field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -1514,14 +1675,14 @@
   <step>
     <name>WTL_Wallet_Row_Error</name>
     <type>WriteToLog</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <loglevel>log_level_error</loglevel>
     <displayHeader>Y</displayHeader>
@@ -1542,7 +1703,7 @@
         <name>ERR_DESCRIPTION</name>
       </field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -1559,14 +1720,14 @@
   <step>
     <name>WTL_GL_Row_Error</name>
     <type>WriteToLog</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <loglevel>log_level_error</loglevel>
     <displayHeader>Y</displayHeader>
@@ -1587,7 +1748,7 @@
         <name>ERR_DESCRIPTION</name>
       </field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -1610,10 +1771,10 @@
       <descriptions_valuename>ERR_DESCRIPTION</descriptions_valuename>
       <fields_valuename>ERR_FIELD</fields_valuename>
       <codes_valuename>ERR_CODE</codes_valuename>
-      <max_errors/>
-      <max_pct_errors/>
-      <min_pct_rows/>
-      <custom_error_field/>
+      <max_errors />
+      <max_pct_errors />
+      <min_pct_rows />
+      <custom_error_field />
     </error>
     <error>
       <source_step>CSV_Read_NETC_Mapper</source_step>
@@ -1623,10 +1784,10 @@
       <descriptions_valuename>ERR_DESCRIPTION</descriptions_valuename>
       <fields_valuename>ERR_FIELD</fields_valuename>
       <codes_valuename>ERR_CODE</codes_valuename>
-      <max_errors/>
-      <max_pct_errors/>
-      <min_pct_rows/>
-      <custom_error_field/>
+      <max_errors />
+      <max_pct_errors />
+      <min_pct_rows />
+      <custom_error_field />
     </error>
     <error>
       <source_step>CSV_Read_FASTag_Wallet</source_step>
@@ -1636,10 +1797,10 @@
       <descriptions_valuename>ERR_DESCRIPTION</descriptions_valuename>
       <fields_valuename>ERR_FIELD</fields_valuename>
       <codes_valuename>ERR_CODE</codes_valuename>
-      <max_errors/>
-      <max_pct_errors/>
-      <min_pct_rows/>
-      <custom_error_field/>
+      <max_errors />
+      <max_pct_errors />
+      <min_pct_rows />
+      <custom_error_field />
     </error>
     <error>
       <source_step>CSV_Read_GL9908_Pool</source_step>
@@ -1649,10 +1810,10 @@
       <descriptions_valuename>ERR_DESCRIPTION</descriptions_valuename>
       <fields_valuename>ERR_FIELD</fields_valuename>
       <codes_valuename>ERR_CODE</codes_valuename>
-      <max_errors/>
-      <max_pct_errors/>
-      <min_pct_rows/>
-      <custom_error_field/>
+      <max_errors />
+      <max_pct_errors />
+      <min_pct_rows />
+      <custom_error_field />
     </error>
   </step_error_handling>
   <slave-step-copy-partition-distribution>
@@ -1662,7 +1823,17 @@
   </groups>
   <notepads>
     <notepad>
-      <note>About: NETC FASTag 4-way reconciliation. Plaza RFID reads (XML) are sorted by EPC + reader time; a stateful scan flags&#xd;&#xa;multi-antenna double reads (same EPC, same plaza, re-read &lt; DOUBLE_READ_WINDOW_SEC, default 60s) and numbers each read per EPC.&#xd;&#xa;The NPCI mapper clearing file (driving side) is numbered per EPC in TXN_ID order and joined to the plaza reads on EPC + sequence,&#xd;&#xa;then to the FASTag wallet CBS dump and the concessionaire GL-9908 pool on RRN.&#xd;&#xa;Exceptions: MULTI_ANTENNA_DOUBLE_DEBIT, WALLET_DEBIT_NO_PLAZA_CLEARANCE, BLACKLISTED_TAG_PASSAGE, LOW_BALANCE_OVERDRAFT,&#xd;&#xa;CONCESSIONAIRE_FEE_DISPUTE, MISSING_IN_WALLET_CBS / CONCESSIONAIRE_GL, EPC_MISMATCH, WALLET_DEBIT_FAILED, SETTLEMENT_PENDING.&#xd;&#xa;&#xd;&#xa;Params: INPUT_DIR, OUTPUT_DIR, DOUBLE_READ_WINDOW_SEC (config), CYCLE_ID (runtime).&#xd;&#xa;Output: Matched_NETC_Records_&lt;yyyyMMdd_HHmmss&gt;.xlsx / Unmatched_NETC_Records_&lt;yyyyMMdd_HHmmss&gt;.xlsx, returned as&#xd;&#xa;o_matched_file / o_unmatched_file and attached to the workflow result.&#xd;&#xa;Errors: feeds pre-validated (missing feed = Failure); malformed XML/CSV rows go down per-feed error hops to the error log.</note>
+      <note>About: NETC FASTag 4-way reconciliation. Plaza RFID reads (XML) are sorted by EPC + reader time; a stateful scan flags
+multi-antenna double reads (same EPC, same plaza, re-read &lt; DOUBLE_READ_WINDOW_SEC, default 60s) and numbers each read per EPC.
+The NPCI mapper clearing file (driving side) is numbered per EPC in TXN_ID order and joined to the plaza reads on EPC + sequence,
+then to the FASTag wallet CBS dump and the concessionaire GL-9908 pool on RRN.
+Exceptions: MULTI_ANTENNA_DOUBLE_DEBIT, WALLET_DEBIT_NO_PLAZA_CLEARANCE, BLACKLISTED_TAG_PASSAGE, LOW_BALANCE_OVERDRAFT,
+CONCESSIONAIRE_FEE_DISPUTE, MISSING_IN_WALLET_CBS / CONCESSIONAIRE_GL, EPC_MISMATCH, WALLET_DEBIT_FAILED, SETTLEMENT_PENDING.
+
+Params: INPUT_DIR, OUTPUT_DIR, DOUBLE_READ_WINDOW_SEC (config), CYCLE_ID (runtime).
+Output: Matched_NETC_Records_&lt;yyyyMMdd_HHmmss&gt;.xlsx / Unmatched_NETC_Records_&lt;yyyyMMdd_HHmmss&gt;.xlsx, returned as
+o_matched_file / o_unmatched_file and attached to the workflow result.
+Errors: feeds pre-validated (missing feed = Failure); malformed XML/CSV rows go down per-feed error hops to the error log.</note>
       <xloc>64</xloc>
       <yloc>780</yloc>
       <width>900</width>

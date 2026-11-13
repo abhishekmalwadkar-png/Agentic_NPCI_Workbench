@@ -1,31 +1,31 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <transformation>
   <info>
     <name>AePS_4Way_Reconciliation_Engine</name>
     <description>AePS 4-way reconciliation of NPCI settlement master, UIDAI auth gateway, BC micro-ATM journal and GL-9904 float on RRN.</description>
-    <extended_description/>
-    <trans_version/>
+    <extended_description />
+    <trans_version />
     <trans_type>Normal</trans_type>
     <created_user>PS Copilot</created_user>
-    <created_date>2026&#x2f;11&#x2f;12 10&#x3a;00&#x3a;00.000</created_date>
+    <created_date>2026/11/12 10:00:00.000</created_date>
     <modified_user>-</modified_user>
-    <modified_date>2026&#x2f;11&#x2f;12 10&#x3a;00&#x3a;00.000</modified_date>
+    <modified_date>2026/11/12 10:00:00.000</modified_date>
     <fileHash>00000000000000000000000000000000</fileHash>
     <stepEntryHash>00000000000000000000000000000000</stepEntryHash>
 
     <format_version>2</format_version>
-    <directory>&#x2f;</directory>
+    <directory>/</directory>
     <parameters>
       <parameter>
         <name>INPUT_DIR</name>
         <description>Folder holding the four AePS inbound CSV feeds</description>
-        <param_description/>
+        <param_description />
         <type>String</type>
         <uiControlType>TextBox</uiControlType>
-        <list_of_values/>
-        <valueSeparator/>
-        <queryName/>
-        <queryMappings/>
+        <list_of_values />
+        <valueSeparator />
+        <queryName />
+        <queryMappings />
         <default_value>D:/NPCI-Workbench/stage1/AEPS_reconn</default_value>
         <secret>N</secret>
         <optional>Y</optional>
@@ -34,13 +34,13 @@
       <parameter>
         <name>OUTPUT_DIR</name>
         <description>Folder for Matched / Unmatched AePS xlsx outputs</description>
-        <param_description/>
+        <param_description />
         <type>String</type>
         <uiControlType>TextBox</uiControlType>
-        <list_of_values/>
-        <valueSeparator/>
-        <queryName/>
-        <queryMappings/>
+        <list_of_values />
+        <valueSeparator />
+        <queryName />
+        <queryMappings />
         <default_value>D:/NPCI-Workbench/stage1/AEPS_reconn/Output</default_value>
         <secret>N</secret>
         <optional>Y</optional>
@@ -49,13 +49,13 @@
       <parameter>
         <name>CYCLE_ID</name>
         <description>Settlement cycle identifier (informational, stamped in the result)</description>
-        <param_description/>
+        <param_description />
         <type>String</type>
         <uiControlType>TextBox</uiControlType>
-        <list_of_values/>
-        <valueSeparator/>
-        <queryName/>
-        <queryMappings/>
+        <list_of_values />
+        <valueSeparator />
+        <queryName />
+        <queryMappings />
         <default_value>AEPS-20261112-CY01</default_value>
         <secret>N</secret>
         <optional>Y</optional>
@@ -81,7 +81,7 @@
     </slaveservers>
     <clusterschemas>
     </clusterschemas>
-    <key_for_session_key>H4sIAAAAAAAA&#x2f;wMAAAAAAAAAAAA&#x3d;</key_for_session_key>
+    <key_for_session_key>H4sIAAAAAAAA/wMAAAAAAAAAAAA=</key_for_session_key>
     <is_key_private>N</is_key_private>
   </info>
   <order>
@@ -89,10 +89,6 @@
     <hop><from>MJSV_Validate_Feeds</from><to>FR_Feeds_Present</to><enabled>Y</enabled><visible>Y</visible></hop>
     <hop><from>FR_Feeds_Present</from><to>DUM_Feed_Fanout</to><enabled>Y</enabled><visible>Y</visible></hop>
     <hop><from>FR_Feeds_Present</from><to>WTL_Missing_Feeds</to><enabled>Y</enabled><visible>Y</visible></hop>
-    <hop><from>DUM_Feed_Fanout</from><to>CSV_Read_NPCI_Master</to><enabled>Y</enabled><visible>Y</visible></hop>
-    <hop><from>DUM_Feed_Fanout</from><to>CSV_Read_UIDAI_Auth</to><enabled>Y</enabled><visible>Y</visible></hop>
-    <hop><from>DUM_Feed_Fanout</from><to>CSV_Read_Terminal_Journal</to><enabled>Y</enabled><visible>Y</visible></hop>
-    <hop><from>DUM_Feed_Fanout</from><to>CSV_Read_GL9904_Float</to><enabled>Y</enabled><visible>Y</visible></hop>
     <hop><from>CSV_Read_NPCI_Master</from><to>SR_Sort_Master_RRN</to><enabled>Y</enabled><visible>Y</visible></hop>
     <hop><from>CSV_Read_UIDAI_Auth</from><to>SR_Sort_UIDAI_RRN</to><enabled>Y</enabled><visible>Y</visible></hop>
     <hop><from>CSV_Read_Terminal_Journal</from><to>SR_Sort_Terminal_RRN</to><enabled>Y</enabled><visible>Y</visible></hop>
@@ -120,24 +116,24 @@
   <step>
     <name>RG_Run_Trigger</name>
     <type>RowGenerator</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <fields>
-      <field><name>f_trigger</name><type>String</type><format/><currency/><decimal/><group/><nullif>RUN</nullif><length>-1</length><precision>-1</precision><set_empty_string>N</set_empty_string></field>
+      <field><name>f_trigger</name><type>String</type><format /><currency /><decimal /><group /><nullif>RUN</nullif><length>-1</length><precision>-1</precision><set_empty_string>N</set_empty_string></field>
     </fields>
     <limit>1</limit>
     <never_ending>N</never_ending>
     <interval_in_ms>5000</interval_in_ms>
     <row_time_field>now</row_time_field>
     <last_time_field>FiveSecondsAgo</last_time_field>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -154,14 +150,14 @@
   <step>
     <name>MJSV_Validate_Feeds</name>
     <type>ScriptValueMod</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <compatible>N</compatible>
     <optimizationLevel>9</optimizationLevel>
@@ -169,7 +165,34 @@
       <jsScript>
         <jsScript_type>0</jsScript_type>
         <jsScript_name>Script 1</jsScript_name>
-        <jsScript_script>function txt(v) { return (v == null) ? &#x22;&#x22; : String(v).replace(/^\s+|\s+$/g, &#x22;&#x22;); }&#xd;&#xa;function num(v) { var t = txt(v).replace(/,/g, &#x22;&#x22;); if (t == &#x22;&#x22;) { return null; } var n = parseFloat(t); return isNaN(n) ? null : n; }&#xd;&#xa;function r2(n) { return Math.round(n * 100) / 100; }&#xd;&#xa;function esc(v) { return txt(v).replace(/\\/g, &#x22;\\\\&#x22;).replace(/&#x22;/g, &#x22;\\\&#x22;&#x22;).replace(/[\r\n\t]+/g, &#x22; &#x22;); }&#xd;&#xa;function money(v) { var n = num(v); return (n == null) ? &#x22;0.00&#x22; : n.toFixed(2); }&#xd;&#xa;function jnum(v) { var n = num(v); return (n == null) ? &#x22;null&#x22; : String(r2(n)); }&#xd;&#xa;function nowTs(p) { return String(new java.text.SimpleDateFormat(p).format(new java.util.Date())); }&#xd;&#xa;function sha256(s) { var md = java.security.MessageDigest.getInstance(&#x22;SHA-256&#x22;); var d = md.digest(new java.lang.String(s).getBytes(&#x22;UTF-8&#x22;)); var h = &#x22;&#x22;; for (var i = 0; i &lt; d.length; i++) { var b = (d[i] &amp; 0xff).toString(16); if (b.length &lt; 2) { b = &#x22;0&#x22; + b; } h = h + b; } return h; }&#xd;&#xa;function pv(name) { var token = &#x22;$&#x22; + &#x22;{Internal.Entry.Current.Directory}&#x22;; var base = String(getVariable(&#x22;Internal.Entry.Current.Directory&#x22;, &#x22;&#x22;)); return txt(String(getVariable(name, &#x22;&#x22;)).split(token).join(base)); }&#xd;&#xa;function dirOf(name) { return pv(name).replace(/\\/g, &#x22;/&#x22;).replace(/\/+$/, &#x22;&#x22;); }&#xd;&#xa;function fileOk(p) { if (txt(p) == &#x22;&#x22;) { return false; } var f = new java.io.File(txt(p)); return f.exists() &amp;&amp; f.isFile() &amp;&amp; f.length() &gt; 0; }&#xd;&#xa;function urlOk(u) { return /^https?:\/\/\S+$/i.test(txt(u)); }&#xd;&#xa;function enc(v) { return String(java.net.URLEncoder.encode(txt(v), &#x22;UTF-8&#x22;)); }&#xd;&#xa;function withQuery(base, q) { var b = txt(base); return b + ((b.indexOf(&#x22;?&#x22;) &gt;= 0) ? &#x22;&amp;&#x22; : &#x22;?&#x22;) + q; }&#xd;&#xa;function pnum(name, dflt) { var n = num(pv(name)); return (n == null) ? dflt : n; }&#xd;&#xa;&#xd;&#xa;var inDir = dirOf(&#x22;INPUT_DIR&#x22;);&#xd;&#xa;var f_master_file = inDir + &#x22;/NPCI_AePS_Settlement_Master.csv&#x22;;&#xd;&#xa;var f_uidai_file = inDir + &#x22;/UIDAI_Aadhaar_Auth_Gateway.csv&#x22;;&#xd;&#xa;var f_terminal_file = inDir + &#x22;/BC_Device_Terminal_Journal.csv&#x22;;&#xd;&#xa;var f_gl_file = inDir + &#x22;/BC_Agent_Float_GL9904.csv&#x22;;&#xd;&#xa;var missing = [];&#xd;&#xa;if (!fileOk(f_master_file)) { missing.push(&#x22;NPCI_AePS_Settlement_Master.csv&#x22;); }&#xd;&#xa;if (!fileOk(f_uidai_file)) { missing.push(&#x22;UIDAI_Aadhaar_Auth_Gateway.csv&#x22;); }&#xd;&#xa;if (!fileOk(f_terminal_file)) { missing.push(&#x22;BC_Device_Terminal_Journal.csv&#x22;); }&#xd;&#xa;if (!fileOk(f_gl_file)) { missing.push(&#x22;BC_Agent_Float_GL9904.csv&#x22;); }&#xd;&#xa;var f_feeds_ok = (missing.length == 0) ? &#x22;Y&#x22; : &#x22;N&#x22;;&#xd;&#xa;var f_missing_feeds = (missing.length == 0) ? &#x22;&#x22; : (&#x22;Missing or empty feed(s) in &#x22; + inDir + &#x22;: &#x22; + missing.join(&#x22;, &#x22;));</jsScript_script>
+        <jsScript_script>function txt(v) { return (v == null) ? "" : String(v).replace(/^\s+|\s+$/g, ""); }
+function num(v) { var t = txt(v).replace(/,/g, ""); if (t == "") { return null; } var n = parseFloat(t); return isNaN(n) ? null : n; }
+function r2(n) { return Math.round(n * 100) / 100; }
+function esc(v) { return txt(v).replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/[\r\n\t]+/g, " "); }
+function money(v) { var n = num(v); return (n == null) ? "0.00" : n.toFixed(2); }
+function jnum(v) { var n = num(v); return (n == null) ? "null" : String(r2(n)); }
+function nowTs(p) { return String(new java.text.SimpleDateFormat(p).format(new java.util.Date())); }
+function sha256(s) { var md = java.security.MessageDigest.getInstance("SHA-256"); var d = md.digest(new java.lang.String(s).getBytes("UTF-8")); var h = ""; for (var i = 0; i &lt; d.length; i++) { var b = (d[i] &amp; 0xff).toString(16); if (b.length &lt; 2) { b = "0" + b; } h = h + b; } return h; }
+function pv(name) { var token = "$" + "{Internal.Entry.Current.Directory}"; var base = String(getVariable("Internal.Entry.Current.Directory", "")); return txt(String(getVariable(name, "")).split(token).join(base)); }
+function dirOf(name) { return pv(name).replace(/\\/g, "/").replace(/\/+$/, ""); }
+function fileOk(p) { if (txt(p) == "") { return false; } var f = new java.io.File(txt(p)); return f.exists() &amp;&amp; f.isFile() &amp;&amp; f.length() &gt; 0; }
+function urlOk(u) { return /^https?:\/\/\S+$/i.test(txt(u)); }
+function enc(v) { return String(java.net.URLEncoder.encode(txt(v), "UTF-8")); }
+function withQuery(base, q) { var b = txt(base); return b + ((b.indexOf("?") &gt;= 0) ? "&amp;" : "?") + q; }
+function pnum(name, dflt) { var n = num(pv(name)); return (n == null) ? dflt : n; }
+
+var inDir = dirOf("INPUT_DIR");
+var f_master_file = inDir + "/NPCI_AePS_Settlement_Master.csv";
+var f_uidai_file = inDir + "/UIDAI_Aadhaar_Auth_Gateway.csv";
+var f_terminal_file = inDir + "/BC_Device_Terminal_Journal.csv";
+var f_gl_file = inDir + "/BC_Agent_Float_GL9904.csv";
+var missing = [];
+if (!fileOk(f_master_file)) { missing.push("NPCI_AePS_Settlement_Master.csv"); }
+if (!fileOk(f_uidai_file)) { missing.push("UIDAI_Aadhaar_Auth_Gateway.csv"); }
+if (!fileOk(f_terminal_file)) { missing.push("BC_Device_Terminal_Journal.csv"); }
+if (!fileOk(f_gl_file)) { missing.push("BC_Agent_Float_GL9904.csv"); }
+var f_feeds_ok = (missing.length == 0) ? "Y" : "N";
+var f_missing_feeds = (missing.length == 0) ? "" : ("Missing or empty feed(s) in " + inDir + ": " + missing.join(", "));</jsScript_script>
       </jsScript>
     </jsScripts>
     <fields>
@@ -180,7 +203,7 @@
       <field><name>f_feeds_ok</name><rename>f_feeds_ok</rename><type>String</type><length>-1</length><precision>-1</precision><replace>N</replace></field>
       <field><name>f_missing_feeds</name><rename>f_missing_feeds</rename><type>String</type><length>-1</length><precision>-1</precision><replace>N</replace></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -197,14 +220,14 @@
   <step>
     <name>FR_Feeds_Present</name>
     <type>FilterRows</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <send_true_to>DUM_Feed_Fanout</send_true_to>
     <send_false_to>WTL_Missing_Feeds</send_false_to>
@@ -212,12 +235,12 @@
       <condition>
         <negated>N</negated>
         <leftvalue>f_feeds_ok</leftvalue>
-        <function>&#x3d;</function>
-        <rightvalue/>
-        <value><name>constant</name><type>String</type><text>Y</text><length>-1</length><precision>-1</precision><isnull>N</isnull><mask/></value>
+        <function>=</function>
+        <rightvalue />
+        <value><name>constant</name><type>String</type><text>Y</text><length>-1</length><precision>-1</precision><isnull>N</isnull><mask /></value>
       </condition>
     </compare>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -234,17 +257,17 @@
   <step>
     <name>DUM_Feed_Fanout</name>
     <type>Dummy</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>N</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
 
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -261,14 +284,14 @@
   <step>
     <name>WTL_Missing_Feeds</name>
     <type>WriteToLog</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <loglevel>log_level_error</loglevel>
     <displayHeader>Y</displayHeader>
@@ -280,7 +303,7 @@
         <name>f_missing_feeds</name>
       </field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -297,21 +320,21 @@
   <step>
     <name>CSV_Read_NPCI_Master</name>
     <type>CsvInput</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
-    <filename/>
-    <filename_field>f_master_file</filename_field>
-    <rownum_field/>
+    <filename>/NPCI_AePS_Settlement_Master.csv</filename>
+    <filename_field />
+    <rownum_field />
     <include_filename>N</include_filename>
     <separator>,</separator>
-    <enclosure>&#x22;</enclosure>
+    <enclosure>"</enclosure>
     <header>Y</header>
     <buffer_size>50000</buffer_size>
     <lazy_conversion>N</lazy_conversion>
@@ -320,15 +343,15 @@
     <newline_possible>N</newline_possible>
     <encoding>UTF-8</encoding>
     <fields>
-      <field><name>RRN</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
-      <field><name>TXN_ID</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
-      <field><name>AADHAAR_REF</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
-      <field><name>TERMINAL_ID</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
-      <field><name>BC_ID</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
-      <field><name>AMOUNT</name><type>Number</type><format>#.##</format><currency/><decimal>.</decimal><group/><length>15</length><precision>2</precision><trim_type>both</trim_type></field>
-      <field><name>STATUS</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>RRN</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>TXN_ID</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>AADHAAR_REF</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>TERMINAL_ID</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>BC_ID</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>AMOUNT</name><type>Number</type><format>#.##</format><currency /><decimal>.</decimal><group /><length>15</length><precision>2</precision><trim_type>both</trim_type></field>
+      <field><name>STATUS</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -345,21 +368,21 @@
   <step>
     <name>CSV_Read_UIDAI_Auth</name>
     <type>CsvInput</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
-    <filename/>
-    <filename_field>f_uidai_file</filename_field>
-    <rownum_field/>
+    <filename>/UIDAI_Aadhaar_Auth_Gateway.csv</filename>
+    <filename_field />
+    <rownum_field />
     <include_filename>N</include_filename>
     <separator>,</separator>
-    <enclosure>&#x22;</enclosure>
+    <enclosure>"</enclosure>
     <header>Y</header>
     <buffer_size>50000</buffer_size>
     <lazy_conversion>N</lazy_conversion>
@@ -368,11 +391,11 @@
     <newline_possible>N</newline_possible>
     <encoding>UTF-8</encoding>
     <fields>
-      <field><name>UIDAI_RRN</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
-      <field><name>AUTH_STATUS</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
-      <field><name>AUTH_RESP_CODE</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>UIDAI_RRN</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>AUTH_STATUS</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>AUTH_RESP_CODE</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -389,21 +412,21 @@
   <step>
     <name>CSV_Read_Terminal_Journal</name>
     <type>CsvInput</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
-    <filename/>
-    <filename_field>f_terminal_file</filename_field>
-    <rownum_field/>
+    <filename>/BC_Device_Terminal_Journal.csv</filename>
+    <filename_field />
+    <rownum_field />
     <include_filename>N</include_filename>
     <separator>,</separator>
-    <enclosure>&#x22;</enclosure>
+    <enclosure>"</enclosure>
     <header>Y</header>
     <buffer_size>50000</buffer_size>
     <lazy_conversion>N</lazy_conversion>
@@ -412,12 +435,12 @@
     <newline_possible>N</newline_possible>
     <encoding>UTF-8</encoding>
     <fields>
-      <field><name>TERM_RRN</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
-      <field><name>TERMINAL_STATUS</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
-      <field><name>DISPENSE_STATUS</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
-      <field><name>TERM_BC_ID</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>TERM_RRN</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>TERMINAL_STATUS</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>DISPENSE_STATUS</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>TERM_BC_ID</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -434,21 +457,21 @@
   <step>
     <name>CSV_Read_GL9904_Float</name>
     <type>CsvInput</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
-    <filename/>
-    <filename_field>f_gl_file</filename_field>
-    <rownum_field/>
+    <filename>/BC_Agent_Float_GL9904.csv</filename>
+    <filename_field />
+    <rownum_field />
     <include_filename>N</include_filename>
     <separator>,</separator>
-    <enclosure>&#x22;</enclosure>
+    <enclosure>"</enclosure>
     <header>Y</header>
     <buffer_size>50000</buffer_size>
     <lazy_conversion>N</lazy_conversion>
@@ -457,11 +480,11 @@
     <newline_possible>N</newline_possible>
     <encoding>UTF-8</encoding>
     <fields>
-      <field><name>GL_RRN</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
-      <field><name>GL_AMOUNT</name><type>Number</type><format>#.##</format><currency/><decimal>.</decimal><group/><length>15</length><precision>2</precision><trim_type>both</trim_type></field>
-      <field><name>GL_STATUS</name><type>String</type><format></format><currency/><decimal>.</decimal><group/><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>GL_RRN</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
+      <field><name>GL_AMOUNT</name><type>Number</type><format>#.##</format><currency /><decimal>.</decimal><group /><length>15</length><precision>2</precision><trim_type>both</trim_type></field>
+      <field><name>GL_STATUS</name><type>String</type><format /><currency /><decimal>.</decimal><group /><length>-1</length><precision>-1</precision><trim_type>both</trim_type></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -478,26 +501,26 @@
   <step>
     <name>SR_Sort_Master_RRN</name>
     <type>SortRows</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <directory>%%java.io.tmpdir%%</directory>
     <prefix>aeps_m</prefix>
     <sort_size>1000000</sort_size>
-    <free_memory/>
+    <free_memory />
     <compress>N</compress>
-    <compress_variable/>
+    <compress_variable />
     <unique_rows>N</unique_rows>
     <fields>
       <field><name>RRN</name><ascending>Y</ascending><case_sensitive>N</case_sensitive><presorted>N</presorted></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -514,26 +537,26 @@
   <step>
     <name>SR_Sort_UIDAI_RRN</name>
     <type>SortRows</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <directory>%%java.io.tmpdir%%</directory>
     <prefix>aeps_u</prefix>
     <sort_size>1000000</sort_size>
-    <free_memory/>
+    <free_memory />
     <compress>N</compress>
-    <compress_variable/>
+    <compress_variable />
     <unique_rows>N</unique_rows>
     <fields>
       <field><name>UIDAI_RRN</name><ascending>Y</ascending><case_sensitive>N</case_sensitive><presorted>N</presorted></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -550,26 +573,26 @@
   <step>
     <name>SR_Sort_Terminal_RRN</name>
     <type>SortRows</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <directory>%%java.io.tmpdir%%</directory>
     <prefix>aeps_t</prefix>
     <sort_size>1000000</sort_size>
-    <free_memory/>
+    <free_memory />
     <compress>N</compress>
-    <compress_variable/>
+    <compress_variable />
     <unique_rows>N</unique_rows>
     <fields>
       <field><name>TERM_RRN</name><ascending>Y</ascending><case_sensitive>N</case_sensitive><presorted>N</presorted></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -586,26 +609,26 @@
   <step>
     <name>SR_Sort_GL_RRN</name>
     <type>SortRows</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <directory>%%java.io.tmpdir%%</directory>
     <prefix>aeps_g</prefix>
     <sort_size>1000000</sort_size>
-    <free_memory/>
+    <free_memory />
     <compress>N</compress>
-    <compress_variable/>
+    <compress_variable />
     <unique_rows>N</unique_rows>
     <fields>
       <field><name>GL_RRN</name><ascending>Y</ascending><case_sensitive>N</case_sensitive><presorted>N</presorted></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -622,14 +645,14 @@
   <step>
     <name>MJ_Join_UIDAI</name>
     <type>MergeJoin</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <join_type>LEFT OUTER</join_type>
     <step1>SR_Sort_Master_RRN</step1>
@@ -640,7 +663,7 @@
     <keys_2>
       <key>UIDAI_RRN</key>
     </keys_2>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -657,14 +680,14 @@
   <step>
     <name>MJ_Join_Terminal</name>
     <type>MergeJoin</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <join_type>LEFT OUTER</join_type>
     <step1>MJ_Join_UIDAI</step1>
@@ -675,7 +698,7 @@
     <keys_2>
       <key>TERM_RRN</key>
     </keys_2>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -692,14 +715,14 @@
   <step>
     <name>MJ_Join_GL9904</name>
     <type>MergeJoin</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <join_type>LEFT OUTER</join_type>
     <step1>MJ_Join_Terminal</step1>
@@ -710,7 +733,7 @@
     <keys_2>
       <key>GL_RRN</key>
     </keys_2>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -727,14 +750,14 @@
   <step>
     <name>MJSV_Classify_4Way</name>
     <type>ScriptValueMod</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <compatible>N</compatible>
     <optimizationLevel>9</optimizationLevel>
@@ -742,7 +765,63 @@
       <jsScript>
         <jsScript_type>0</jsScript_type>
         <jsScript_name>Script 1</jsScript_name>
-        <jsScript_script>function txt(v) { return (v == null) ? &#x22;&#x22; : String(v).replace(/^\s+|\s+$/g, &#x22;&#x22;); }&#xd;&#xa;function num(v) { var t = txt(v).replace(/,/g, &#x22;&#x22;); if (t == &#x22;&#x22;) { return null; } var n = parseFloat(t); return isNaN(n) ? null : n; }&#xd;&#xa;function r2(n) { return Math.round(n * 100) / 100; }&#xd;&#xa;function esc(v) { return txt(v).replace(/\\/g, &#x22;\\\\&#x22;).replace(/&#x22;/g, &#x22;\\\&#x22;&#x22;).replace(/[\r\n\t]+/g, &#x22; &#x22;); }&#xd;&#xa;function money(v) { var n = num(v); return (n == null) ? &#x22;0.00&#x22; : n.toFixed(2); }&#xd;&#xa;function jnum(v) { var n = num(v); return (n == null) ? &#x22;null&#x22; : String(r2(n)); }&#xd;&#xa;function nowTs(p) { return String(new java.text.SimpleDateFormat(p).format(new java.util.Date())); }&#xd;&#xa;function sha256(s) { var md = java.security.MessageDigest.getInstance(&#x22;SHA-256&#x22;); var d = md.digest(new java.lang.String(s).getBytes(&#x22;UTF-8&#x22;)); var h = &#x22;&#x22;; for (var i = 0; i &lt; d.length; i++) { var b = (d[i] &amp; 0xff).toString(16); if (b.length &lt; 2) { b = &#x22;0&#x22; + b; } h = h + b; } return h; }&#xd;&#xa;function pv(name) { var token = &#x22;$&#x22; + &#x22;{Internal.Entry.Current.Directory}&#x22;; var base = String(getVariable(&#x22;Internal.Entry.Current.Directory&#x22;, &#x22;&#x22;)); return txt(String(getVariable(name, &#x22;&#x22;)).split(token).join(base)); }&#xd;&#xa;function dirOf(name) { return pv(name).replace(/\\/g, &#x22;/&#x22;).replace(/\/+$/, &#x22;&#x22;); }&#xd;&#xa;function fileOk(p) { if (txt(p) == &#x22;&#x22;) { return false; } var f = new java.io.File(txt(p)); return f.exists() &amp;&amp; f.isFile() &amp;&amp; f.length() &gt; 0; }&#xd;&#xa;function urlOk(u) { return /^https?:\/\/\S+$/i.test(txt(u)); }&#xd;&#xa;function enc(v) { return String(java.net.URLEncoder.encode(txt(v), &#x22;UTF-8&#x22;)); }&#xd;&#xa;function withQuery(base, q) { var b = txt(base); return b + ((b.indexOf(&#x22;?&#x22;) &gt;= 0) ? &#x22;&amp;&#x22; : &#x22;?&#x22;) + q; }&#xd;&#xa;function pnum(name, dflt) { var n = num(pv(name)); return (n == null) ? dflt : n; }&#xd;&#xa;&#xd;&#xa;// NPCI RRN layout YDDDHHnnnnnn : Y = last digit of year, DDD = Julian day&#xd;&#xa;function rrnDate(rrn) { var r = txt(rrn); if (!/^\d{12}$/.test(r)) { return null; } var cal = java.util.Calendar.getInstance(); var curYear = cal.get(java.util.Calendar.YEAR); var y = Math.floor(curYear / 10) * 10 + parseInt(r.substring(0, 1), 10); if (y &gt; curYear) { y = y - 10; } var doy = parseInt(r.substring(1, 4), 10); if (doy &lt; 1 || doy &gt; 366) { return null; } var c = java.util.Calendar.getInstance(); c.clear(); c.set(java.util.Calendar.YEAR, y); c.set(java.util.Calendar.DAY_OF_YEAR, doy); return c.getTime(); }&#xd;&#xa;function fmtDate(d) { return (d == null) ? &#x22;&#x22; : String(new java.text.SimpleDateFormat(&#x22;yyyy-MM-dd&#x22;).format(d)); }&#xd;&#xa;function ageDays(d) { if (d == null) { return null; } var t = java.util.Calendar.getInstance(); t.set(java.util.Calendar.HOUR_OF_DAY, 0); t.set(java.util.Calendar.MINUTE, 0); t.set(java.util.Calendar.SECOND, 0); t.set(java.util.Calendar.MILLISECOND, 0); return Math.round((t.getTimeInMillis() - d.getTime()) / 86400000); }&#xd;&#xa;function parseDay(s) { var t = txt(s); if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) { return null; } return new java.text.SimpleDateFormat(&#x22;yyyy-MM-dd&#x22;).parse(t); }&#xd;&#xa;&#xd;&#xa;var mStatus = txt(STATUS).toUpperCase();&#xd;&#xa;var authStatus = txt(AUTH_STATUS).toUpperCase();&#xd;&#xa;var authCode = txt(AUTH_RESP_CODE).toUpperCase();&#xd;&#xa;var termStatus = txt(TERMINAL_STATUS).toUpperCase();&#xd;&#xa;var dispense = txt(DISPENSE_STATUS).toUpperCase();&#xd;&#xa;var glStatus = txt(GL_STATUS).toUpperCase();&#xd;&#xa;var amt = num(AMOUNT);&#xd;&#xa;var glAmt = num(GL_AMOUNT);&#xd;&#xa;var uidaiPresent = (txt(UIDAI_RRN) != &#x22;&#x22;);&#xd;&#xa;var termPresent = (txt(TERM_RRN) != &#x22;&#x22;);&#xd;&#xa;var glPresent = (txt(GL_RRN) != &#x22;&#x22;);&#xd;&#xa;var AMOUNT_VARIANCE = (amt != null &amp;&amp; glAmt != null) ? r2(amt - glAmt) : null;&#xd;&#xa;var absVar = (AMOUNT_VARIANCE == null) ? null : Math.abs(AMOUNT_VARIANCE);&#xd;&#xa;var d = rrnDate(RRN);&#xd;&#xa;var TXN_DATE = fmtDate(d);&#xd;&#xa;var AGE_DAYS = ageDays(d);&#xd;&#xa;var BREAK_CATEGORY = &#x22;&#x22;;&#xd;&#xa;var BREAK_REASON = &#x22;&#x22;;&#xd;&#xa;var EXCEPTION_SEVERITY = &#x22;NONE&#x22;;&#xd;&#xa;if (!uidaiPresent) { BREAK_CATEGORY = &#x22;MISSING_IN_UIDAI&#x22;; BREAK_REASON = &#x22;RRN absent in UIDAI Aadhaar auth gateway feed&#x22;; EXCEPTION_SEVERITY = &#x22;HIGH&#x22;; }&#xd;&#xa;else if (authCode == &#x22;998&#x22; || authStatus == &#x22;SPOOF&#x22; || authStatus == &#x22;TAMPER&#x22;) { BREAK_CATEGORY = &#x22;BIOMETRIC_SPOOF_ALERT&#x22;; BREAK_REASON = &#x22;UIDAI flagged biometric tamper / spoof - auth code &#x22; + authCode; EXCEPTION_SEVERITY = &#x22;CRITICAL&#x22;; }&#xd;&#xa;else if (authStatus != &#x22;SUCCESS&#x22;) { BREAK_CATEGORY = &#x22;BIOMETRIC_MISMATCH&#x22;; BREAK_REASON = &#x22;UIDAI auth &#x22; + authStatus + &#x22; (code &#x22; + authCode + &#x22;) while NPCI status is &#x22; + mStatus; EXCEPTION_SEVERITY = (mStatus == &#x22;SUCCESS&#x22;) ? &#x22;HIGH&#x22; : &#x22;LOW&#x22;; }&#xd;&#xa;else if (!termPresent) { BREAK_CATEGORY = &#x22;MISSING_IN_TERMINAL&#x22;; BREAK_REASON = &#x22;RRN absent in BC micro-ATM terminal journal&#x22;; EXCEPTION_SEVERITY = &#x22;HIGH&#x22;; }&#xd;&#xa;else if (termStatus == &#x22;91&#x22;) { BREAK_CATEGORY = &#x22;TERMINAL_TIMEOUT_91&#x22;; BREAK_REASON = &#x22;Micro-ATM issuer/switch timeout (RC 91) - dispense &#x22; + dispense; EXCEPTION_SEVERITY = &#x22;MEDIUM&#x22;; }&#xd;&#xa;else if (termStatus == &#x22;96&#x22;) { BREAK_CATEGORY = &#x22;TERMINAL_TIMEOUT_96&#x22;; BREAK_REASON = &#x22;Micro-ATM system malfunction (RC 96) - dispense &#x22; + dispense; EXCEPTION_SEVERITY = &#x22;MEDIUM&#x22;; }&#xd;&#xa;else if (dispense != &#x22;DISPENSED&#x22;) { BREAK_CATEGORY = &#x22;DISPENSE_FAILURE&#x22;; BREAK_REASON = &#x22;Cash not dispensed (&#x22; + dispense + &#x22;) but NPCI status &#x22; + mStatus; EXCEPTION_SEVERITY = &#x22;MEDIUM&#x22;; }&#xd;&#xa;else if (txt(TERM_BC_ID) != &#x22;&#x22; &amp;&amp; txt(TERM_BC_ID) != txt(BC_ID)) { BREAK_CATEGORY = &#x22;BC_AGENT_MISMATCH&#x22;; BREAK_REASON = &#x22;Terminal BC &#x22; + txt(TERM_BC_ID) + &#x22; differs from NPCI BC &#x22; + txt(BC_ID); EXCEPTION_SEVERITY = &#x22;MEDIUM&#x22;; }&#xd;&#xa;else if (!glPresent) { BREAK_CATEGORY = &#x22;MISSING_IN_GL&#x22;; BREAK_REASON = &#x22;No BC agent float entry in GL-9904&#x22;; EXCEPTION_SEVERITY = &#x22;HIGH&#x22;; }&#xd;&#xa;else if (absVar == null || absVar &gt; 0.001) { BREAK_CATEGORY = &#x22;GL_FLOAT_VARIANCE&#x22;; BREAK_REASON = &#x22;NPCI &#x22; + money(amt) + &#x22; vs GL-9904 &#x22; + money(glAmt) + &#x22; - variance &#x22; + money(AMOUNT_VARIANCE); EXCEPTION_SEVERITY = &#x22;HIGH&#x22;; }&#xd;&#xa;else if (glStatus != &#x22;POSTED&#x22;) { BREAK_CATEGORY = &#x22;GL_NOT_POSTED&#x22;; BREAK_REASON = &#x22;GL-9904 status &#x22; + glStatus; EXCEPTION_SEVERITY = &#x22;MEDIUM&#x22;; }&#xd;&#xa;else if (mStatus == &#x22;SUCCESS&#x22; &amp;&amp; authStatus == &#x22;SUCCESS&#x22; &amp;&amp; dispense == &#x22;DISPENSED&#x22; &amp;&amp; glStatus == &#x22;POSTED&#x22;) { BREAK_CATEGORY = &#x22;MATCHED_STP&#x22;; BREAK_REASON = &#x22;4-way match - NPCI, UIDAI, terminal and GL-9904 agree&#x22;; }&#xd;&#xa;else { BREAK_CATEGORY = &#x22;STATUS_MISMATCH&#x22;; BREAK_REASON = &#x22;NPCI &#x22; + mStatus + &#x22; / UIDAI &#x22; + authStatus + &#x22; / dispense &#x22; + dispense + &#x22; / GL &#x22; + glStatus; EXCEPTION_SEVERITY = &#x22;MEDIUM&#x22;; }&#xd;&#xa;var IS_MATCHED = (BREAK_CATEGORY == &#x22;MATCHED_STP&#x22;) ? &#x22;Y&#x22; : &#x22;N&#x22;;&#xd;&#xa;var MATCH_FLAG = (IS_MATCHED == &#x22;Y&#x22;) ? 1 : 0;&#xd;&#xa;var RECON_RUN_TS = nowTs(&#x22;yyyy-MM-dd HH:mm:ss&#x22;);</jsScript_script>
+        <jsScript_script>function txt(v) { return (v == null) ? "" : String(v).replace(/^\s+|\s+$/g, ""); }
+function num(v) { var t = txt(v).replace(/,/g, ""); if (t == "") { return null; } var n = parseFloat(t); return isNaN(n) ? null : n; }
+function r2(n) { return Math.round(n * 100) / 100; }
+function esc(v) { return txt(v).replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/[\r\n\t]+/g, " "); }
+function money(v) { var n = num(v); return (n == null) ? "0.00" : n.toFixed(2); }
+function jnum(v) { var n = num(v); return (n == null) ? "null" : String(r2(n)); }
+function nowTs(p) { return String(new java.text.SimpleDateFormat(p).format(new java.util.Date())); }
+function sha256(s) { var md = java.security.MessageDigest.getInstance("SHA-256"); var d = md.digest(new java.lang.String(s).getBytes("UTF-8")); var h = ""; for (var i = 0; i &lt; d.length; i++) { var b = (d[i] &amp; 0xff).toString(16); if (b.length &lt; 2) { b = "0" + b; } h = h + b; } return h; }
+function pv(name) { var token = "$" + "{Internal.Entry.Current.Directory}"; var base = String(getVariable("Internal.Entry.Current.Directory", "")); return txt(String(getVariable(name, "")).split(token).join(base)); }
+function dirOf(name) { return pv(name).replace(/\\/g, "/").replace(/\/+$/, ""); }
+function fileOk(p) { if (txt(p) == "") { return false; } var f = new java.io.File(txt(p)); return f.exists() &amp;&amp; f.isFile() &amp;&amp; f.length() &gt; 0; }
+function urlOk(u) { return /^https?:\/\/\S+$/i.test(txt(u)); }
+function enc(v) { return String(java.net.URLEncoder.encode(txt(v), "UTF-8")); }
+function withQuery(base, q) { var b = txt(base); return b + ((b.indexOf("?") &gt;= 0) ? "&amp;" : "?") + q; }
+function pnum(name, dflt) { var n = num(pv(name)); return (n == null) ? dflt : n; }
+
+// NPCI RRN layout YDDDHHnnnnnn : Y = last digit of year, DDD = Julian day
+function rrnDate(rrn) { var r = txt(rrn); if (!/^\d{12}$/.test(r)) { return null; } var cal = java.util.Calendar.getInstance(); var curYear = cal.get(java.util.Calendar.YEAR); var y = Math.floor(curYear / 10) * 10 + parseInt(r.substring(0, 1), 10); if (y &gt; curYear) { y = y - 10; } var doy = parseInt(r.substring(1, 4), 10); if (doy &lt; 1 || doy &gt; 366) { return null; } var c = java.util.Calendar.getInstance(); c.clear(); c.set(java.util.Calendar.YEAR, y); c.set(java.util.Calendar.DAY_OF_YEAR, doy); return c.getTime(); }
+function fmtDate(d) { return (d == null) ? "" : String(new java.text.SimpleDateFormat("yyyy-MM-dd").format(d)); }
+function ageDays(d) { if (d == null) { return null; } var t = java.util.Calendar.getInstance(); t.set(java.util.Calendar.HOUR_OF_DAY, 0); t.set(java.util.Calendar.MINUTE, 0); t.set(java.util.Calendar.SECOND, 0); t.set(java.util.Calendar.MILLISECOND, 0); return Math.round((t.getTimeInMillis() - d.getTime()) / 86400000); }
+function parseDay(s) { var t = txt(s); if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) { return null; } return new java.text.SimpleDateFormat("yyyy-MM-dd").parse(t); }
+
+var mStatus = txt(STATUS).toUpperCase();
+var authStatus = txt(AUTH_STATUS).toUpperCase();
+var authCode = txt(AUTH_RESP_CODE).toUpperCase();
+var termStatus = txt(TERMINAL_STATUS).toUpperCase();
+var dispense = txt(DISPENSE_STATUS).toUpperCase();
+var glStatus = txt(GL_STATUS).toUpperCase();
+var amt = num(AMOUNT);
+var glAmt = num(GL_AMOUNT);
+var uidaiPresent = (txt(UIDAI_RRN) != "");
+var termPresent = (txt(TERM_RRN) != "");
+var glPresent = (txt(GL_RRN) != "");
+var AMOUNT_VARIANCE = (amt != null &amp;&amp; glAmt != null) ? r2(amt - glAmt) : null;
+var absVar = (AMOUNT_VARIANCE == null) ? null : Math.abs(AMOUNT_VARIANCE);
+var d = rrnDate(RRN);
+var TXN_DATE = fmtDate(d);
+var AGE_DAYS = ageDays(d);
+var BREAK_CATEGORY = "";
+var BREAK_REASON = "";
+var EXCEPTION_SEVERITY = "NONE";
+if (!uidaiPresent) { BREAK_CATEGORY = "MISSING_IN_UIDAI"; BREAK_REASON = "RRN absent in UIDAI Aadhaar auth gateway feed"; EXCEPTION_SEVERITY = "HIGH"; }
+else if (authCode == "998" || authStatus == "SPOOF" || authStatus == "TAMPER") { BREAK_CATEGORY = "BIOMETRIC_SPOOF_ALERT"; BREAK_REASON = "UIDAI flagged biometric tamper / spoof - auth code " + authCode; EXCEPTION_SEVERITY = "CRITICAL"; }
+else if (authStatus != "SUCCESS") { BREAK_CATEGORY = "BIOMETRIC_MISMATCH"; BREAK_REASON = "UIDAI auth " + authStatus + " (code " + authCode + ") while NPCI status is " + mStatus; EXCEPTION_SEVERITY = (mStatus == "SUCCESS") ? "HIGH" : "LOW"; }
+else if (!termPresent) { BREAK_CATEGORY = "MISSING_IN_TERMINAL"; BREAK_REASON = "RRN absent in BC micro-ATM terminal journal"; EXCEPTION_SEVERITY = "HIGH"; }
+else if (termStatus == "91") { BREAK_CATEGORY = "TERMINAL_TIMEOUT_91"; BREAK_REASON = "Micro-ATM issuer/switch timeout (RC 91) - dispense " + dispense; EXCEPTION_SEVERITY = "MEDIUM"; }
+else if (termStatus == "96") { BREAK_CATEGORY = "TERMINAL_TIMEOUT_96"; BREAK_REASON = "Micro-ATM system malfunction (RC 96) - dispense " + dispense; EXCEPTION_SEVERITY = "MEDIUM"; }
+else if (dispense != "DISPENSED") { BREAK_CATEGORY = "DISPENSE_FAILURE"; BREAK_REASON = "Cash not dispensed (" + dispense + ") but NPCI status " + mStatus; EXCEPTION_SEVERITY = "MEDIUM"; }
+else if (txt(TERM_BC_ID) != "" &amp;&amp; txt(TERM_BC_ID) != txt(BC_ID)) { BREAK_CATEGORY = "BC_AGENT_MISMATCH"; BREAK_REASON = "Terminal BC " + txt(TERM_BC_ID) + " differs from NPCI BC " + txt(BC_ID); EXCEPTION_SEVERITY = "MEDIUM"; }
+else if (!glPresent) { BREAK_CATEGORY = "MISSING_IN_GL"; BREAK_REASON = "No BC agent float entry in GL-9904"; EXCEPTION_SEVERITY = "HIGH"; }
+else if (absVar == null || absVar &gt; 0.001) { BREAK_CATEGORY = "GL_FLOAT_VARIANCE"; BREAK_REASON = "NPCI " + money(amt) + " vs GL-9904 " + money(glAmt) + " - variance " + money(AMOUNT_VARIANCE); EXCEPTION_SEVERITY = "HIGH"; }
+else if (glStatus != "POSTED") { BREAK_CATEGORY = "GL_NOT_POSTED"; BREAK_REASON = "GL-9904 status " + glStatus; EXCEPTION_SEVERITY = "MEDIUM"; }
+else if (mStatus == "SUCCESS" &amp;&amp; authStatus == "SUCCESS" &amp;&amp; dispense == "DISPENSED" &amp;&amp; glStatus == "POSTED") { BREAK_CATEGORY = "MATCHED_STP"; BREAK_REASON = "4-way match - NPCI, UIDAI, terminal and GL-9904 agree"; }
+else { BREAK_CATEGORY = "STATUS_MISMATCH"; BREAK_REASON = "NPCI " + mStatus + " / UIDAI " + authStatus + " / dispense " + dispense + " / GL " + glStatus; EXCEPTION_SEVERITY = "MEDIUM"; }
+var IS_MATCHED = (BREAK_CATEGORY == "MATCHED_STP") ? "Y" : "N";
+var MATCH_FLAG = (IS_MATCHED == "Y") ? 1 : 0;
+var RECON_RUN_TS = nowTs("yyyy-MM-dd HH:mm:ss");</jsScript_script>
       </jsScript>
     </jsScripts>
     <fields>
@@ -756,7 +835,7 @@
       <field><name>MATCH_FLAG</name><rename>MATCH_FLAG</rename><type>Integer</type><length>9</length><precision>0</precision><replace>N</replace></field>
       <field><name>RECON_RUN_TS</name><rename>RECON_RUN_TS</rename><type>String</type><length>-1</length><precision>-1</precision><replace>N</replace></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -773,14 +852,14 @@
   <step>
     <name>FR_Is_Matched_STP</name>
     <type>FilterRows</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <send_true_to>XLW_Matched_AePS</send_true_to>
     <send_false_to>XLW_Unmatched_AePS</send_false_to>
@@ -788,12 +867,12 @@
       <condition>
         <negated>N</negated>
         <leftvalue>IS_MATCHED</leftvalue>
-        <function>&#x3d;</function>
-        <rightvalue/>
-        <value><name>constant</name><type>String</type><text>Y</text><length>-1</length><precision>-1</precision><isnull>N</isnull><mask/></value>
+        <function>=</function>
+        <rightvalue />
+        <value><name>constant</name><type>String</type><text>Y</text><length>-1</length><precision>-1</precision><isnull>N</isnull><mask /></value>
       </condition>
     </compare>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -810,14 +889,14 @@
   <step>
     <name>XLW_Matched_AePS</name>
     <type>TypeExitExcelWriterStep</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <header>Y</header>
     <footer>N</footer>
@@ -846,7 +925,7 @@
       <stream_data>N</stream_data>
       <protect_sheet>N</protect_sheet>
       <password>Encrypted </password>
-      <protected_by/>
+      <protected_by />
       <splitevery>0</splitevery>
       <if_file_exists>new</if_file_exists>
       <if_sheet_exists>new</if_sheet_exists>
@@ -855,34 +934,34 @@
       <enabled>N</enabled>
       <sheet_enabled>N</sheet_enabled>
       <hidden>N</hidden>
-      <filename/>
-      <sheetname/>
+      <filename />
+      <sheetname />
     </template>
     <fields>
-      <field><name>RRN</name><type>String</type><format></format><title>RRN</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>TXN_ID</name><type>String</type><format></format><title>TXN_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>AADHAAR_REF</name><type>String</type><format></format><title>AADHAAR_REF</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>TERMINAL_ID</name><type>String</type><format></format><title>TERMINAL_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>BC_ID</name><type>String</type><format></format><title>BC_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>AMOUNT</name><type>Number</type><format>0.00</format><title>AMOUNT</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>STATUS</name><type>String</type><format></format><title>STATUS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>AUTH_STATUS</name><type>String</type><format></format><title>AUTH_STATUS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>AUTH_RESP_CODE</name><type>String</type><format></format><title>AUTH_RESP_CODE</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>TERMINAL_STATUS</name><type>String</type><format></format><title>TERMINAL_STATUS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>DISPENSE_STATUS</name><type>String</type><format></format><title>DISPENSE_STATUS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>TERM_BC_ID</name><type>String</type><format></format><title>TERM_BC_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>GL_AMOUNT</name><type>Number</type><format>0.00</format><title>GL_AMOUNT</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>GL_STATUS</name><type>String</type><format></format><title>GL_STATUS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>TXN_DATE</name><type>String</type><format></format><title>TXN_DATE</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>AGE_DAYS</name><type>Integer</type><format>0</format><title>AGE_DAYS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>AMOUNT_VARIANCE</name><type>Number</type><format>0.00</format><title>AMOUNT_VARIANCE</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>BREAK_CATEGORY</name><type>String</type><format></format><title>BREAK_CATEGORY</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>BREAK_REASON</name><type>String</type><format></format><title>BREAK_REASON</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>EXCEPTION_SEVERITY</name><type>String</type><format></format><title>EXCEPTION_SEVERITY</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>IS_MATCHED</name><type>String</type><format></format><title>IS_MATCHED</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>RECON_RUN_TS</name><type>String</type><format></format><title>RECON_RUN_TS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
+      <field><name>RRN</name><type>String</type><format /><title>RRN</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>TXN_ID</name><type>String</type><format /><title>TXN_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>AADHAAR_REF</name><type>String</type><format /><title>AADHAAR_REF</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>TERMINAL_ID</name><type>String</type><format /><title>TERMINAL_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>BC_ID</name><type>String</type><format /><title>BC_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>AMOUNT</name><type>Number</type><format>0.00</format><title>AMOUNT</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>STATUS</name><type>String</type><format /><title>STATUS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>AUTH_STATUS</name><type>String</type><format /><title>AUTH_STATUS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>AUTH_RESP_CODE</name><type>String</type><format /><title>AUTH_RESP_CODE</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>TERMINAL_STATUS</name><type>String</type><format /><title>TERMINAL_STATUS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>DISPENSE_STATUS</name><type>String</type><format /><title>DISPENSE_STATUS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>TERM_BC_ID</name><type>String</type><format /><title>TERM_BC_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>GL_AMOUNT</name><type>Number</type><format>0.00</format><title>GL_AMOUNT</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>GL_STATUS</name><type>String</type><format /><title>GL_STATUS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>TXN_DATE</name><type>String</type><format /><title>TXN_DATE</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>AGE_DAYS</name><type>Integer</type><format>0</format><title>AGE_DAYS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>AMOUNT_VARIANCE</name><type>Number</type><format>0.00</format><title>AMOUNT_VARIANCE</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>BREAK_CATEGORY</name><type>String</type><format /><title>BREAK_CATEGORY</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>BREAK_REASON</name><type>String</type><format /><title>BREAK_REASON</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>EXCEPTION_SEVERITY</name><type>String</type><format /><title>EXCEPTION_SEVERITY</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>IS_MATCHED</name><type>String</type><format /><title>IS_MATCHED</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>RECON_RUN_TS</name><type>String</type><format /><title>RECON_RUN_TS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -899,14 +978,14 @@
   <step>
     <name>XLW_Unmatched_AePS</name>
     <type>TypeExitExcelWriterStep</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <header>Y</header>
     <footer>N</footer>
@@ -935,7 +1014,7 @@
       <stream_data>N</stream_data>
       <protect_sheet>N</protect_sheet>
       <password>Encrypted </password>
-      <protected_by/>
+      <protected_by />
       <splitevery>0</splitevery>
       <if_file_exists>new</if_file_exists>
       <if_sheet_exists>new</if_sheet_exists>
@@ -944,34 +1023,34 @@
       <enabled>N</enabled>
       <sheet_enabled>N</sheet_enabled>
       <hidden>N</hidden>
-      <filename/>
-      <sheetname/>
+      <filename />
+      <sheetname />
     </template>
     <fields>
-      <field><name>RRN</name><type>String</type><format></format><title>RRN</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>TXN_ID</name><type>String</type><format></format><title>TXN_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>AADHAAR_REF</name><type>String</type><format></format><title>AADHAAR_REF</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>TERMINAL_ID</name><type>String</type><format></format><title>TERMINAL_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>BC_ID</name><type>String</type><format></format><title>BC_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>AMOUNT</name><type>Number</type><format>0.00</format><title>AMOUNT</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>STATUS</name><type>String</type><format></format><title>STATUS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>AUTH_STATUS</name><type>String</type><format></format><title>AUTH_STATUS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>AUTH_RESP_CODE</name><type>String</type><format></format><title>AUTH_RESP_CODE</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>TERMINAL_STATUS</name><type>String</type><format></format><title>TERMINAL_STATUS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>DISPENSE_STATUS</name><type>String</type><format></format><title>DISPENSE_STATUS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>TERM_BC_ID</name><type>String</type><format></format><title>TERM_BC_ID</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>GL_AMOUNT</name><type>Number</type><format>0.00</format><title>GL_AMOUNT</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>GL_STATUS</name><type>String</type><format></format><title>GL_STATUS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>TXN_DATE</name><type>String</type><format></format><title>TXN_DATE</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>AGE_DAYS</name><type>Integer</type><format>0</format><title>AGE_DAYS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>AMOUNT_VARIANCE</name><type>Number</type><format>0.00</format><title>AMOUNT_VARIANCE</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>BREAK_CATEGORY</name><type>String</type><format></format><title>BREAK_CATEGORY</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>BREAK_REASON</name><type>String</type><format></format><title>BREAK_REASON</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>EXCEPTION_SEVERITY</name><type>String</type><format></format><title>EXCEPTION_SEVERITY</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>IS_MATCHED</name><type>String</type><format></format><title>IS_MATCHED</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
-      <field><name>RECON_RUN_TS</name><type>String</type><format></format><title>RECON_RUN_TS</title><titleStyleCell/><styleCell/><commentField/><commentAuthorField/><formula>N</formula><hyperlinkField/></field>
+      <field><name>RRN</name><type>String</type><format /><title>RRN</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>TXN_ID</name><type>String</type><format /><title>TXN_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>AADHAAR_REF</name><type>String</type><format /><title>AADHAAR_REF</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>TERMINAL_ID</name><type>String</type><format /><title>TERMINAL_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>BC_ID</name><type>String</type><format /><title>BC_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>AMOUNT</name><type>Number</type><format>0.00</format><title>AMOUNT</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>STATUS</name><type>String</type><format /><title>STATUS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>AUTH_STATUS</name><type>String</type><format /><title>AUTH_STATUS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>AUTH_RESP_CODE</name><type>String</type><format /><title>AUTH_RESP_CODE</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>TERMINAL_STATUS</name><type>String</type><format /><title>TERMINAL_STATUS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>DISPENSE_STATUS</name><type>String</type><format /><title>DISPENSE_STATUS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>TERM_BC_ID</name><type>String</type><format /><title>TERM_BC_ID</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>GL_AMOUNT</name><type>Number</type><format>0.00</format><title>GL_AMOUNT</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>GL_STATUS</name><type>String</type><format /><title>GL_STATUS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>TXN_DATE</name><type>String</type><format /><title>TXN_DATE</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>AGE_DAYS</name><type>Integer</type><format>0</format><title>AGE_DAYS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>AMOUNT_VARIANCE</name><type>Number</type><format>0.00</format><title>AMOUNT_VARIANCE</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>BREAK_CATEGORY</name><type>String</type><format /><title>BREAK_CATEGORY</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>BREAK_REASON</name><type>String</type><format /><title>BREAK_REASON</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>EXCEPTION_SEVERITY</name><type>String</type><format /><title>EXCEPTION_SEVERITY</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>IS_MATCHED</name><type>String</type><format /><title>IS_MATCHED</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
+      <field><name>RECON_RUN_TS</name><type>String</type><format /><title>RECON_RUN_TS</title><titleStyleCell /><styleCell /><commentField /><commentAuthorField /><formula>N</formula><hyperlinkField /></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -988,31 +1067,31 @@
   <step>
     <name>GB_Recon_Summary</name>
     <type>GroupBy</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <all_rows>N</all_rows>
     <ignore_aggregate>N</ignore_aggregate>
-    <field_ignore/>
+    <field_ignore />
     <directory>%%java.io.tmpdir%%</directory>
     <prefix>aeps_grp</prefix>
     <add_linenr>N</add_linenr>
-    <linenr_fieldname/>
+    <linenr_fieldname />
     <give_back_row>Y</give_back_row>
     <group>
 
     </group>
     <fields>
-      <field><aggregate>f_total_rows</aggregate><subject>RRN</subject><type>COUNT_ALL</type><valuefield/></field>
-      <field><aggregate>f_matched_rows</aggregate><subject>MATCH_FLAG</subject><type>SUM</type><valuefield/></field>
+      <field><aggregate>f_total_rows</aggregate><subject>RRN</subject><type>COUNT_ALL</type><valuefield /></field>
+      <field><aggregate>f_matched_rows</aggregate><subject>MATCH_FLAG</subject><type>SUM</type><valuefield /></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -1029,14 +1108,14 @@
   <step>
     <name>MJSV_Build_Recon_Result</name>
     <type>ScriptValueMod</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <compatible>N</compatible>
     <optimizationLevel>9</optimizationLevel>
@@ -1044,7 +1123,43 @@
       <jsScript>
         <jsScript_type>0</jsScript_type>
         <jsScript_name>Script 1</jsScript_name>
-        <jsScript_script>function txt(v) { return (v == null) ? &#x22;&#x22; : String(v).replace(/^\s+|\s+$/g, &#x22;&#x22;); }&#xd;&#xa;function num(v) { var t = txt(v).replace(/,/g, &#x22;&#x22;); if (t == &#x22;&#x22;) { return null; } var n = parseFloat(t); return isNaN(n) ? null : n; }&#xd;&#xa;function r2(n) { return Math.round(n * 100) / 100; }&#xd;&#xa;function esc(v) { return txt(v).replace(/\\/g, &#x22;\\\\&#x22;).replace(/&#x22;/g, &#x22;\\\&#x22;&#x22;).replace(/[\r\n\t]+/g, &#x22; &#x22;); }&#xd;&#xa;function money(v) { var n = num(v); return (n == null) ? &#x22;0.00&#x22; : n.toFixed(2); }&#xd;&#xa;function jnum(v) { var n = num(v); return (n == null) ? &#x22;null&#x22; : String(r2(n)); }&#xd;&#xa;function nowTs(p) { return String(new java.text.SimpleDateFormat(p).format(new java.util.Date())); }&#xd;&#xa;function sha256(s) { var md = java.security.MessageDigest.getInstance(&#x22;SHA-256&#x22;); var d = md.digest(new java.lang.String(s).getBytes(&#x22;UTF-8&#x22;)); var h = &#x22;&#x22;; for (var i = 0; i &lt; d.length; i++) { var b = (d[i] &amp; 0xff).toString(16); if (b.length &lt; 2) { b = &#x22;0&#x22; + b; } h = h + b; } return h; }&#xd;&#xa;function pv(name) { var token = &#x22;$&#x22; + &#x22;{Internal.Entry.Current.Directory}&#x22;; var base = String(getVariable(&#x22;Internal.Entry.Current.Directory&#x22;, &#x22;&#x22;)); return txt(String(getVariable(name, &#x22;&#x22;)).split(token).join(base)); }&#xd;&#xa;function dirOf(name) { return pv(name).replace(/\\/g, &#x22;/&#x22;).replace(/\/+$/, &#x22;&#x22;); }&#xd;&#xa;function fileOk(p) { if (txt(p) == &#x22;&#x22;) { return false; } var f = new java.io.File(txt(p)); return f.exists() &amp;&amp; f.isFile() &amp;&amp; f.length() &gt; 0; }&#xd;&#xa;function urlOk(u) { return /^https?:\/\/\S+$/i.test(txt(u)); }&#xd;&#xa;function enc(v) { return String(java.net.URLEncoder.encode(txt(v), &#x22;UTF-8&#x22;)); }&#xd;&#xa;function withQuery(base, q) { var b = txt(base); return b + ((b.indexOf(&#x22;?&#x22;) &gt;= 0) ? &#x22;&amp;&#x22; : &#x22;?&#x22;) + q; }&#xd;&#xa;function pnum(name, dflt) { var n = num(pv(name)); return (n == null) ? dflt : n; }&#xd;&#xa;&#xd;&#xa;function latest(dir, prefix, since) { var d = new java.io.File(dir); var list = d.listFiles(); var best = null; if (list == null) { return &#x22;&#x22;; } for (var i = 0; i &lt; list.length; i++) { var f = list[i]; var n = String(f.getName()); if (n.indexOf(prefix) == 0 &amp;&amp; /\.xlsx$/i.test(n) &amp;&amp; f.lastModified() &gt;= since) { if (best == null || f.lastModified() &gt; best.lastModified()) { best = f; } } } return (best == null) ? &#x22;&#x22; : String(best.getAbsolutePath()).replace(/\\/g, &#x22;/&#x22;); }&#xd;&#xa;&#xd;&#xa;var inDir = dirOf(&#x22;INPUT_DIR&#x22;);&#xd;&#xa;var outDir = dirOf(&#x22;OUTPUT_DIR&#x22;);&#xd;&#xa;var cycle = pv(&#x22;CYCLE_ID&#x22;);&#xd;&#xa;var feeds = [&#x22;NPCI_AePS_Settlement_Master.csv&#x22;, &#x22;UIDAI_Aadhaar_Auth_Gateway.csv&#x22;, &#x22;BC_Device_Terminal_Journal.csv&#x22;, &#x22;BC_Agent_Float_GL9904.csv&#x22;];&#xd;&#xa;var missing = [];&#xd;&#xa;for (var i = 0; i &lt; feeds.length; i++) { if (!fileOk(inDir + &#x22;/&#x22; + feeds[i])) { missing.push(feeds[i]); } }&#xd;&#xa;var total = num(f_total_rows); if (total == null) { total = 0; }&#xd;&#xa;var matched = num(f_matched_rows); if (matched == null) { matched = 0; }&#xd;&#xa;var f_total_txns = total.toFixed(0);&#xd;&#xa;var f_matched_txns = matched.toFixed(0);&#xd;&#xa;var f_break_txns = (total - matched).toFixed(0);&#xd;&#xa;var f_matched_file = latest(outDir, &#x22;Matched_AePS_Records_&#x22;, g_runStart);&#xd;&#xa;var f_unmatched_file = latest(outDir, &#x22;Unmatched_AePS_Records_&#x22;, g_runStart);&#xd;&#xa;var files = []; if (f_matched_file != &#x22;&#x22;) { files.push(f_matched_file); } if (f_unmatched_file != &#x22;&#x22;) { files.push(f_unmatched_file); }&#xd;&#xa;var f_result_files = files.join(&#x22;,&#x22;);&#xd;&#xa;var f_success = &#x22;true&#x22;; var f_status = &#x22;Complete&#x22;; var f_message = &#x22;&#x22;;&#xd;&#xa;if (missing.length &gt; 0) { f_success = &#x22;false&#x22;; f_status = &#x22;Failure&#x22;; f_message = &#x22;AePS recon aborted - missing or empty inbound feed(s): &#x22; + missing.join(&#x22;, &#x22;); }&#xd;&#xa;else if (total == 0) { f_status = &#x22;Diverted&#x22;; f_message = &#x22;AePS recon - no settlement records found in NPCI_AePS_Settlement_Master.csv&#x22;; }&#xd;&#xa;else { f_message = &#x22;AePS 4-way recon &#x22; + cycle + &#x22; - &#x22; + f_total_txns + &#x22; txns / &#x22; + f_matched_txns + &#x22; matched STP / &#x22; + f_break_txns + &#x22; exceptions&#x22;; }</jsScript_script>
+        <jsScript_script>function txt(v) { return (v == null) ? "" : String(v).replace(/^\s+|\s+$/g, ""); }
+function num(v) { var t = txt(v).replace(/,/g, ""); if (t == "") { return null; } var n = parseFloat(t); return isNaN(n) ? null : n; }
+function r2(n) { return Math.round(n * 100) / 100; }
+function esc(v) { return txt(v).replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/[\r\n\t]+/g, " "); }
+function money(v) { var n = num(v); return (n == null) ? "0.00" : n.toFixed(2); }
+function jnum(v) { var n = num(v); return (n == null) ? "null" : String(r2(n)); }
+function nowTs(p) { return String(new java.text.SimpleDateFormat(p).format(new java.util.Date())); }
+function sha256(s) { var md = java.security.MessageDigest.getInstance("SHA-256"); var d = md.digest(new java.lang.String(s).getBytes("UTF-8")); var h = ""; for (var i = 0; i &lt; d.length; i++) { var b = (d[i] &amp; 0xff).toString(16); if (b.length &lt; 2) { b = "0" + b; } h = h + b; } return h; }
+function pv(name) { var token = "$" + "{Internal.Entry.Current.Directory}"; var base = String(getVariable("Internal.Entry.Current.Directory", "")); return txt(String(getVariable(name, "")).split(token).join(base)); }
+function dirOf(name) { return pv(name).replace(/\\/g, "/").replace(/\/+$/, ""); }
+function fileOk(p) { if (txt(p) == "") { return false; } var f = new java.io.File(txt(p)); return f.exists() &amp;&amp; f.isFile() &amp;&amp; f.length() &gt; 0; }
+function urlOk(u) { return /^https?:\/\/\S+$/i.test(txt(u)); }
+function enc(v) { return String(java.net.URLEncoder.encode(txt(v), "UTF-8")); }
+function withQuery(base, q) { var b = txt(base); return b + ((b.indexOf("?") &gt;= 0) ? "&amp;" : "?") + q; }
+function pnum(name, dflt) { var n = num(pv(name)); return (n == null) ? dflt : n; }
+
+function latest(dir, prefix, since) { var d = new java.io.File(dir); var list = d.listFiles(); var best = null; if (list == null) { return ""; } for (var i = 0; i &lt; list.length; i++) { var f = list[i]; var n = String(f.getName()); if (n.indexOf(prefix) == 0 &amp;&amp; /\.xlsx$/i.test(n) &amp;&amp; f.lastModified() &gt;= since) { if (best == null || f.lastModified() &gt; best.lastModified()) { best = f; } } } return (best == null) ? "" : String(best.getAbsolutePath()).replace(/\\/g, "/"); }
+
+var inDir = dirOf("INPUT_DIR");
+var outDir = dirOf("OUTPUT_DIR");
+var cycle = pv("CYCLE_ID");
+var feeds = ["NPCI_AePS_Settlement_Master.csv", "UIDAI_Aadhaar_Auth_Gateway.csv", "BC_Device_Terminal_Journal.csv", "BC_Agent_Float_GL9904.csv"];
+var missing = [];
+for (var i = 0; i &lt; feeds.length; i++) { if (!fileOk(inDir + "/" + feeds[i])) { missing.push(feeds[i]); } }
+var total = num(f_total_rows); if (total == null) { total = 0; }
+var matched = num(f_matched_rows); if (matched == null) { matched = 0; }
+var f_total_txns = total.toFixed(0);
+var f_matched_txns = matched.toFixed(0);
+var f_break_txns = (total - matched).toFixed(0);
+var f_matched_file = latest(outDir, "Matched_AePS_Records_", g_runStart);
+var f_unmatched_file = latest(outDir, "Unmatched_AePS_Records_", g_runStart);
+var files = []; if (f_matched_file != "") { files.push(f_matched_file); } if (f_unmatched_file != "") { files.push(f_unmatched_file); }
+var f_result_files = files.join(",");
+var f_success = "true"; var f_status = "Complete"; var f_message = "";
+if (missing.length &gt; 0) { f_success = "false"; f_status = "Failure"; f_message = "AePS recon aborted - missing or empty inbound feed(s): " + missing.join(", "); }
+else if (total == 0) { f_status = "Diverted"; f_message = "AePS recon - no settlement records found in NPCI_AePS_Settlement_Master.csv"; }
+else { f_message = "AePS 4-way recon " + cycle + " - " + f_total_txns + " txns / " + f_matched_txns + " matched STP / " + f_break_txns + " exceptions"; }</jsScript_script>
       </jsScript>
       <jsScript>
         <jsScript_type>1</jsScript_type>
@@ -1063,7 +1178,7 @@
       <field><name>f_status</name><rename>f_status</rename><type>String</type><length>-1</length><precision>-1</precision><replace>N</replace></field>
       <field><name>f_message</name><rename>f_message</rename><type>String</type><length>-1</length><precision>-1</precision><replace>N</replace></field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -1080,26 +1195,26 @@
   <step>
     <name>SWR_Recon_Result</name>
     <type>SetWorkflowResult</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <success>f_success</success>
     <status>f_status</status>
     <message>f_message</message>
     <operationsTotal>0</operationsTotal>
     <operationsPerformed>0</operationsPerformed>
-    <attribute1/>
-    <attribute2/>
-    <attribute3/>
-    <attribute4/>
-    <attribute5/>
-    <attribute6/>
+    <attribute1 />
+    <attribute2 />
+    <attribute3 />
+    <attribute4 />
+    <attribute5 />
+    <attribute6 />
     <fileNames>f_result_files</fileNames>
     <failureReason>UNKNOWN</failureReason>
     <outputFields>
@@ -1109,7 +1224,7 @@
       <field><name>o_matched_file</name><type>String</type><displayName>Matched_File_Path</displayName><value>f_matched_file</value></field>
       <field><name>o_unmatched_file</name><type>String</type><displayName>UnMatched_File_Path</displayName><value>f_unmatched_file</value></field>
     </outputFields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -1126,14 +1241,14 @@
   <step>
     <name>WTL_Master_Row_Error</name>
     <type>WriteToLog</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <loglevel>log_level_error</loglevel>
     <displayHeader>Y</displayHeader>
@@ -1154,7 +1269,7 @@
         <name>ERR_DESCRIPTION</name>
       </field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -1171,14 +1286,14 @@
   <step>
     <name>WTL_UIDAI_Row_Error</name>
     <type>WriteToLog</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <loglevel>log_level_error</loglevel>
     <displayHeader>Y</displayHeader>
@@ -1199,7 +1314,7 @@
         <name>ERR_DESCRIPTION</name>
       </field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -1216,14 +1331,14 @@
   <step>
     <name>WTL_Terminal_Row_Error</name>
     <type>WriteToLog</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <loglevel>log_level_error</loglevel>
     <displayHeader>Y</displayHeader>
@@ -1244,7 +1359,7 @@
         <name>ERR_DESCRIPTION</name>
       </field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -1261,14 +1376,14 @@
   <step>
     <name>WTL_GL_Row_Error</name>
     <type>WriteToLog</type>
-    <description/>
-    <customErrorMessage/>
+    <description />
+    <customErrorMessage />
     <distribute>Y</distribute>
-    <custom_distribution/>
+    <custom_distribution />
     <copies>1</copies>
     <partitioning>
       <method>none</method>
-      <schema_name/>
+      <schema_name />
     </partitioning>
     <loglevel>log_level_error</loglevel>
     <displayHeader>Y</displayHeader>
@@ -1289,7 +1404,7 @@
         <name>ERR_DESCRIPTION</name>
       </field>
     </fields>
-    <cluster_schema/>
+    <cluster_schema />
     <remotesteps>
       <input>
       </input>
@@ -1312,10 +1427,10 @@
       <descriptions_valuename>ERR_DESCRIPTION</descriptions_valuename>
       <fields_valuename>ERR_FIELD</fields_valuename>
       <codes_valuename>ERR_CODE</codes_valuename>
-      <max_errors/>
-      <max_pct_errors/>
-      <min_pct_rows/>
-      <custom_error_field/>
+      <max_errors />
+      <max_pct_errors />
+      <min_pct_rows />
+      <custom_error_field />
     </error>
     <error>
       <source_step>CSV_Read_UIDAI_Auth</source_step>
@@ -1325,10 +1440,10 @@
       <descriptions_valuename>ERR_DESCRIPTION</descriptions_valuename>
       <fields_valuename>ERR_FIELD</fields_valuename>
       <codes_valuename>ERR_CODE</codes_valuename>
-      <max_errors/>
-      <max_pct_errors/>
-      <min_pct_rows/>
-      <custom_error_field/>
+      <max_errors />
+      <max_pct_errors />
+      <min_pct_rows />
+      <custom_error_field />
     </error>
     <error>
       <source_step>CSV_Read_Terminal_Journal</source_step>
@@ -1338,10 +1453,10 @@
       <descriptions_valuename>ERR_DESCRIPTION</descriptions_valuename>
       <fields_valuename>ERR_FIELD</fields_valuename>
       <codes_valuename>ERR_CODE</codes_valuename>
-      <max_errors/>
-      <max_pct_errors/>
-      <min_pct_rows/>
-      <custom_error_field/>
+      <max_errors />
+      <max_pct_errors />
+      <min_pct_rows />
+      <custom_error_field />
     </error>
     <error>
       <source_step>CSV_Read_GL9904_Float</source_step>
@@ -1351,10 +1466,10 @@
       <descriptions_valuename>ERR_DESCRIPTION</descriptions_valuename>
       <fields_valuename>ERR_FIELD</fields_valuename>
       <codes_valuename>ERR_CODE</codes_valuename>
-      <max_errors/>
-      <max_pct_errors/>
-      <min_pct_rows/>
-      <custom_error_field/>
+      <max_errors />
+      <max_pct_errors />
+      <min_pct_rows />
+      <custom_error_field />
     </error>
   </step_error_handling>
   <slave-step-copy-partition-distribution>
@@ -1364,7 +1479,19 @@
   </groups>
   <notepads>
     <notepad>
-      <note>About: AePS 4-way reconciliation. NPCI settlement master (driving side) is LEFT-joined on RRN to the UIDAI&#xd;&#xa;Aadhaar auth gateway, the BC micro-ATM terminal journal and the BC agent float GL-9904.&#xd;&#xa;STP rule: STATUS=SUCCESS and AUTH_STATUS=SUCCESS and DISPENSE_STATUS=DISPENSED and GL_STATUS=POSTED and zero GL variance.&#xd;&#xa;Exceptions: TERMINAL_TIMEOUT_91 / _96, DISPENSE_FAILURE, BIOMETRIC_MISMATCH, BIOMETRIC_SPOOF_ALERT (UIDAI 998),&#xd;&#xa;GL_FLOAT_VARIANCE, GL_NOT_POSTED, BC_AGENT_MISMATCH, MISSING_IN_UIDAI / TERMINAL / GL, STATUS_MISMATCH.&#xd;&#xa;Txn date / age is decoded from the RRN (YDDDHHnnnnnn) for the RBI T+1 TAT check downstream.&#xd;&#xa;&#xd;&#xa;Params: INPUT_DIR, OUTPUT_DIR (config), CYCLE_ID (runtime).&#xd;&#xa;Output: Matched_AePS_Records_&lt;yyyyMMdd_HHmmss&gt;.xlsx and Unmatched_AePS_Records_&lt;yyyyMMdd_HHmmss&gt;.xlsx; both paths are&#xd;&#xa;returned as o_matched_file / o_unmatched_file and attached to the workflow result.&#xd;&#xa;&#xd;&#xa;Errors: feeds are pre-validated (exists and non-empty) - a missing feed ends in Failure with the feed names.&#xd;&#xa;Malformed CSV rows go down per-feed error hops to the error log (their RRN surfaces as a MISSING_IN_x exception).</note>
+      <note>About: AePS 4-way reconciliation. NPCI settlement master (driving side) is LEFT-joined on RRN to the UIDAI
+Aadhaar auth gateway, the BC micro-ATM terminal journal and the BC agent float GL-9904.
+STP rule: STATUS=SUCCESS and AUTH_STATUS=SUCCESS and DISPENSE_STATUS=DISPENSED and GL_STATUS=POSTED and zero GL variance.
+Exceptions: TERMINAL_TIMEOUT_91 / _96, DISPENSE_FAILURE, BIOMETRIC_MISMATCH, BIOMETRIC_SPOOF_ALERT (UIDAI 998),
+GL_FLOAT_VARIANCE, GL_NOT_POSTED, BC_AGENT_MISMATCH, MISSING_IN_UIDAI / TERMINAL / GL, STATUS_MISMATCH.
+Txn date / age is decoded from the RRN (YDDDHHnnnnnn) for the RBI T+1 TAT check downstream.
+
+Params: INPUT_DIR, OUTPUT_DIR (config), CYCLE_ID (runtime).
+Output: Matched_AePS_Records_&lt;yyyyMMdd_HHmmss&gt;.xlsx and Unmatched_AePS_Records_&lt;yyyyMMdd_HHmmss&gt;.xlsx; both paths are
+returned as o_matched_file / o_unmatched_file and attached to the workflow result.
+
+Errors: feeds are pre-validated (exists and non-empty) - a missing feed ends in Failure with the feed names.
+Malformed CSV rows go down per-feed error hops to the error log (their RRN surfaces as a MISSING_IN_x exception).</note>
       <xloc>64</xloc>
       <yloc>760</yloc>
       <width>900</width>

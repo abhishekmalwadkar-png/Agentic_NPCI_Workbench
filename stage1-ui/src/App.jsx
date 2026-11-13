@@ -3,14 +3,16 @@ import RailCatalogView from './RailCatalogView'
 import ProductOperationsView from './ProductOperationsView'
 import AeServerExecutionModal from './AeServerExecutionModal'
 import AgenticFlowView from './AgenticFlowView'
+import PaymentsCopilotView from './PaymentsCopilotView'
+import RbiNeftRtgsView from './RbiNeftRtgsView'
 import './index.css'
 
-const LIVE_RAILS = ['AEPS', 'NETC', 'IMPS']
+const LIVE_RAILS = ['AEPS', 'NETC', 'IMPS', 'NEFT', 'RTGS']
 
 // ── Browser history for in-app navigation ────────────────────────────────────
 // Each tab / rail-scope change is a history entry (#/<tab>?rail=<code>) so the browser
 // Back / Forward buttons move between workbench tabs instead of leaving the site.
-const VALID_NAVS = ['ae_agentic_flow', 'dashboard', 'catalog', 'product_ops', 'upload', 'files', 'staging',
+const VALID_NAVS = ['ae_agentic_flow', 'dashboard', 'rbi_3way', 'copilot', 'catalog', 'product_ops', 'upload', 'files', 'staging',
   'recon', 'investigate', 'recovery', 'reports', 'audit', 'orchestrator']
 function readNavFromUrl() {
   const m = /^#\/([a-z_]+)(?:\?rail=([A-Za-z0-9]+))?/.exec(window.location.hash || '')
@@ -986,7 +988,9 @@ export default function App() {
     RUPAY: (reconData?.rail === 'RUPAY' && reconData?.total_records) ? reconData.total_records : (stats.rail_volumes?.RUPAY || 0),
     CTS: (reconData?.rail === 'CTS' && reconData?.total_records) ? reconData.total_records : (stats.rail_volumes?.CTS || 0),
     BBPS: (reconData?.rail === 'BBPS' && reconData?.total_records) ? reconData.total_records : (stats.rail_volumes?.BBPS || 0),
-    NETC: (reconData?.rail === 'NETC' && reconData?.total_records) ? reconData.total_records : (stats.rail_volumes?.NETC || 0)
+    NETC: (reconData?.rail === 'NETC' && reconData?.total_records) ? reconData.total_records : (stats.rail_volumes?.NETC || 0),
+    NEFT: (reconData?.rail === 'NEFT' && reconData?.total_records) ? reconData.total_records : (stats.rail_volumes?.NEFT || 0),
+    RTGS: (reconData?.rail === 'RTGS' && reconData?.total_records) ? reconData.total_records : (stats.rail_volumes?.RTGS || 0)
   }
 
   const railMetadata = {
@@ -1069,6 +1073,26 @@ export default function App() {
       systems: 'IHMCL / NPCI NETC Switch, Plaza Toll Reader Log, FASTag Wallet CBS Host',
       dailyVolume: '1,505 tolls',
       stpRate: '95.2%'
+    },
+    NEFT: {
+      name: 'National Electronic Funds Transfer (NEFT)',
+      category: 'Wholesale & RBI Clearing',
+      tagline: '24x7 Deferred Net Settlement (DNS) in Half-Hourly Batches (RBI e-Kuber)',
+      clearingWindow: '48 Half-Hourly Batches Daily (24x7 Since Dec 2019)',
+      sla: '2-Hour Credit / Return TAT (RBI DPSS Mandate)',
+      systems: 'RBI e-Kuber CBS, SFMS Gateway (ISO 20022 pacs.008), Finacle CBS, GL 9901',
+      dailyVolume: '14,460 txns',
+      stpRate: '96.4%'
+    },
+    RTGS: {
+      name: 'Real Time Gross Settlement (RTGS)',
+      category: 'Wholesale & RBI Clearing',
+      tagline: 'Continuous Gross High-Value Interbank Settlement (₹2 Lakh+ Mandate)',
+      clearingWindow: 'Continuous Real-Time 24x7 Clearing (Since Dec 2020)',
+      sla: 'Immediate Irrevocable Settlement (T+0 Real-Time)',
+      systems: 'RBI e-Kuber RTGS Node, SFMS pacs.008/009, Finacle Treasury CBS, GL 11010',
+      dailyVolume: '4,910 txns',
+      stpRate: '98.2%'
     }
   }
 
@@ -1491,6 +1515,26 @@ export default function App() {
       label: 'Home Dashboard'
     },
     {
+      id: 'rbi_3way',
+      icon: (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="2" y="3" width="20" height="14" rx="2" />
+          <line x1="8" y1="21" x2="16" y2="21" />
+          <line x1="12" y1="17" x2="12" y2="21" />
+        </svg>
+      ),
+      label: 'RBI 3-Way & Liquidity'
+    },
+    {
+      id: 'copilot',
+      icon: (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+      ),
+      label: 'Payments Copilot (UC7)'
+    },
+    {
       id: 'upload',
       icon: (
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1823,6 +1867,26 @@ export default function App() {
               recoverySummary={recoverySummary}
               onOpenRecon={() => setActiveNav('recon')}
               onOpenHitl={() => setActiveNav('hitl')}
+            />
+          )}
+
+          {/* ═════════════════════════════════════════════════════════════════ */}
+          {/* RBI NEFT & RTGS — 3-WAY RECON, LIQUIDITY & MAKER-CHECKER (UC1-UC8) */}
+          {/* ═════════════════════════════════════════════════════════════════ */}
+          {activeNav === 'rbi_3way' && (
+            <RbiNeftRtgsView
+              apiBase={API}
+              onNavigateCopilot={() => setActiveNav('copilot')}
+            />
+          )}
+
+          {/* ═════════════════════════════════════════════════════════════════ */}
+          {/* PAYMENTS COPILOT — UC7: STATUS COPILOT (TEAMS / WEB PORTAL)      */}
+          {/* ═════════════════════════════════════════════════════════════════ */}
+          {activeNav === 'copilot' && (
+            <PaymentsCopilotView
+              apiBase={API}
+              onNavigateWorkbench={(nav) => setActiveNav(nav || 'rbi_3way')}
             />
           )}
 
@@ -3271,6 +3335,49 @@ export default function App() {
                 </div>
               </div>
             </div>
+
+            {/* ── NEFT / RTGS Quick-Access Banner (shown only when rail scope is NEFT or RTGS) ── */}
+            {(activeRailScope === 'NEFT' || activeRailScope === 'RTGS') && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 12,
+                background: 'linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 100%)',
+                borderRadius: 12,
+                padding: '14px 20px',
+                marginBottom: 18,
+                boxShadow: '0 4px 16px rgba(29,78,216,0.18)'
+              }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: '#93c5fd', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    {activeRailScope} — RBI Settlement Operations Active
+                  </div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: '#ffffff', marginTop: 3 }}>
+                    {activeRailScope === 'RTGS'
+                      ? 'Real-Time Gross Settlement via RBI e-Kuber — UC1 Pre-Validation, UC2/UC3 Liquidity Monitor, UC5/UC6 3-Way Recon, UC7 Copilot, UC8 TAT Reporting'
+                      : 'National Electronic Funds Transfer via RBI e-Kuber — UC4 Inward Credit & Return, UC5/UC6 3-Way Recon, UC7 Copilot, UC8 Regulatory Reporting'}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button
+                    className="btn"
+                    style={{ background: '#ffffff', color: '#1d4ed8', fontWeight: 700, fontSize: 12, padding: '7px 16px', border: 'none', borderRadius: 8, cursor: 'pointer' }}
+                    onClick={() => setActiveNav('rbi_3way')}
+                  >
+                    RBI 3-Way Recon &amp; Liquidity
+                  </button>
+                  <button
+                    className="btn"
+                    style={{ background: 'rgba(255,255,255,0.15)', color: '#ffffff', fontWeight: 700, fontSize: 12, padding: '7px 16px', border: '1.5px solid rgba(255,255,255,0.4)', borderRadius: 8, cursor: 'pointer' }}
+                    onClick={() => setActiveNav('copilot')}
+                  >
+                    Payments Copilot (UC7)
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Executive Banking Overview Cards (Clean & Focused) */}
             <div style={{

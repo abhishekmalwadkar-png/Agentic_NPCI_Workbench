@@ -192,6 +192,52 @@ RAIL_CATALOGS = {
         ],
         "pricing_model": "₹ 0.002 per toll read or ₹ 40,000 / month flat",
         "last_trial_run": None
+    },
+    "NEFT": {
+        "rail_code": "NEFT",
+        "name": "National Electronic Funds Transfer (NEFT)",
+        "tagline": "24x7 Deferred Net Settlement (DNS) in Half-Hourly Batches (RBI e-Kuber)",
+        "icon": "",
+        "color": "#0d9488",
+        "category": "Wholesale & RBI Clearing",
+        "subscription_status": "SUBSCRIBED",
+        "subscription_tier": "Central Banking DNS Suite",
+        "sla_standard": "2-Hour Credit / Return TAT (RBI DPSS Mandate)",
+        "clearing_window": "48 Half-Hourly Batches Daily (24x7 Since Dec 2019)",
+        "daily_volume_rating": "500,000 - 30,000,000 txns/day",
+        "systems_integrated": ["RBI e-Kuber CBS", "SFMS Gateway (ISO 20022 pacs.008)", "Finacle CBS", "GL NEFT Suspense 9901"],
+        "automated_tasks": [
+            {"code": "WF-01", "name": "e-Kuber Batch File Stream Intake", "desc": "Ingests half-hourly multilateral net settlement batch advices."},
+            {"code": "WF-04", "name": "3-Way Triangulation Engine", "desc": "Matches Finacle CBS vs SFMS Switch vs RBI e-Kuber batch statements."},
+            {"code": "WF-07", "name": "Inward Return Classifier (pacs.004)", "desc": "Auto-prepares return messages within the 2-hour RBI TAT window for rejected credits."},
+            {"code": "WF-10", "name": "Zero-Delta Net Settlement Knock-Off", "desc": "Knocks off GL-9901 sundry accounts against RBI current account debits/credits."},
+            {"code": "WF-12", "name": "RBI TAT Compensation Pack", "desc": "Computes mandatory delay interest (Repo + 2%) for inward delays."}
+        ],
+        "pricing_model": "₹ 0.0018 per transfer or ₹ 45,000 / month flat",
+        "last_trial_run": None
+    },
+    "RTGS": {
+        "rail_code": "RTGS",
+        "name": "Real Time Gross Settlement (RTGS)",
+        "tagline": "Continuous Gross High-Value Interbank Settlement (₹2 Lakh+ Mandate)",
+        "icon": "",
+        "color": "#7c3aed",
+        "category": "Wholesale & RBI Clearing",
+        "subscription_status": "SUBSCRIBED",
+        "subscription_tier": "Real-Time Gross Liquidity Suite",
+        "sla_standard": "Immediate Irrevocable Settlement (T+0 Real-Time)",
+        "clearing_window": "Continuous Real-Time 24x7 Clearing (Since Dec 2020)",
+        "daily_volume_rating": "50,000 - 2,000,000 high-value txns/day",
+        "systems_integrated": ["RBI e-Kuber RTGS Node", "SFMS pacs.008/pacs.009", "Finacle Treasury CBS", "RBI Current Account GL-11010"],
+        "automated_tasks": [
+            {"code": "WF-01", "name": "Intraday Liquidity & Queue Monitor", "desc": "Watches RBI settlement account balance and outward RTGS queue depth in real time."},
+            {"code": "WF-04", "name": "Gross Settlement 3-Way Reconciler", "desc": "Cross-matches order-by-order gross settlements at RBI against Finacle debits."},
+            {"code": "WF-07", "name": "Timeout & Deemed Failure Analyzer", "desc": "Catches 30s switch drops and triggers immediate customer reversals."},
+            {"code": "WF-10", "name": "Pre-Submission Dual-Authorization Gate", "desc": "L2 Maker-Checker clearance for outward payments exceeding ₹5 Crores."},
+            {"code": "WF-12", "name": "Regulatory Settlement Certificate", "desc": "Generates cryptographically sealed gross settlement audit evidence."}
+        ],
+        "pricing_model": "₹ 0.004 per high-value order or ₹ 65,000 / month flat",
+        "last_trial_run": None
     }
 }
 
@@ -243,6 +289,8 @@ def execute_rail_trial(rail_code: str) -> Dict[str, Any]:
         "CTS":   {"sample_txns": 8000,  "stp_rate": "97.5%", "matched": 7800,  "breaks": 200,  "auto_recovered_inr": 4500000.0, "time_ms": 250},
         "BBPS":  {"sample_txns": 20000, "stp_rate": "98.1%", "matched": 19620, "breaks": 380,  "auto_recovered_inr": 820000.0, "time_ms": 340},
         "NETC":  {"sample_txns": 40000, "stp_rate": "96.8%", "matched": 38720, "breaks": 1280, "auto_recovered_inr": 1140000.0, "time_ms": 530},
+        "NEFT":  {"sample_txns": 15000, "stp_rate": "96.4%", "matched": 14460, "breaks": 540,  "auto_recovered_inr": 12500000.0, "time_ms": 480},
+        "RTGS":  {"sample_txns": 5000,  "stp_rate": "98.2%", "matched": 4910,  "breaks": 90,   "auto_recovered_inr": 185000000.0, "time_ms": 320},
     }.get(rc, {"sample_txns": 10000, "stp_rate": "95.0%", "matched": 9500, "breaks": 500, "auto_recovered_inr": 1000000.0, "time_ms": 300})
 
     trial_seal = f"SEAL_TRIAL_{rc}_{uuid.uuid4().hex[:12].upper()}"

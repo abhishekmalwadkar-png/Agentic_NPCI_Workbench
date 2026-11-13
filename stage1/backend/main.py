@@ -51,6 +51,13 @@ from stage4_5_6.backend.recovery_and_execution import (
 )
 from orchestrator.backend.maf_orchestrator import get_orchestrator
 from stage2.backend import rail_recon
+from stage2.backend.rbi_neft_rtgs import (
+    RBI_LIQUIDITY_STATE,
+    _generate_3way_records,
+    MAKER_CHECKER_ACTIONS,
+    query_payments_copilot,
+    execute_maker_checker_decision,
+)
 
 app = FastAPI(title="NPCI Stage 1 – File Monitoring & Validation Agent", version="1.0.0")
 
@@ -2077,6 +2084,65 @@ def rail_catalog_try_now(rail_code: str = "UPI"):
 def rail_catalog_subscribe(rail_code: str, status: str = "SUBSCRIBED"):
     """Toggles or purchases customer subscription access for a specific rail catalog."""
     return toggle_rail_subscription(rail_code=rail_code, status=status)
+
+
+# -----------------------------------------------------------------------------
+# RBI NEFT & RTGS WHOLESALE CLEARING, LIQUIDITY & COPILOT ENDPOINTS
+# -----------------------------------------------------------------------------
+@app.get("/api/rbi/liquidity")
+def get_rbi_liquidity():
+    """Returns real-time RBI e-Kuber current account balance, ILF float, and RTGS/NEFT queue depths."""
+    return RBI_LIQUIDITY_STATE
+
+
+@app.get("/api/rbi/neft-rtgs/3way-recon")
+def get_rbi_3way_recon(rail: Optional[str] = None):
+    """Returns 3-way reconciliation records (Finacle CBS vs SFMS Switch vs RBI e-Kuber Statement)."""
+    records = _generate_3way_records()
+    if rail:
+        records = [r for r in records if r["rail"].upper() == rail.upper()]
+    return {
+        "status": "SUCCESS",
+        "rail": rail or "ALL_RBI",
+        "total_records": len(records),
+        "records": records
+    }
+
+
+@app.get("/api/maker-checker/actions")
+def get_maker_checker_actions(status: Optional[str] = None):
+    """Returns L2 agent-prepared actions waiting for human maker-checker sign-off."""
+    actions = MAKER_CHECKER_ACTIONS
+    if status:
+        actions = [a for a in actions if a["status"].upper() == status.upper()]
+    return {"status": "SUCCESS", "count": len(actions), "actions": actions}
+
+
+@app.post("/api/maker-checker/decide")
+def post_maker_checker_decision(payload: Dict[str, Any]):
+    """Approves or rejects an L2 agent proposal with approver identity and audit seal."""
+    act_id = payload.get("action_id", "")
+    decision = payload.get("decision", "APPROVE")
+    approver = payload.get("approver_name", "abhishek.malwadkar")
+    remarks = payload.get("remarks", "")
+    res = execute_maker_checker_decision(act_id, decision, approver_name=approver, remarks=remarks)
+    if res["status"] != "SUCCESS":
+        raise HTTPException(status_code=400, detail=res["message"])
+    add_audit("INFO", "MAKER_CHECKER_DECISION", act_id, f"Action {act_id} {decision}D by {approver}: {remarks}")
+    return res
+
+
+@app.post("/api/copilot/chat")
+def post_copilot_chat(payload: Dict[str, Any]):
+    """Payments Copilot conversational inquiry supporting Microsoft Teams and Web Portal formatting."""
+    query = payload.get("query", "")
+    channel = payload.get("channel", "teams")
+    if not query:
+        raise HTTPException(status_code=400, detail="Query cannot be empty")
+    res = query_payments_copilot(query, channel=channel)
+    add_audit("INFO", "COPILOT_QUERY", channel.upper(), f"Query: '{query[:60]}' -> Matched: {res.get('matched')}")
+    return res
+
 
 
 

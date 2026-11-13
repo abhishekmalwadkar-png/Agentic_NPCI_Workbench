@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import RailCatalogView from './RailCatalogView'
 import ProductOperationsView from './ProductOperationsView'
 import AeServerExecutionModal from './AeServerExecutionModal'
-import AgenticFlowView from './AgenticFlowView'
 import PaymentsCopilotView from './PaymentsCopilotView'
 import RbiNeftRtgsView from './RbiNeftRtgsView'
 import './index.css'
@@ -12,7 +11,7 @@ const LIVE_RAILS = ['AEPS', 'NETC', 'IMPS', 'NEFT', 'RTGS']
 // ── Browser history for in-app navigation ────────────────────────────────────
 // Each tab / rail-scope change is a history entry (#/<tab>?rail=<code>) so the browser
 // Back / Forward buttons move between workbench tabs instead of leaving the site.
-const VALID_NAVS = ['ae_agentic_flow', 'dashboard', 'rbi_3way', 'copilot', 'catalog', 'product_ops', 'upload', 'files', 'staging',
+const VALID_NAVS = ['dashboard', 'catalog', 'rbi_3way', 'copilot', 'product_ops', 'upload', 'files', 'staging',
   'recon', 'investigate', 'recovery', 'reports', 'audit', 'orchestrator']
 function readNavFromUrl() {
   const m = /^#\/([a-z_]+)(?:\?rail=([A-Za-z0-9]+))?/.exec(window.location.hash || '')
@@ -681,7 +680,7 @@ export default function App() {
   const [files, setFiles] = useState([])
   const [audit, setAudit] = useState([])
   const [staging, setStaging] = useState([])
-  const [activeNav, setActiveNav] = useState(() => readNavFromUrl()?.nav || 'ae_agentic_flow')
+  const [activeNav, setActiveNav] = useState(() => readNavFromUrl()?.nav || 'dashboard')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [activeRailScope, setActiveRailScope] = useState(() => readNavFromUrl()?.rail || null)
   const [activeRailName, setActiveRailName] = useState(() => readNavFromUrl()?.rail || '')
@@ -703,7 +702,7 @@ export default function App() {
 
   useEffect(() => {
     const onPop = (e) => {
-      const s = e.state || readNavFromUrl() || { nav: 'ae_agentic_flow', rail: null, railName: '' }
+      const s = e.state || readNavFromUrl() || { nav: 'dashboard', rail: null, railName: '' }
       setActiveNav(s.nav)
       setActiveRailScope(s.rail || null)
       setActiveRailName(s.railName || s.rail || '')
@@ -1484,17 +1483,6 @@ export default function App() {
 
   const navItems = [
     {
-      id: 'ae_agentic_flow',
-      icon: (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#ea580c' }}>
-          <polygon points="12 2 2 7 12 12 22 7 12 2" />
-          <polyline points="2 17 12 22 22 17" />
-          <polyline points="2 12 12 17 22 12" />
-        </svg>
-      ),
-      label: 'Agentic Flow'
-    },
-    {
       id: 'catalog',
       icon: (
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1813,22 +1801,6 @@ export default function App() {
           {/* ═════════════════════════════════════════════════════════════════ */}
           {/* NPCI PRODUCT OPERATIONS (RAIL-SPECIFIC WORKBENCH: SCREEN #2)      */}
           {/* ═════════════════════════════════════════════════════════════════ */}
-          {/* ======================================================== */}
-          {/* AE AGENTIC AUTOMATION FLOW ARCHITECTURE DIAGRAM         */}
-          {/* ======================================================== */}
-          {activeNav === 'ae_agentic_flow' && (
-            <AgenticFlowView
-              reconSummary={reconData}
-              aeState={aeExecutionStatus}
-              sidebarCollapsed={sidebarCollapsed}
-              onTriggerAe={() => setAeModalOpen(true)}
-              selectedRailCode={activeRailScope || selectedRailForOps || 'UPI'}
-              onSelectRail={(railCode) => {
-                setSelectedRailForOps(railCode)
-              }}
-            />
-          )}
-
           {activeNav === 'product_ops' && (
             <ProductOperationsView
               initialRail={activeRailScope || selectedRailForOps || 'UPI'}

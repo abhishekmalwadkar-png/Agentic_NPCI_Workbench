@@ -1347,7 +1347,7 @@ _PROCESSED_BATCHES = set()
 _PROCESSED_IMPS_BATCHES = set()
 _PROCESSED_AEPS_BATCHES = set()
 _PROCESSED_NETC_BATCHES = set()
-_LATEST_RECON_REQ_ID = 3425234
+_LATEST_RECON_REQ_ID = 3482180
 
 
 def _find_active_or_latest_recon_instance(wf_name: str = "NPCI Demo UPI Reconn") -> Optional[Dict[str, Any]]:
@@ -1419,17 +1419,36 @@ def wait_for_ae_recon_to_complete(batch_key: str, m_path: Optional[Path], u_path
             if p and p.exists():
                 try:
                     s1 = p.stat().st_size
-                    if s1 == 0:
+                    if s1 < 1000:
                         all_unlocked = False
                         break
+                    # If Excel file, verify it is a valid, closed ZIP archive with worksheets
+                    if p.suffix.lower() == ".xlsx":
+                        import zipfile
+                        with zipfile.ZipFile(p, "r") as zf:
+                            if zf.testzip() is not None:
+                                all_unlocked = False
+                                break
+                            sheets = [n for n in zf.namelist() if n.startswith("xl/worksheets/sheet")]
+                            if not sheets:
+                                all_unlocked = False
+                                break
                     with open(p, "r+b"):
                         pass
-                except (PermissionError, OSError):
+                except Exception:
                     all_unlocked = False
                     break
             else:
                 all_unlocked = False
                 break
+
+        # Verify file size stability (ensure Process Studio has completely finished writing)
+        if all_unlocked:
+            sizes_before = {p: p.stat().st_size for p in [m_path, u_path] if p and p.exists()}
+            time.sleep(1.5)
+            sizes_after = {p: p.stat().st_size for p in [m_path, u_path] if p and p.exists()}
+            if any(sizes_before.get(p) != sizes_after.get(p) for p in sizes_before):
+                all_unlocked = False
 
         if not all_unlocked:
             print(f"[AE-WATCHER] Output files for batch {batch_key} ({wf_name}) are still being written by Process Studio. Waiting... ({int(time.time()-start_time)}s elapsed)")

@@ -1,10 +1,65 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, Component } from 'react'
 import RailCatalogView from './RailCatalogView'
 import ProductOperationsView from './ProductOperationsView'
 import AeServerExecutionModal from './AeServerExecutionModal'
 import PaymentsCopilotView from './PaymentsCopilotView'
 import RbiNeftRtgsView from './RbiNeftRtgsView'
 import './index.css'
+
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error('Workbench UI Error:', error, errorInfo)
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          padding: 32,
+          margin: 24,
+          borderRadius: 8,
+          background: '#ffffff',
+          border: '1.5px solid #fed7aa',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: 32, marginBottom: 8, color: '#ea580c' }}>!</div>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>
+            Workbench Interface Recovered
+          </h3>
+          <p style={{ fontSize: 12, color: '#64748b', maxWidth: 480, margin: '0 auto 16px' }}>
+            {this.state.error?.message || 'An unexpected rendering state was captured. Click below to refresh your workbench session.'}
+          </p>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false, error: null })
+              window.location.hash = '#/catalog'
+            }}
+            style={{
+              padding: '8px 18px',
+              borderRadius: 6,
+              background: '#ea580c',
+              color: '#ffffff',
+              border: 'none',
+              fontWeight: 600,
+              fontSize: 12,
+              cursor: 'pointer'
+            }}
+          >
+            Return to Rail Solution Catalog
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 const LIVE_RAILS = ['AEPS', 'NETC', 'IMPS', 'NEFT', 'RTGS']
 
@@ -367,7 +422,8 @@ function AuditLog({ logs, scopedRail, onDownloadFile }) {
 }
 
 // ── File Registry Table (Multi-Rail, Date Filter DD-MM-YYYY, Direct AE Output Download) ──
-function FileTable({ files, onDownload, activeRailScope }) {
+function FileTable({ files = [], onDownload, activeRailScope }) {
+  const safeFiles = useMemo(() => Array.isArray(files) ? files : [], [files])
   const [selectedRail, setSelectedRail] = useState(() => (activeRailScope && activeRailScope !== 'ALL' ? activeRailScope.toUpperCase() : 'ALL'))
   const [dateFilter, setDateFilter] = useState('') // Stored as DD-MM-YYYY
   const [searchQuery, setSearchQuery] = useState('')
@@ -393,6 +449,7 @@ function FileTable({ files, onDownload, activeRailScope }) {
 
   // Helper to extract DD-MM-YYYY from file object
   const getFileDateDMY = f => {
+    if (!f) return todayDMY
     if (f.date_dmy) return f.date_dmy
     if (f.received_at) {
       try {
@@ -410,6 +467,7 @@ function FileTable({ files, onDownload, activeRailScope }) {
 
   // Helper to extract time string
   const getFileTimeStr = f => {
+    if (!f) return '12:00:00'
     if (f.time_str) return f.time_str
     if (f.received_at) {
       try {
@@ -424,6 +482,7 @@ function FileTable({ files, onDownload, activeRailScope }) {
 
   // Normalize rail
   const getFileRail = f => {
+    if (!f) return 'UPI'
     if (f.rail) return f.rail.toUpperCase()
     const rKeys = Object.keys(f.rail_counts || {})
     if (rKeys.length > 0) return rKeys[0].toUpperCase()
@@ -432,7 +491,8 @@ function FileTable({ files, onDownload, activeRailScope }) {
 
   // Filtered files list
   const filteredFiles = useMemo(() => {
-    return files.filter(f => {
+    return safeFiles.filter(f => {
+      if (!f) return false
       // 1. Rail filter
       const fRail = getFileRail(f)
       if (selectedRail !== 'ALL' && fRail !== selectedRail) {
@@ -468,18 +528,19 @@ function FileTable({ files, onDownload, activeRailScope }) {
 
       return true
     })
-  }, [files, selectedRail, dateFilter, typeFilter, searchQuery])
+  }, [safeFiles, selectedRail, dateFilter, typeFilter, searchQuery])
 
   // Count per rail for tab badges
   const railCounts = useMemo(() => {
-    const counts = { ALL: files.length, UPI: 0, IMPS: 0, AEPS: 0, NETC: 0, NEFT: 0, RTGS: 0 }
-    files.forEach(f => {
+    const counts = { ALL: safeFiles.length, UPI: 0, IMPS: 0, AEPS: 0, NETC: 0, NEFT: 0, RTGS: 0 }
+    safeFiles.forEach(f => {
+      if (!f) return
       const r = getFileRail(f)
       if (counts[r] !== undefined) counts[r]++
       else counts.ALL++
     })
     return counts
-  }, [files])
+  }, [safeFiles])
 
   // Pagination slice
   const totalPages = Math.ceil(filteredFiles.length / pageSize) || 1
@@ -759,7 +820,7 @@ function FileTable({ files, onDownload, activeRailScope }) {
         {/* Counter & Clear All Button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 11, color: '#64748b' }}>
-            Showing <strong>{filteredFiles.length}</strong> of <strong>{files.length}</strong> file{files.length === 1 ? '' : 's'}
+            Showing <strong>{filteredFiles.length}</strong> of <strong>{safeFiles.length}</strong> file{safeFiles.length === 1 ? '' : 's'}
           </span>
           {isFiltered && (
             <button
@@ -801,6 +862,7 @@ function FileTable({ files, onDownload, activeRailScope }) {
           </thead>
           <tbody>
             {pagedFiles.map((f, i) => {
+              if (!f) return null
               const total = f.records || 1
               const stp = f.stp_rate !== undefined ? f.stp_rate : Math.round(((f.stp_count || 0) / total) * 100)
               const fRail = getFileRail(f)
@@ -2439,8 +2501,9 @@ export default function App() {
 
         {/* Main Content */}
         <div className="main">
-          {/* Page transition wrapper — key forces re-mount → re-animates on tab switch */}
-          <div key={activeNav} className="page-transition">
+          {/* Page transition wrapper & Error Boundary */}
+          <ErrorBoundary key={activeNav}>
+            <div className="page-transition">
           {/* ═════════════════════════════════════════════════════════════════ */}
           {/* NPCI PRODUCT OPERATIONS (RAIL-SPECIFIC WORKBENCH: SCREEN #2)      */}
           {/* ═════════════════════════════════════════════════════════════════ */}
@@ -4421,7 +4484,8 @@ export default function App() {
             </div>
           </>}
 
-          </div>
+            </div>
+          </ErrorBoundary>
         </div>
       </div>
     </div>

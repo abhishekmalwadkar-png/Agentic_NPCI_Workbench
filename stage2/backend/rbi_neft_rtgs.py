@@ -604,21 +604,36 @@ def query_payments_copilot(query_text: str, channel: str = "teams") -> Dict[str,
             }
         }
 
-    # 5. MAKER-CHECKER / PENDING ACTIONS QUERY
-    if any(k in q for k in ["MAKER", "CHECKER", "APPROVAL", "APPROVE", "REJECT", "HELD", "L2", "COCKPIT"]):
-        pending = [a for a in MAKER_CHECKER_ACTIONS if a.get("status") == "PENDING_CHECKER"]
-        summary = (
-            f"**L2 Maker-Checker Dual-Authorization Queue ({now_str}):**\n\n"
-            f"Found **{len(pending)} pending action(s)** awaiting supervisor clearance:\n\n"
-        )
-        for act in pending:
-            summary += (
-                f"- **Action ID:** `{act['id']}` | **Rail:** {act['rail']} | **Amount:** INR {act['amount']:,.2f}\n"
-                f"  - **Trigger:** {act['description']}\n"
-                f"  - **Risk Assessment:** {act['risk_level']} | **SLA:** {act['sla_window']}\n"
-                f"  - **Automated Next Step:** {act['automated_workflow_target']}\n\n"
+    # 5. HITL / MAKER-CHECKER / PENDING ACTIONS QUERY
+    is_hitl_query = (
+        any(k in q for k in ["HITL", "MAKER", "CHECKER", "APPROVAL", "APPROVE", "REJECT", "ACTION", "COCKPIT", "L2"]) or
+        ("PENDING" in q and ("ACTION" in q or "LIST" in q or "HITL" in q)) or
+        ("LIST" in q and any(k in q for k in ["FULL LIST", "PENDING", "ACTIONS", "ITEMS"]) and not any(k in q for k in ["MATCHED", "UNMATCHED", "BREAK"])) or
+        (q in ["FULL LIST", "GIVE ME FULL LIST", "SHOW FULL LIST", "SHOW LIST", "LIST ALL", "LIST OF PENDING", "PENDING ACTIONS"])
+    )
+
+    if is_hitl_query:
+        pending = [a for a in MAKER_CHECKER_ACTIONS if a.get("status") in ("PENDING_APPROVAL", "PENDING_CHECKER", "HELD")]
+        tot_action_val = sum(a.get("amount", 0) for a in pending)
+
+        lines = [
+            f"**L2 Maker-Checker Dual-Authorization Queue ({len(pending)} Pending HITL Actions):**\n",
+            f"Total Value Pending Supervisor Clearance: **INR {tot_action_val:,.2f}** (~₹ {tot_action_val/10000000:.2f} Crores) across NEFT & RTGS:\n"
+        ]
+
+        for i, act in enumerate(pending, 1):
+            dossier = act.get("evidence_dossier", {})
+            sla_info = dossier.get("regulatory_sla", "2-hour regulatory cutoff")
+            lines.append(
+                f"{i}. **Action ID:** `{act['id']}` | **Rail:** {act['rail']} | **Amount:** INR {act['amount']:,.2f}\n"
+                f"   - **Action Required:** `{act['action_type']}`\n"
+                f"   - **Parties / Customer:** {act.get('customer', 'Treasury')}\n"
+                f"   - **Trigger / Reason:** `{act.get('reason_code', 'Policy Hold')}`\n"
+                f"   - **Proposed by:** {act.get('agent_name', 'Agent')} ({act.get('autonomy_level', 'L2')})\n"
+                f"   - **Regulatory SLA:** {sla_info}\n"
             )
-        summary += "*(You can approve or reject these items directly from the HITL Approvals & Cockpit tab).* "
+
+        lines.append("*(You can approve or reject these items directly from the **HITL Approvals & Cockpit** tab or using the action cards below).*")
 
         return {
             "status": "SUCCESS",
@@ -627,8 +642,10 @@ def query_payments_copilot(query_text: str, channel: str = "teams") -> Dict[str,
             "channel": channel,
             "query": query_text,
             "timestamp": now_str,
-            "summary": summary,
-            "records_list": pending
+            "summary": "\n".join(lines),
+            "records_list": pending,
+            "count": len(pending),
+            "total_amount": tot_action_val
         }
 
     # 6. LIQUIDITY / E-KUBER QUERY
@@ -654,8 +671,8 @@ def query_payments_copilot(query_text: str, channel: str = "teams") -> Dict[str,
             "record": liq
         }
 
-    # 7. QUEUE QUERY
-    if any(k in q for k in ["QUEUE", "STUCK", "PENDING", "HOLD"]):
+    # 7. IN-FLIGHT OUTWARD QUEUE QUERY
+    if any(k in q for k in ["QUEUE", "STUCK", "OUTWARD DEPTH", "IN-FLIGHT"]) and "ACTION" not in q and "HITL" not in q:
         summary = (
             f"**In-Flight Queue Status ({now_str}):**\n\n"
             f"- **RTGS Gross Queue:** 8 active payments totaling INR 34.85 Cr. All payments within acceptable threshold (< 5 mins queue age).\n"

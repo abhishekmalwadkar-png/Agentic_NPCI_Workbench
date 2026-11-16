@@ -362,43 +362,52 @@ MAKER_CHECKER_ACTIONS: List[Dict[str, Any]] = [
 # -----------------------------------------------------------------------------
 def query_payments_copilot(query_text: str, channel: str = "teams") -> Dict[str, Any]:
     """
-    Answers natural language questions about UTRs, queues, liquidity, and return reasons.
+    Answers natural language questions about UTRs, matched records, breaks,
+    queues, liquidity, regulatory TAT, and banking reconciliation SOPs.
     Output conforms to Microsoft Teams Adaptive Cards or Web Portal cards.
     """
     q = query_text.strip().upper()
     now_str = datetime.now().strftime("%d-%b-%Y %H:%M:%S IST")
     all_records = _generate_3way_records()
 
-    # Search for matching record by UTR, RRN, Account, or normalized variants (handling YY vs YYYY)
+    # Search for matching record by specific UTR, RRN, Account, or normalized variants
     q_norm = q.replace(" ", "").replace("-", "").replace(":", "")
     q_tokens = [t.strip().upper() for t in q.replace(":", " ").replace(",", " ").replace("?", " ").replace("`", "").replace("'", "").replace('"', '').split() if len(t.strip()) >= 3]
+
+    # Explicit query intent checks:
+    is_list_query = any(k in q for k in ["LIST", "SHOW", "GIVE", "ALL", "WHAT ARE", "DISPLAY", "FETCH", "RECORDS", "TRANSACTIONS", "BREAKS"])
+    has_unmatched_kw = any(k in q for k in ["UNMATCHED", "BREAK", "EXCEPTION", "FAIL", "REVERSAL", "P1", "TIMEOUT", "REJECT", "MISMATCH", "DROPPED"])
+    has_matched_kw = any(k in q for k in ["MATCHED", "STP", "SETTLED", "BALANCED", "CLEARING AGREEMENT"]) and not has_unmatched_kw
+
+    # Check for specific UTR match ONLY if query is not a general list request
     matched_rec = None
-    for r in all_records:
-        r_utr = r["utr"].upper()
-        r_short = r_utr.replace("2026", "26")
-        r_long = r_utr.replace("261113", "20261113")
-        r_suffix = r_utr[-6:]
-        r_rrn = r["rrn"]
+    if not (is_list_query and (has_matched_kw or has_unmatched_kw)):
+        for r in all_records:
+            r_utr = r["utr"].upper()
+            r_short = r_utr.replace("2026", "26")
+            r_long = r_utr.replace("261113", "20261113")
+            r_suffix = r_utr[-6:]
+            r_rrn = r["rrn"]
 
-        # Exact or substring match in raw or normalized query
-        if (r_utr in q or r_short in q or r_long in q or
-            r_utr in q_norm or r_short in q_norm or r_long in q_norm or
-            r_rrn in q or r["remitter_acc"] in q or r["beneficiary_acc"] in q):
-            matched_rec = r
-            break
+            # Exact or substring match in raw or normalized query
+            if (r_utr in q or r_short in q or r_long in q or
+                r_utr in q_norm or r_short in q_norm or r_long in q_norm or
+                r_rrn in q or r["remitter_acc"] in q or r["beneficiary_acc"] in q):
+                matched_rec = r
+                break
 
-        # Suffix / sequence match (e.g. 000101, 000103, 000104)
-        if r_suffix in q_norm:
-            matched_rec = r
-            break
+            # Suffix / sequence match (e.g. 000101, 000103, 000104)
+            if r_suffix in q_norm and not is_list_query:
+                matched_rec = r
+                break
 
-        # Token-based match
-        ignore_words = {"STATUS", "CHECK", "INVESTIGATE", "TRANSACTION", "PAYMENT", "WHAT", "ABOUT", "SHOW", "THE", "FOR"}
-        if any((tok in r_utr or tok in r_short or r_utr in tok or r_short in tok or tok in r_rrn) for tok in q_tokens if tok not in ignore_words):
-            matched_rec = r
-            break
+            # Token-based match
+            ignore_words = {"STATUS", "CHECK", "INVESTIGATE", "TRANSACTION", "PAYMENT", "WHAT", "ABOUT", "SHOW", "THE", "FOR", "GIVE", "LIST", "RECORDS", "MATCHED", "UNMATCHED", "BREAKS"}
+            if any((tok in r_utr or tok in r_short or r_utr in tok or r_short in tok or tok in r_rrn) for tok in q_tokens if tok not in ignore_words):
+                matched_rec = r
+                break
 
-    # If UTR found in query
+    # 1. SPECIFIC UTR INVESTIGATION DOSSIER
     if matched_rec:
         rec = matched_rec
         status_color = "good" if rec["recon_status"] == "MATCHED_STP" else "warning" if "HOLD" in rec["recon_status"] else "attention"
@@ -487,8 +496,143 @@ def query_payments_copilot(query_text: str, channel: str = "teams") -> Dict[str,
             "adaptive_card": adaptive_card
         }
 
-    # Liquidity query check
-    if any(k in q for k in ["LIQUIDITY", "BALANCE", "E-KUBER", "EKUBER", "BUFFER"]):
+    # 2. MATCHED RECORDS LIST QUERY
+    if has_matched_kw:
+        matched_list = [r for r in all_records if r.get("recon_status") == "MATCHED_STP"]
+        tot_val = sum(r["amount"] for r in matched_list)
+
+        lines = [
+            f"**3-Leg Reconciled Matched Records (100% STP Settled • Zero Variance):**\n",
+            f"Found **{len(matched_list)} matched transactions** totaling **INR {tot_val:,.2f}** with confirmed 3-leg agreement across Core Banking (Finacle CBS), SFMS Switch, and RBI e-Kuber:\n"
+        ]
+
+        for i, m in enumerate(matched_list, 1):
+            lines.append(
+                f"{i}. **UTR:** `{m['utr']}` ({m['rail']}) | **Amount:** INR {m['amount']:,.2f}\n"
+                f"   - **Remitter:** {m['remitter_name']} ({m['remitter_acc']})\n"
+                f"   - **Beneficiary:** {m['beneficiary_name']} ({m['beneficiary_bank']})\n"
+                f"   - **3-Leg Status:** CBS: `{m['cbs_status']}` | SFMS: `{m['sfms_status']}` | RBI: `{m['rbi_status']}` (Voucher: `{m['rbi_voucher_no']}`)\n"
+                f"   - **Settlement Result:** STP Settled with zero financial variance.\n"
+            )
+
+        lines.append(
+            f"*(Multi-Rail Overview: In the workbench, 47,600 UPI transactions are matched at 95.2% STP, 1,000 IMPS matched, and 200 AePS matched. Download full verified `.xlsx` batch files from the File Registry tab).* "
+        )
+
+        return {
+            "status": "SUCCESS",
+            "matched": True,
+            "record_type": "MATCHED_LIST",
+            "channel": channel,
+            "query": query_text,
+            "timestamp": now_str,
+            "summary": "\n".join(lines),
+            "records_list": matched_list,
+            "count": len(matched_list),
+            "total_amount": tot_val
+        }
+
+    # 3. UNMATCHED RECORDS / BREAKS / EXCEPTIONS QUERY
+    if has_unmatched_kw:
+        break_list = [r for r in all_records if "BREAK" in r.get("recon_status", "") or "HOLD" in r.get("recon_status", "")]
+        tot_break_val = sum(r["amount"] for r in break_list)
+
+        lines = [
+            f"**Open Reconciliation Breaks & Exception Records:**\n",
+            f"Found **{len(break_list)} active exceptions** totaling **INR {tot_break_val:,.2f}** requiring AI remediation or Maker-Checker authorization:\n"
+        ]
+
+        for i, b in enumerate(break_list, 1):
+            prio_tag = f"[{b['priority']}]" if b.get("priority") else "[P1]"
+            lines.append(
+                f"{i}. **UTR:** `{b['utr']}` ({b['rail']}) | **Amount:** INR {b['amount']:,.2f} | **Priority:** `{prio_tag}`\n"
+                f"   - **Break Category:** `{b['recon_status']}`\n"
+                f"   - **Diagnosis:** {b['root_cause']}\n"
+                f"   - **Regulatory SLA:** {b['sla_status']} (Elapsed: {b['sla_elapsed_min']} mins | Deadline: {b['tat_deadline']})\n"
+                f"   - **Proposed Action:** {b['proposed_action']}\n"
+            )
+
+        lines.append("*(Click on any UTR above or type `Investigate UTR <code >` to see the full 3-Leg comparative evidence dossier).*")
+
+        return {
+            "status": "SUCCESS",
+            "matched": True,
+            "record_type": "BREAK_LIST",
+            "channel": channel,
+            "query": query_text,
+            "timestamp": now_str,
+            "summary": "\n".join(lines),
+            "records_list": break_list,
+            "count": len(break_list),
+            "total_amount": tot_break_val
+        }
+
+    # 4. OVERALL RECON SUMMARY / METRICS QUERY
+    if any(k in q for k in ["RECON", "SUMMARY", "METRIC", "OVERVIEW", "STATUS", "RATE", "SCORECARD", "STATS"]):
+        matched_cnt = sum(1 for r in all_records if r.get("recon_status") == "MATCHED_STP")
+        break_cnt = sum(1 for r in all_records if "BREAK" in r.get("recon_status", "") or "HOLD" in r.get("recon_status", ""))
+        tot_cnt = len(all_records)
+        stp_pct = round((matched_cnt / max(1, tot_cnt)) * 100, 1)
+
+        summary = (
+            f"**Comprehensive Multi-Rail Reconciliation Telemetry ({now_str}):**\n\n"
+            f"- **3-Way Triangulation Match Rate:** **{stp_pct}% STP** ({matched_cnt} of {tot_cnt} sampled batches balanced)\n"
+            f"- **Settled Volume:** INR {sum(r['amount'] for r in all_records if r.get('recon_status') == 'MATCHED_STP'):,.2f} with zero variance\n"
+            f"- **Active Exceptions:** **{break_cnt} open breaks** requiring dual-track remediation (1 SFMS timeout, 1 pacs.004 return, 1 L2 hold)\n"
+            f"- **Leg-by-Leg Health:**\n"
+            f"  - **Leg 1 (Finacle CBS):** 100% operational | GL-14022 suspense monitored\n"
+            f"  - **Leg 2 (SFMS ISO 20022 Switch):** 98.7% dispatch ACK rate (`pacs.008`)\n"
+            f"  - **Leg 3 (RBI e-Kuber Node):** 99.4% real-time gross settlement confirmation\n\n"
+            f"- **Settlement Account Float:** INR {RBI_LIQUIDITY_STATE['current_balance_inr']:,.2f} (Prudential Buffer: INR {RBI_LIQUIDITY_STATE['prudential_buffer_threshold_inr']:,.2f})\n"
+            f"- **Zero-Delta GL Status:** `KNOCKED_OFF_BALANCED` (Vouchers posted in GL-14020 vs GL-11010)"
+        )
+
+        return {
+            "status": "SUCCESS",
+            "matched": True,
+            "record_type": "RECON_SUMMARY",
+            "channel": channel,
+            "query": query_text,
+            "timestamp": now_str,
+            "summary": summary,
+            "record": {
+                "total_records": tot_cnt,
+                "matched_count": matched_cnt,
+                "break_count": break_cnt,
+                "stp_rate": stp_pct,
+                "liquidity_balance": RBI_LIQUIDITY_STATE["current_balance_inr"]
+            }
+        }
+
+    # 5. MAKER-CHECKER / PENDING ACTIONS QUERY
+    if any(k in q for k in ["MAKER", "CHECKER", "APPROVAL", "APPROVE", "REJECT", "HELD", "L2", "COCKPIT"]):
+        pending = [a for a in MAKER_CHECKER_ACTIONS if a.get("status") == "PENDING_CHECKER"]
+        summary = (
+            f"**L2 Maker-Checker Dual-Authorization Queue ({now_str}):**\n\n"
+            f"Found **{len(pending)} pending action(s)** awaiting supervisor clearance:\n\n"
+        )
+        for act in pending:
+            summary += (
+                f"- **Action ID:** `{act['id']}` | **Rail:** {act['rail']} | **Amount:** INR {act['amount']:,.2f}\n"
+                f"  - **Trigger:** {act['description']}\n"
+                f"  - **Risk Assessment:** {act['risk_level']} | **SLA:** {act['sla_window']}\n"
+                f"  - **Automated Next Step:** {act['automated_workflow_target']}\n\n"
+            )
+        summary += "*(You can approve or reject these items directly from the HITL Approvals & Cockpit tab).* "
+
+        return {
+            "status": "SUCCESS",
+            "matched": True,
+            "record_type": "MAKER_CHECKER",
+            "channel": channel,
+            "query": query_text,
+            "timestamp": now_str,
+            "summary": summary,
+            "records_list": pending
+        }
+
+    # 6. LIQUIDITY / E-KUBER QUERY
+    if any(k in q for k in ["LIQUIDITY", "BALANCE", "E-KUBER", "EKUBER", "BUFFER", "FLOAT", "RESERVE"]):
         liq = RBI_LIQUIDITY_STATE
         summary = (
             f"**RBI e-Kuber Settlement Liquidity Telemetry ({now_str}):**\n\n"
@@ -507,27 +651,10 @@ def query_payments_copilot(query_text: str, channel: str = "teams") -> Dict[str,
             "query": query_text,
             "timestamp": now_str,
             "summary": summary,
-            "record": liq,
-            "adaptive_card": {
-                "type": "AdaptiveCard",
-                "version": "1.4",
-                "body": [
-                    {"type": "TextBlock", "text": "RBI e-Kuber Settlement Liquidity & Queue Monitor", "weight": "Bolder", "size": "Medium", "color": "Accent"},
-                    {
-                        "type": "FactSet",
-                        "facts": [
-                            {"title": "RBI Settlement Account", "value": liq["settlement_account_no"]},
-                            {"title": "Current Float Balance", "value": f"INR {liq['current_balance_inr']/10000000:.2f} Cr"},
-                            {"title": "Liquidity Status", "value": liq["liquidity_status"]},
-                            {"title": "RTGS Queue Depth", "value": f"{liq['rtgs_queue']['queue_depth']} txns (₹ {liq['rtgs_queue']['total_queued_value_inr']/10000000:.2f} Cr)"},
-                            {"title": "NEFT Batch Countdown", "value": f"{liq['neft_batch']['seconds_to_cutoff']//60} mins to cut-off"}
-                        ]
-                    }
-                ]
-            }
+            "record": liq
         }
 
-    # Queue query check
+    # 7. QUEUE QUERY
     if any(k in q for k in ["QUEUE", "STUCK", "PENDING", "HOLD"]):
         summary = (
             f"**In-Flight Queue Status ({now_str}):**\n\n"
@@ -545,7 +672,60 @@ def query_payments_copilot(query_text: str, channel: str = "teams") -> Dict[str,
             "record": RBI_LIQUIDITY_STATE["rtgs_queue"]
         }
 
-    # Default help fallback
+    # 8. FILE REGISTRY / EXCEL DOWNLOAD QUERY
+    if any(k in q for k in ["FILE", "DOWNLOAD", "EXCEL", "XLSX", "CSV", "REGISTRY", "REPORT", "EXPORT"]):
+        summary = (
+            f"**Workflow Output Files & Reports Registry ({now_str}):**\n\n"
+            f"All Process Studio and AutomationEdge workflow outputs are downloadable directly from the **File Registry** tab:\n\n"
+            f"- `Matched_Records_UPI_20261113.xlsx` — Full 4-way balanced STP records with bank legs\n"
+            f"- `Unmatched_Records_UPI_20261113.xlsx` — Exception breaks, root causes, and SLA breach countdowns\n"
+            f"- `Balanced_Ledger_UPI_20261113.xlsx` — Zero-delta GL knock-off voucher journal\n"
+            f"- `Finacle_CBS_Reversals_UPI_20261113.xlsx` — AI-approved auto-refunds and adjustment postings\n"
+            f"- `RBI_NEFT_Settlement_Batch_20261113.xlsx` — 3-leg multilateral net settlement report\n"
+            f"- `RBI_RTGS_Liquidity_Report_20261113.xlsx` — Gross settlement and float balance report\n\n"
+            f"Navigate to `#/files` to filter by **DD-MM-YYYY** date and rail or click the download icon next to any file."
+        )
+        return {
+            "status": "SUCCESS",
+            "matched": True,
+            "record_type": "FILE_REGISTRY",
+            "channel": channel,
+            "query": query_text,
+            "timestamp": now_str,
+            "summary": summary
+        }
+
+    # 9. BANKING SOP & ISO 20022 FAQ EXPLANATIONS
+    if "PACS.008" in q or "PACS 008" in q or "CREDIT TRANSFER" in q:
+        summary = (
+            f"**ISO 20022 `pacs.008.001.08` (Financial Institutional Customer Credit Transfer):**\n\n"
+            f"- **Purpose:** The core interbank XML message used in RTGS and NEFT outward clearing to instruct fund transfers between originating and receiving banks.\n"
+            f"- **Workflow Action:** Generated by SFMS Switch after Finacle CBS customer debit (`GL-14022`). Dispatched to RBI e-Kuber node.\n"
+            f"- **Validation Rule:** Must contain valid IFSC, Account Number, LEI (Legal Entity Identifier for ₹50 Cr+ corporate transactions), and UTR."
+        )
+        return {"status": "SUCCESS", "matched": True, "query": query_text, "timestamp": now_str, "summary": summary}
+
+    if "PACS.004" in q or "PACS 004" in q or "RETURN" in q and ("REASON" in q or "WHAT" in q):
+        summary = (
+            f"**ISO 20022 `pacs.004.001.09` (Payment Return Message):**\n\n"
+            f"- **Purpose:** Used when an inward NEFT/RTGS payment cannot be credited to the beneficiary (e.g. Account Closed, Invalid Account, Name Mismatch).\n"
+            f"- **Regulatory TAT:** Under RBI DPSS Circular, beneficiary banks must return uncredited inward NEFT within **2 hours** of batch settlement or by end of day.\n"
+            f"- **Workflow Action:** Our AI Agent diagnoses reason code (e.g. `AC04` Closed Account), auto-prepares `pacs.004`, and triggers `WF_NEFT_RTGS_CBS_Execution_Bot` to credit the remitter bank."
+        )
+        return {"status": "SUCCESS", "matched": True, "query": query_text, "timestamp": now_str, "summary": summary}
+
+    if "3-WAY" in q or "TRIANGULATION" in q:
+        summary = (
+            f"**3-Way Triangulation Reconciliation Architecture:**\n\n"
+            f"Cross-matches 3 independent sources to guarantee zero balance variance:\n"
+            f"1. **Leg 1: Core Banking (CBS Finacle):** Verifies customer debit/credit entry and GL clearing leg.\n"
+            f"2. **Leg 2: SFMS Payment Application (Switch):** Verifies ISO 20022 message dispatch (`pacs.008`) and network ACK.\n"
+            f"3. **Leg 3: RBI e-Kuber Central Bank Statement:** Verifies central clearing voucher settlement and intraday float.\n\n"
+            f"When all 3 agree with zero variance, transactions are closed as **`MATCHED_STP`**."
+        )
+        return {"status": "SUCCESS", "matched": True, "query": query_text, "timestamp": now_str, "summary": summary}
+
+    # 10. DEFAULT INTELLIGENT GUIDANCE
     return {
         "status": "SUCCESS",
         "matched": False,
@@ -553,12 +733,15 @@ def query_payments_copilot(query_text: str, channel: str = "teams") -> Dict[str,
         "query": query_text,
         "timestamp": now_str,
         "summary": (
-            f"I can investigate any NEFT or RTGS transaction, queue, or liquidity metric. Try typing:\n\n"
-            f"- `Status of UTR RBIR261113000101` (Instant RTGS Settlement)\n"
-            f"- `Check UTR NEFT261113000103` (Inward Closed Account Break)\n"
-            f"- `Investigate UTR RBIR261113000104` (SFMS Timeout Deemed Failure)\n"
-            f"- `Check RBI e-Kuber balance & liquidity` (Intraday settlement float)\n"
-            f"- `Show pending RTGS queue` (Outward queue depth & aging)"
+            f"I am your **Payments & Reconciliation Copilot**. Ask me anything about reconciliation, transactions, or settlement:\n\n"
+            f"- **Matched Records:** `give list of matched records` or `show settled transactions`\n"
+            f"- **Exceptions & Breaks:** `show open breaks` or `what are the P1 exceptions`\n"
+            f"- **Recon Overview:** `what is the recon status` or `show recon summary`\n"
+            f"- **Investigate UTR:** `Status of UTR RBIR261113000101` or `Investigate UTR RBIR261113000104`\n"
+            f"- **Liquidity & Float:** `Check RBI e-Kuber balance & liquidity`\n"
+            f"- **In-Flight Queues:** `Show pending RTGS queue`\n"
+            f"- **Maker-Checker:** `Show pending approvals`\n"
+            f"- **Download Reports:** `Download Excel files` or `File registry`"
         )
     }
 

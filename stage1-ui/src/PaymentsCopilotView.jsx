@@ -357,6 +357,147 @@ function PaymentInvestigationCard({ record, onNavigateWorkbench, isTeams }) {
   )
 }
 
+// ── Interactive Record List Table (Matched / Breaks / Approvals) ──────────────
+function RecordListTable({ records, type, onSelectUtr, onNavigateWorkbench }) {
+  if (!records || !records.length) return null
+  const isMatched = type === 'MATCHED_LIST'
+  const headerBg = isMatched ? '#ecfdf5' : '#fef2f2'
+  const headerColor = isMatched ? '#047857' : '#b91c1c'
+  const headerBorder = isMatched ? '#a7f3d0' : '#fecaca'
+
+  return (
+    <div style={{
+      marginTop: 12,
+      border: `1.5px solid ${headerBorder}`,
+      borderRadius: 10,
+      background: '#ffffff',
+      overflow: 'hidden',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+    }}>
+      <div style={{
+        padding: '10px 14px',
+        background: headerBg,
+        borderBottom: `1px solid ${headerBorder}`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{
+            fontSize: 10.5,
+            fontWeight: 800,
+            padding: '2px 8px',
+            borderRadius: 4,
+            background: isMatched ? '#047857' : '#b91c1c',
+            color: '#ffffff'
+          }}>
+            {isMatched ? 'MATCHED (STP)' : 'EXCEPTIONS & BREAKS'}
+          </span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: headerColor }}>
+            {records.length} Record{records.length === 1 ? '' : 's'}
+          </span>
+        </div>
+        {onNavigateWorkbench && (
+          <button
+            onClick={() => onNavigateWorkbench('rbi_3way')}
+            style={{
+              padding: '3px 8px',
+              fontSize: 11,
+              borderRadius: 4,
+              border: `1px solid ${headerBorder}`,
+              background: '#ffffff',
+              color: headerColor,
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+          >
+            Open 3-Way Workbench &rarr;
+          </button>
+        )}
+      </div>
+
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <thead>
+            <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b', textAlign: 'left', fontSize: 11 }}>
+              <th style={{ padding: '8px 12px' }}>UTR</th>
+              <th style={{ padding: '8px 10px' }}>Rail</th>
+              <th style={{ padding: '8px 10px', textAlign: 'right' }}>Amount</th>
+              <th style={{ padding: '8px 12px' }}>Parties</th>
+              <th style={{ padding: '8px 10px' }}>3-Leg Status</th>
+              <th style={{ padding: '8px 10px' }}>Status</th>
+              <th style={{ padding: '8px 10px', textAlign: 'center' }}>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {records.map((r, i) => (
+              <tr key={r.utr || i} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 1 ? '#fafafa' : '#ffffff' }}>
+                <td style={{ padding: '8px 12px' }}>
+                  <code style={{ fontSize: 11.5, fontWeight: 800, color: '#0f172a' }}>{r.utr}</code>
+                </td>
+                <td style={{ padding: '8px 10px' }}>
+                  <span style={{
+                    fontSize: 10,
+                    fontWeight: 800,
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    background: r.rail === 'RTGS' ? '#eff6ff' : '#f0fdf4',
+                    color: r.rail === 'RTGS' ? '#1d4ed8' : '#15803d'
+                  }}>
+                    {r.rail}
+                  </span>
+                </td>
+                <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 800, color: '#0f172a' }}>
+                  {fmtInr(r.amount)}
+                </td>
+                <td style={{ padding: '8px 12px', fontSize: 11, color: '#475569', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <b>{r.remitter_name}</b> &rarr; {r.beneficiary_name}
+                </td>
+                <td style={{ padding: '8px 10px', fontSize: 10.5 }}>
+                  <span style={{ color: r.cbs_status === 'DEBITED' ? '#166534' : '#b91c1c', fontWeight: 600 }}>CBS: {r.cbs_status}</span> •{' '}
+                  <span style={{ color: r.sfms_status?.includes('ACK') ? '#166534' : '#b91c1c', fontWeight: 600 }}>SFMS: {r.sfms_status}</span> •{' '}
+                  <span style={{ color: r.rbi_status === 'SETTLED' ? '#166534' : '#b91c1c', fontWeight: 600 }}>RBI: {r.rbi_status}</span>
+                </td>
+                <td style={{ padding: '8px 10px' }}>
+                  <span style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    background: r.recon_status === 'MATCHED_STP' ? '#ecfdf5' : '#fef2f2',
+                    color: r.recon_status === 'MATCHED_STP' ? '#047857' : '#b91c1c'
+                  }}>
+                    {r.recon_status === 'MATCHED_STP' ? 'STP SETTLED' : (r.priority || 'BREAK')}
+                  </span>
+                </td>
+                <td style={{ padding: '8px 10px', textAlign: 'center' }}>
+                  <button
+                    onClick={() => onSelectUtr && onSelectUtr(r.utr)}
+                    style={{
+                      padding: '3px 8px',
+                      fontSize: 10.5,
+                      borderRadius: 4,
+                      border: '1.5px solid #ea580c',
+                      background: '#fff7ed',
+                      color: '#ea580c',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#ea580c'; e.currentTarget.style.color = '#ffffff' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#fff7ed'; e.currentTarget.style.color = '#ea580c' }}
+                  >
+                    Investigate &rarr;
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //  MAIN COMPONENT: PaymentsCopilotView (UC7)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -406,7 +547,9 @@ export default function PaymentsCopilotView({ apiBase = 'http://localhost:8000',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         text: data.summary,
         adaptiveCard: data.adaptive_card || null,
-        record: data.record || null
+        record: data.record || null,
+        recordsList: data.records_list || null,
+        recordType: data.record_type || null
       }
       setChatHistory(prev => [...prev, botMsg])
     } catch (e) {
@@ -424,6 +567,9 @@ export default function PaymentsCopilotView({ apiBase = 'http://localhost:8000',
   }
 
   const quickPrompts = [
+    { label: "List Matched Records", query: "Give list of matched records" },
+    { label: "Show Open Breaks", query: "Give list of unmatched records" },
+    { label: "Recon Summary", query: "What is the recon status" },
     { label: "Instant RTGS Settlement", query: "Status of UTR RBIR20261113000101" },
     { label: "Inward Closed Acc Break", query: "Check UTR NEFT20261113000103" },
     { label: "SFMS Timeout Deemed Failure", query: "Investigate UTR RBIR20261113000104" },
@@ -611,9 +757,10 @@ export default function PaymentsCopilotView({ apiBase = 'http://localhost:8000',
                     isTeams={isTeams}
                   />
                 ) : (
-                  /* Formatted Text Message for non-UTR replies (Welcome, Liquidity, Queues, Help) */
+                  /* Formatted Text Message for non-UTR replies (Welcome, Liquidity, Queues, Help, Lists) */
                   <div style={{
-                    maxWidth: 720,
+                    maxWidth: 780,
+                    width: '100%',
                     padding: '14px 18px',
                     borderRadius: msg.sender === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
                     background: msg.sender === 'user'
@@ -624,6 +771,15 @@ export default function PaymentsCopilotView({ apiBase = 'http://localhost:8000',
                     boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
                   }}>
                     <FormattedMessage text={msg.text} />
+
+                    {msg.recordsList && msg.recordsList.length > 0 && (
+                      <RecordListTable
+                        records={msg.recordsList}
+                        type={msg.recordType}
+                        onSelectUtr={(utr) => handleSend(`Status of UTR ${utr}`)}
+                        onNavigateWorkbench={onNavigateWorkbench}
+                      />
+                    )}
                   </div>
                 )}
               </div>

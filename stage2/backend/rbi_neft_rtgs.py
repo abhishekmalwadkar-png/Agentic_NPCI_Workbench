@@ -357,32 +357,332 @@ MAKER_CHECKER_ACTIONS: List[Dict[str, Any]] = [
 
 
 # -----------------------------------------------------------------------------
+# 3b. Automated Customer Refund & Reversal Dataset (Multi-Rail STP)
+# -----------------------------------------------------------------------------
+def _generate_auto_refund_records() -> List[Dict[str, Any]]:
+    today_str = datetime.now().strftime("%Y%m%d")
+    now = datetime.now()
+    return [
+        {
+            "rrn": "901818109562",
+            "utr": f"UTR90181810956202",
+            "rail": "UPI",
+            "remitter_acc": "100982349945",
+            "remitter_name": "Rahul Verma",
+            "remitter_bank": "ABC Bank (Our Bank)",
+            "beneficiary_acc": "502000192837",
+            "beneficiary_name": "Swiggy Merchant",
+            "beneficiary_bank": "HDFC Bank (HDFC0000001)",
+            "amount": 2500.00,
+            "priority": "P1",
+            "cbs_status": "DEBITED_THEN_REVERSED",
+            "cbs_amount": 2500.00,
+            "cbs_txn_id": "TXN000000002",
+            "cbs_gl_leg": "GL-14022 -> Finacle Voucher FT261116009182",
+            "cbs_timestamp": (now - timedelta(minutes=40)).strftime("%Y-%m-%d %H:%M:%S"),
+            "sfms_status": "RC91_TIMEOUT",
+            "sfms_msg_id": f"UPI.REQ.{today_str}.9562",
+            "sfms_msg_type": "UPI Pay Request",
+            "sfms_timestamp": (now - timedelta(minutes=40)).strftime("%Y-%m-%d %H:%M:%S"),
+            "rbi_status": "NOT_SETTLED_AUTO_REFUNDED",
+            "rbi_voucher_no": "REV-UPI-AUTO-09182",
+            "rbi_batch_id": f"UPI-{today_str}-CY01",
+            "rbi_settled_amount": 2500.00,
+            "rbi_timestamp": (now - timedelta(minutes=38)).strftime("%Y-%m-%d %H:%M:%S"),
+            "recon_status": "AUTO_REFUND_COMPLETED",
+            "variance": 0.00,
+            "root_cause": "NPCI RC91 switch timeout. Beneficiary CBS timed out after remitter debit. Autonomous Reversal Bot (Track A) auto-refunded to customer account.",
+            "sla_elapsed_min": 2.0,
+            "sla_status": "SLA_COMPLIANT_ZERO_PENALTY",
+            "tat_deadline": (now + timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S"),
+            "proposed_action": "None required - ₹2,500.00 credited back to Remitter (A/C 100982349945). GL knocked off.",
+            "refund_ref": "INST-UPI-REV-001 / FT261116009182",
+            "refund_date": (now - timedelta(minutes=38)).strftime("%Y-%m-%d %H:%M:%S")
+        },
+        {
+            "rrn": "902910000104",
+            "utr": f"RBIR{today_str}000104",
+            "rail": "RTGS",
+            "remitter_acc": "100982750323",
+            "remitter_name": "Larsen & Toubro Project Div",
+            "remitter_bank": "ABC Bank (Our Bank)",
+            "beneficiary_acc": "301928475019",
+            "beneficiary_name": "Siemens Energy India",
+            "beneficiary_bank": "Axis Bank (UTIB0000010)",
+            "amount": 14500000.00,
+            "priority": "P1",
+            "cbs_status": "DEBITED_THEN_REVERSED",
+            "cbs_amount": 14500000.00,
+            "cbs_txn_id": "TXN_CBS_RTGS_104",
+            "cbs_gl_leg": "GL-14022 (RTGS Outward Clearing Reversal)",
+            "cbs_timestamp": (now - timedelta(minutes=35)).strftime("%Y-%m-%d %H:%M:%S"),
+            "sfms_status": "DISPATCH_TIMEOUT_NACK",
+            "sfms_msg_id": f"pacs.008.{today_str}.000104",
+            "sfms_msg_type": "pacs.008.001.08",
+            "sfms_timestamp": (now - timedelta(minutes=34, seconds=45)).strftime("%Y-%m-%d %H:%M:%S"),
+            "rbi_status": "NOT_SETTLED_NO_RECORD",
+            "rbi_voucher_no": "N/A",
+            "rbi_batch_id": "N/A",
+            "rbi_settled_amount": 0.00,
+            "rbi_timestamp": "N/A",
+            "recon_status": "AUTO_REVERSED_CUSTOMER",
+            "variance": 0.00,
+            "root_cause": "SFMS network timeout encountered (No ACK from RBI Gateway within 30s). Deemed failure resolved via automated customer reversal voucher (DR GL-14022 / CR Account 100982750323).",
+            "sla_elapsed_min": 18,
+            "sla_status": "SLA_COMPLIANT_REVERSED",
+            "tat_deadline": (now + timedelta(minutes=102)).strftime("%Y-%m-%d %H:%M:%S"),
+            "proposed_action": "None required - ₹1.45 Cr reversal voucher posted to prevent RBI interest penalty.",
+            "refund_ref": "FT261116007412",
+            "refund_date": (now - timedelta(minutes=18)).strftime("%Y-%m-%d %H:%M:%S")
+        },
+        {
+            "rrn": "902910000103",
+            "utr": f"NEFT{today_str}000103",
+            "rail": "NEFT",
+            "remitter_acc": "400192837461",
+            "remitter_name": "Reliance Retail Ltd",
+            "remitter_bank": "ICICI Bank (ICIC0000002)",
+            "beneficiary_acc": "100982275012",
+            "beneficiary_name": "Kavita Sharma",
+            "beneficiary_bank": "ABC Bank (Our Bank)",
+            "amount": 420000.00,
+            "priority": "P1",
+            "cbs_status": "INWARD_RETURNED",
+            "cbs_amount": 420000.00,
+            "cbs_txn_id": "TXN_CBS_INW_FAIL_103",
+            "cbs_gl_leg": "GL-9903 -> Inward Return Dispatched",
+            "cbs_timestamp": (now - timedelta(minutes=50)).strftime("%Y-%m-%d %H:%M:%S"),
+            "sfms_status": "pacs.004_DISPATCHED",
+            "sfms_msg_id": f"pacs.004.OUT.{today_str}.000103",
+            "sfms_msg_type": "pacs.004 Payment Return",
+            "sfms_timestamp": (now - timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M:%S"),
+            "rbi_status": "SETTLED_RETURN",
+            "rbi_voucher_no": f"RBI-NET-{today_str}-B29-RET041",
+            "rbi_batch_id": f"NEFT-{today_str}-B29",
+            "rbi_settled_amount": 420000.00,
+            "rbi_timestamp": (now - timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M:%S"),
+            "recon_status": "AUTO_RETURNED_PACS004",
+            "variance": 0.00,
+            "root_cause": "Beneficiary Account 100982275012 closed (Reason: AC04). Inward Return pacs.004 automatically created and returned to ICICI Bank within 2 hours.",
+            "sla_elapsed_min": 30,
+            "sla_status": "SLA_COMPLIANT_2HR_TAT",
+            "tat_deadline": (now + timedelta(minutes=90)).strftime("%Y-%m-%d %H:%M:%S"),
+            "proposed_action": "None required - ₹4.20 Lakh returned via pacs.004 to ICICI Bank. Settlement closed.",
+            "refund_ref": f"pacs.004.OUT.{today_str}.000103",
+            "refund_date": (now - timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M:%S")
+        },
+        {
+            "rrn": "402819201941",
+            "utr": f"AEPS{today_str}000412",
+            "rail": "AePS",
+            "remitter_acc": "Aadhaar *******4910",
+            "remitter_name": "Rameshwar Yadav",
+            "remitter_bank": "ABC Bank (Our Bank)",
+            "beneficiary_acc": "BC-1042-MICR",
+            "beneficiary_name": "BC Point MicroATM 1042",
+            "beneficiary_bank": "ABC Bank (Our Bank)",
+            "amount": 1200.00,
+            "priority": "P2",
+            "cbs_status": "DEBITED_THEN_REVERSED",
+            "cbs_amount": 1200.00,
+            "cbs_txn_id": "TXN_AEPS_CW_412",
+            "cbs_gl_leg": "GL-14022 -> Finacle Voucher FT261116001290",
+            "cbs_timestamp": (now - timedelta(minutes=25)).strftime("%Y-%m-%d %H:%M:%S"),
+            "sfms_status": "BIO_AUTH_TIMEOUT",
+            "sfms_msg_id": f"AEPS.REQ.{today_str}.000412",
+            "sfms_msg_type": "AePS Cash Withdrawal",
+            "sfms_timestamp": (now - timedelta(minutes=25)).strftime("%Y-%m-%d %H:%M:%S"),
+            "rbi_status": "NOT_SETTLED_AUTO_REFUNDED",
+            "rbi_voucher_no": "REV-AEPS-AUTO-01290",
+            "rbi_batch_id": f"AEPS-{today_str}-CY01",
+            "rbi_settled_amount": 1200.00,
+            "rbi_timestamp": (now - timedelta(minutes=24)).strftime("%Y-%m-%d %H:%M:%S"),
+            "recon_status": "AUTO_REFUND_COMPLETED",
+            "variance": 0.00,
+            "root_cause": "MicroATM cash withdrawal biometric timeout. Deemed failure auto-reversed under Low-Value Policy (< ₹5,000) within 60 seconds.",
+            "sla_elapsed_min": 1,
+            "sla_status": "SLA_COMPLIANT_INSTANT",
+            "tat_deadline": (now + timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S"),
+            "proposed_action": "None required - ₹1,200.00 credited back to Customer Aadhaar Account.",
+            "refund_ref": "FT261116001290",
+            "refund_date": (now - timedelta(minutes=24)).strftime("%Y-%m-%d %H:%M:%S")
+        },
+        {
+            "rrn": "718291048201",
+            "utr": f"NETC{today_str}008192",
+            "rail": "NETC",
+            "remitter_acc": "Tag 34161FA820918231",
+            "remitter_name": "Rajesh Kumar (MH12-DE-9921)",
+            "remitter_bank": "ABC Bank FASTag Wallet",
+            "beneficiary_acc": "PLAZA-KHED-SHIVAPUR",
+            "beneficiary_name": "Khed-Shivapur Toll Plaza",
+            "beneficiary_bank": "Axis Bank (Acquirer)",
+            "amount": 450.00,
+            "priority": "P2",
+            "cbs_status": "DEBITED_THEN_REVERSED",
+            "cbs_amount": 450.00,
+            "cbs_txn_id": "TXN_NETC_TOLL_8192",
+            "cbs_gl_leg": "GL-14022 -> Wallet Auto-Credit",
+            "cbs_timestamp": (now - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S"),
+            "sfms_status": "DUPLICATE_DEBIT_ACK",
+            "sfms_msg_id": f"NETC.TOLL.{today_str}.008192",
+            "sfms_msg_type": "Toll Deduct Request",
+            "sfms_timestamp": (now - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S"),
+            "rbi_status": "NOT_SETTLED_AUTO_REFUNDED",
+            "rbi_voucher_no": "REV-NETC-AUTO-08192",
+            "rbi_batch_id": f"NETC-{today_str}-CY02",
+            "rbi_settled_amount": 450.00,
+            "rbi_timestamp": (now - timedelta(minutes=13)).strftime("%Y-%m-%d %H:%M:%S"),
+            "recon_status": "AUTO_REFUND_COMPLETED",
+            "variance": 0.00,
+            "root_cause": "Toll plaza reader dual pulse (duplicate debit within 12 seconds). NETC auto-reversal engine credited ₹450 back to FASTag wallet.",
+            "sla_elapsed_min": 2,
+            "sla_status": "SLA_COMPLIANT_INSTANT",
+            "tat_deadline": (now + timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S"),
+            "proposed_action": "None required - ₹450.00 credited back to Customer FASTag balance.",
+            "refund_ref": "FT261116008192",
+            "refund_date": (now - timedelta(minutes=13)).strftime("%Y-%m-%d %H:%M:%S")
+        }
+    ]
+
+
+# -----------------------------------------------------------------------------
 # 4. Status Copilot Agent Engine (UC7)
 #    Supports both standard Web Portal JSON and Microsoft Teams Adaptive Card JSON
 # -----------------------------------------------------------------------------
 def query_payments_copilot(query_text: str, channel: str = "teams") -> Dict[str, Any]:
     """
     Answers natural language questions about UTRs, matched records, breaks,
-    queues, liquidity, regulatory TAT, and banking reconciliation SOPs.
+    auto-refunds, reversals, queues, liquidity, regulatory TAT, and banking reconciliation SOPs.
+    Equipped with Banking NLP Intent Classifier for sub-millisecond semantic dispatch.
     Output conforms to Microsoft Teams Adaptive Cards or Web Portal cards.
     """
     q = query_text.strip().upper()
     now_str = datetime.now().strftime("%d-%b-%Y %H:%M:%S IST")
     all_records = _generate_3way_records()
+    auto_refund_records = _generate_auto_refund_records()
 
     # Search for matching record by specific UTR, RRN, Account, or normalized variants
     q_norm = q.replace(" ", "").replace("-", "").replace(":", "")
-    q_tokens = [t.strip().upper() for t in q.replace(":", " ").replace(",", " ").replace("?", " ").replace("`", "").replace("'", "").replace('"', '').split() if len(t.strip()) >= 3]
+    q_tokens = [t.strip().upper() for t in q.replace(":", " ").replace(",", " ").replace("?", " ").replace("`", "").replace("'", "").replace('"', '').split() if len(t.strip()) >= 2]
 
-    # Explicit query intent checks:
-    is_list_query = any(k in q for k in ["LIST", "SHOW", "GIVE", "ALL", "WHAT ARE", "DISPLAY", "FETCH", "RECORDS", "TRANSACTIONS", "BREAKS"])
-    has_unmatched_kw = any(k in q for k in ["UNMATCHED", "BREAK", "EXCEPTION", "FAIL", "REVERSAL", "P1", "TIMEOUT", "REJECT", "MISMATCH", "DROPPED"])
-    has_matched_kw = any(k in q for k in ["MATCHED", "STP", "SETTLED", "BALANCED", "CLEARING AGREEMENT"]) and not has_unmatched_kw
+    # ─────────────────────────────────────────────────────────────────────────────
+    # Banking NLP Intent Classifier & Semantic Scoring Engine
+    # ─────────────────────────────────────────────────────────────────────────────
+    intent_scores = {
+        "AUTO_REFUND_LIST": 0,
+        "MATCHED_LIST": 0,
+        "BREAK_LIST": 0,
+        "RECON_SUMMARY": 0,
+        "MAKER_CHECKER": 0,
+        "LIQUIDITY": 0,
+        "QUEUE": 0,
+        "FILE_REGISTRY": 0,
+        "SOP_PACS008": 0,
+        "SOP_PACS004": 0,
+        "SOP_3WAY": 0
+    }
+
+    # 1. Auto-Refund / Reversal Intent Scoring
+    for kw, weight in [
+        ("AUTO REFUND", 45), ("AUTO-REFUND", 45), ("AUTOREFUND", 45),
+        ("AUTO REFUNDED", 55), ("AUTO-REFUNDED", 55),
+        ("REFUND", 25), ("REFUNDS", 25), ("REFUNDED", 30),
+        ("AUTO REVERSAL", 45), ("AUTO-REVERSAL", 45), ("AUTOREVERSAL", 45),
+        ("REVERSAL", 25), ("REVERSALS", 25), ("REVERSED", 30),
+        ("PACS.004 RETURN", 35), ("RETURNED", 20), ("RETURNS", 15),
+        ("CHARGEBACK", 25), ("COMPENSATION", 25), ("CREDITED BACK", 30), ("DEEMED FAIL", 25)
+    ]:
+        if kw in q:
+            intent_scores["AUTO_REFUND_LIST"] += weight
+
+    # 2. Matched Records Intent Scoring
+    for kw, weight in [
+        ("MATCHED", 30), ("MATCH", 20), ("MATCHES", 20), ("MATCHING", 25), ("MTCHED", 30),
+        ("STP", 25), ("SETTLED", 25), ("SETTLEMENT", 20),
+        ("BALANCED", 25), ("ZERO DELTA", 30), ("ZERO VARIANCE", 30),
+        ("CLEARING AGREEMENT", 35)
+    ]:
+        if kw in q:
+            intent_scores["MATCHED_LIST"] += weight
+
+    # 3. Breaks / Exceptions Intent Scoring
+    for kw, weight in [
+        ("UNMATCHED", 35), ("UNMTCHED", 35), ("UNMATCH", 30), ("UN-MATCHED", 35), ("NOT MATCHED", 35),
+        ("NOT MATCH", 30), ("UNRECONCILED", 35), ("UN-RECONCILED", 35),
+        ("BREAK", 30), ("BREAKS", 30), ("OPEN BREAK", 35), ("OPEN BREAKS", 35),
+        ("EXCEPTION", 30), ("EXCEPTIONS", 30), ("TIMEOUT", 20), ("TIMEOUTS", 20),
+        ("FAIL", 20), ("FAILED", 20), ("FAILURE", 20), ("FAILURES", 20), ("P1", 20), ("P2", 15),
+        ("MISMATCH", 25), ("MISMATCHES", 25), ("DROPPED", 20), ("DISCREPANCY", 25), ("DISCREPANCIES", 25)
+    ]:
+        if kw in q:
+            intent_scores["BREAK_LIST"] += weight
+
+    # 4. Recon Telemetry & Summary Intent Scoring
+    for kw, weight in [
+        ("RECON", 20), ("RECONCILIATION", 25), ("SUMMARY", 30), ("OVERVIEW", 30),
+        ("STATUS", 15), ("RATE", 20), ("SCORECARD", 30), ("STATS", 25),
+        ("METRIC", 25), ("METRICS", 25), ("TELEMETRY", 30), ("HOW IS RECON", 40)
+    ]:
+        if kw in q:
+            intent_scores["RECON_SUMMARY"] += weight
+
+    # 5. Maker-Checker / HITL Approvals Intent Scoring
+    for kw, weight in [
+        ("HITL", 35), ("MAKER", 30), ("CHECKER", 30), ("APPROVAL", 30),
+        ("APPROVALS", 30), ("APPROVE", 25), ("REJECT", 20), ("COCKPIT", 30),
+        ("PENDING APPROVAL", 40), ("PENDING ACTIONS", 40), ("SUPERVISOR", 25), ("L2", 25)
+    ]:
+        if kw in q:
+            intent_scores["MAKER_CHECKER"] += weight
+
+    # 6. Central Bank Liquidity Intent Scoring
+    for kw, weight in [
+        ("LIQUIDITY", 35), ("BALANCE", 30), ("BALANCES", 25), ("E-KUBER", 35),
+        ("EKUBER", 35), ("FLOAT", 30), ("BUFFER", 30), ("ILF", 30), ("RESERVE", 25)
+    ]:
+        if kw in q:
+            intent_scores["LIQUIDITY"] += weight
+
+    # 7. In-Flight Queue Depths Intent Scoring
+    for kw, weight in [
+        ("QUEUE", 35), ("QUEUES", 35), ("IN-FLIGHT", 30), ("STUCK", 30),
+        ("OUTWARD DEPTH", 35), ("CUTOFF", 25), ("CUT-OFF", 25), ("PENDING RTGS", 35)
+    ]:
+        if kw in q:
+            intent_scores["QUEUE"] += weight
+
+    # 8. File Registry & Excel Download Intent Scoring
+    for kw, weight in [
+        ("FILE", 25), ("FILES", 25), ("DOWNLOAD", 35), ("EXCEL", 35),
+        ("XLSX", 35), ("CSV", 30), ("REGISTRY", 35), ("REPORT", 25), ("EXPORT", 25)
+    ]:
+        if kw in q:
+            intent_scores["FILE_REGISTRY"] += weight
+
+    # 9. Banking SOP & Knowledge FAQ Scoring
+    if "PACS.008" in q or "CREDIT TRANSFER" in q:
+        intent_scores["SOP_PACS008"] += 50
+    if "PACS.004" in q or ("RETURN" in q and ("REASON" in q or "WHAT" in q or "SOP" in q)):
+        intent_scores["SOP_PACS004"] += 50
+    if "3-WAY" in q or "TRIANGULATION" in q or "3 WAY" in q:
+        intent_scores["SOP_3WAY"] += 50
+
+    # Query modifier boosts
+    is_list_query = any(k in q for k in ["LIST", "SHOW", "GIVE", "ALL", "WHAT ARE", "DISPLAY", "FETCH", "RECORDS", "TRANSACTIONS"])
+    if is_list_query:
+        if intent_scores["AUTO_REFUND_LIST"] > 0:
+            intent_scores["AUTO_REFUND_LIST"] += 15
+        if intent_scores["MATCHED_LIST"] > 0:
+            intent_scores["MATCHED_LIST"] += 10
+        if intent_scores["BREAK_LIST"] > 0:
+            intent_scores["BREAK_LIST"] += 10
 
     # Check for specific UTR match ONLY if query is not a general list request
     matched_rec = None
-    if not (is_list_query and (has_matched_kw or has_unmatched_kw)):
-        for r in all_records:
+    all_combined = all_records + auto_refund_records
+    if not (is_list_query and (intent_scores["AUTO_REFUND_LIST"] > 20 or intent_scores["MATCHED_LIST"] > 20 or intent_scores["BREAK_LIST"] > 20)):
+        for r in all_combined:
             r_utr = r["utr"].upper()
             r_short = r_utr.replace("2026", "26")
             r_long = r_utr.replace("261113", "20261113")
@@ -392,7 +692,7 @@ def query_payments_copilot(query_text: str, channel: str = "teams") -> Dict[str,
             # Exact or substring match in raw or normalized query
             if (r_utr in q or r_short in q or r_long in q or
                 r_utr in q_norm or r_short in q_norm or r_long in q_norm or
-                r_rrn in q or r["remitter_acc"] in q or r["beneficiary_acc"] in q):
+                r_rrn in q or r.get("remitter_acc") in q or r.get("beneficiary_acc") in q):
                 matched_rec = r
                 break
 
@@ -402,7 +702,7 @@ def query_payments_copilot(query_text: str, channel: str = "teams") -> Dict[str,
                 break
 
             # Token-based match
-            ignore_words = {"STATUS", "CHECK", "INVESTIGATE", "TRANSACTION", "PAYMENT", "WHAT", "ABOUT", "SHOW", "THE", "FOR", "GIVE", "LIST", "RECORDS", "MATCHED", "UNMATCHED", "BREAKS"}
+            ignore_words = {"STATUS", "CHECK", "INVESTIGATE", "TRANSACTION", "PAYMENT", "WHAT", "ABOUT", "SHOW", "THE", "FOR", "GIVE", "LIST", "RECORDS", "MATCHED", "UNMATCHED", "BREAKS", "REFUND", "AUTO", "REFUNDED"}
             if any((tok in r_utr or tok in r_short or r_utr in tok or r_short in tok or tok in r_rrn) for tok in q_tokens if tok not in ignore_words):
                 matched_rec = r
                 break
@@ -410,15 +710,15 @@ def query_payments_copilot(query_text: str, channel: str = "teams") -> Dict[str,
     # 1. SPECIFIC UTR INVESTIGATION DOSSIER
     if matched_rec:
         rec = matched_rec
-        status_color = "good" if rec["recon_status"] == "MATCHED_STP" else "warning" if "HOLD" in rec["recon_status"] else "attention"
-        status_badge = "SETTLED (STP)" if rec["recon_status"] == "MATCHED_STP" else "BREAK / EXCEPTION" if "BREAK" in rec["recon_status"] else "PENDING CHECKER"
+        status_color = "good" if "MATCHED" in rec["recon_status"] or "AUTO_REFUND" in rec["recon_status"] or "REVERSED" in rec["recon_status"] else "warning" if "HOLD" in rec["recon_status"] else "attention"
+        status_badge = "SETTLED (STP)" if rec["recon_status"] == "MATCHED_STP" else "AUTO-REFUNDED" if "AUTO" in rec["recon_status"] or "REVERSED" in rec["recon_status"] else "BREAK / EXCEPTION" if "BREAK" in rec["recon_status"] else "PENDING CHECKER"
 
         response_text = (
             f"**UTR:** `{rec['utr']}` ({rec['rail']}) | **Amount:** INR {rec['amount']:,.2f}\n\n"
             f"**3-Leg Settlement Status:**\n"
             f"- **Core Banking (CBS):** {rec['cbs_status']} ({rec['cbs_gl_leg']})\n"
-            f"- **SFMS Switch:** {rec['sfms_status']} via `{rec['sfms_msg_type']}`\n"
-            f"- **RBI e-Kuber:** {rec['rbi_status']} (Voucher: `{rec['rbi_voucher_no']}`)\n\n"
+            f"- **SFMS Switch:** {rec['sfms_status']} via `{rec.get('sfms_msg_type', 'N/A')}`\n"
+            f"- **RBI e-Kuber:** {rec['rbi_status']} (Voucher: `{rec.get('rbi_voucher_no', 'N/A')}`)\n\n"
             f"**Root-Cause Diagnosis:** {rec['root_cause']}\n\n"
             f"**Regulatory TAT Status:** {rec['sla_status']} (Elapsed: {rec['sla_elapsed_min']} mins, Deadline: {rec['tat_deadline']})\n"
             f"**Proposed Next Action:** {rec['proposed_action']}"
@@ -458,11 +758,11 @@ def query_payments_copilot(query_text: str, channel: str = "teams") -> Dict[str,
                     "type": "FactSet",
                     "facts": [
                         {"title": "Amount", "value": f"INR {rec['amount']:,.2f}"},
-                        {"title": "Remitter", "value": f"{rec['remitter_name']} ({rec['remitter_acc']})"},
-                        {"title": "Beneficiary", "value": f"{rec['beneficiary_name']} ({rec['beneficiary_bank']})"},
+                        {"title": "Remitter", "value": f"{rec['remitter_name']} ({rec.get('remitter_acc', 'N/A')})"},
+                        {"title": "Beneficiary", "value": f"{rec['beneficiary_name']} ({rec.get('beneficiary_bank', 'N/A')})"},
                         {"title": "CBS Leg", "value": rec["cbs_status"]},
                         {"title": "SFMS Leg", "value": rec["sfms_status"]},
-                        {"title": "RBI e-Kuber", "value": f"{rec['rbi_status']} ({rec['rbi_voucher_no']})"},
+                        {"title": "RBI e-Kuber", "value": f"{rec['rbi_status']} ({rec.get('rbi_voucher_no', 'N/A')})"},
                         {"title": "RBI SLA", "value": f"{rec['sla_status']} (Elapsed: {rec['sla_elapsed_min']}m)"}
                     ]
                 },
@@ -476,7 +776,7 @@ def query_payments_copilot(query_text: str, channel: str = "teams") -> Dict[str,
                     "type": "TextBlock",
                     "text": f"**Recommended Action:** {rec['proposed_action']}",
                     "wrap": True,
-                    "color": "Warning" if "BREAK" in rec["recon_status"] else "Default"
+                    "color": "Good" if "AUTO" in rec["recon_status"] or "MATCHED" in rec["recon_status"] else "Warning"
                 }
             ],
             "actions": [
@@ -496,8 +796,45 @@ def query_payments_copilot(query_text: str, channel: str = "teams") -> Dict[str,
             "adaptive_card": adaptive_card
         }
 
-    # 2. MATCHED RECORDS LIST QUERY
-    if has_matched_kw:
+    # 2. AUTO-REFUND & REVERSAL LIST QUERY (NLP WINNER)
+    if intent_scores["AUTO_REFUND_LIST"] >= 20 and intent_scores["AUTO_REFUND_LIST"] >= intent_scores["BREAK_LIST"]:
+        tot_refund_val = sum(r["amount"] for r in auto_refund_records)
+        lines = [
+            f"**Automated Customer Refunds & System Reversals (Multi-Rail STP):**\n",
+            f"Found **{len(auto_refund_records)} auto-refunded / reversed transactions** totaling **INR {tot_refund_val:,.2f}** (~₹ {tot_refund_val/10000000:.2f} Cr) resolved by Autonomous AI Recovery Agents across UPI, RTGS, NEFT, AePS, and NETC:\n"
+        ]
+
+        for i, r in enumerate(auto_refund_records, 1):
+            badge = f"[{r['recon_status']}]"
+            lines.append(
+                f"{i}. **UTR:** `{r['utr']}` ({r['rail']}) | **Amount:** INR {r['amount']:,.2f} | **Status:** `{badge}`\n"
+                f"   - **Remitter:** {r['remitter_name']} (`{r['remitter_acc']}`)\n"
+                f"   - **Beneficiary:** {r['beneficiary_name']}\n"
+                f"   - **Root Cause:** {r['root_cause']}\n"
+                f"   - **Reversal Voucher:** `{r['cbs_gl_leg']}`\n"
+                f"   - **Regulatory SLA:** {r['sla_status']} (Elapsed: {r['sla_elapsed_min']} mins | Zero Penalty)\n"
+                f"   - **Remediation Result:** {r['proposed_action']}\n"
+            )
+
+        lines.append(
+            "*(Under RBI DPSS Circular & Dual-Track AI Policy, all timeouts under ₹5,000 and deemed failures are auto-reversed via Finacle bot script within seconds. Click any UTR to inspect the full comparative 3-Leg audit trail).*"
+        )
+
+        return {
+            "status": "SUCCESS",
+            "matched": True,
+            "record_type": "AUTO_REFUND_LIST",
+            "channel": channel,
+            "query": query_text,
+            "timestamp": now_str,
+            "summary": "\n".join(lines),
+            "records_list": auto_refund_records,
+            "count": len(auto_refund_records),
+            "total_amount": tot_refund_val
+        }
+
+    # 3. MATCHED RECORDS LIST QUERY (NLP WINNER)
+    if intent_scores["MATCHED_LIST"] >= 20 and intent_scores["MATCHED_LIST"] > intent_scores["BREAK_LIST"]:
         matched_list = [r for r in all_records if r.get("recon_status") == "MATCHED_STP"]
         tot_val = sum(r["amount"] for r in matched_list)
 
@@ -532,8 +869,8 @@ def query_payments_copilot(query_text: str, channel: str = "teams") -> Dict[str,
             "total_amount": tot_val
         }
 
-    # 3. UNMATCHED RECORDS / BREAKS / EXCEPTIONS QUERY
-    if has_unmatched_kw:
+    # 4. UNMATCHED RECORDS / BREAKS / EXCEPTIONS QUERY (NLP WINNER)
+    if intent_scores["BREAK_LIST"] >= 20:
         break_list = [r for r in all_records if "BREAK" in r.get("recon_status", "") or "HOLD" in r.get("recon_status", "")]
         tot_break_val = sum(r["amount"] for r in break_list)
 
@@ -567,8 +904,8 @@ def query_payments_copilot(query_text: str, channel: str = "teams") -> Dict[str,
             "total_amount": tot_break_val
         }
 
-    # 4. OVERALL RECON SUMMARY / METRICS QUERY
-    if any(k in q for k in ["RECON", "SUMMARY", "METRIC", "OVERVIEW", "STATUS", "RATE", "SCORECARD", "STATS"]):
+    # 5. OVERALL RECON SUMMARY / METRICS QUERY
+    if intent_scores["RECON_SUMMARY"] >= 15:
         matched_cnt = sum(1 for r in all_records if r.get("recon_status") == "MATCHED_STP")
         break_cnt = sum(1 for r in all_records if "BREAK" in r.get("recon_status", "") or "HOLD" in r.get("recon_status", ""))
         tot_cnt = len(all_records)
@@ -751,10 +1088,11 @@ def query_payments_copilot(query_text: str, channel: str = "teams") -> Dict[str,
         "timestamp": now_str,
         "summary": (
             f"I am your **Payments & Reconciliation Copilot**. Ask me anything about reconciliation, transactions, or settlement:\n\n"
+            f"- **Auto-Refunds & Reversals:** `give list of auto refunded` or `show customer reversals`\n"
             f"- **Matched Records:** `give list of matched records` or `show settled transactions`\n"
             f"- **Exceptions & Breaks:** `show open breaks` or `what are the P1 exceptions`\n"
             f"- **Recon Overview:** `what is the recon status` or `show recon summary`\n"
-            f"- **Investigate UTR:** `Status of UTR RBIR261113000101` or `Investigate UTR RBIR261113000104`\n"
+            f"- **Investigate UTR:** `Status of UTR RBIR20261116000101` or `Investigate UTR RBIR20261116000104`\n"
             f"- **Liquidity & Float:** `Check RBI e-Kuber balance & liquidity`\n"
             f"- **In-Flight Queues:** `Show pending RTGS queue`\n"
             f"- **Maker-Checker:** `Show pending approvals`\n"

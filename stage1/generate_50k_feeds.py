@@ -15,7 +15,9 @@ import shutil
 from pathlib import Path
 
 STAGE1_DIR = Path(__file__).resolve().parent
-SOURCE_PATH = STAGE1_DIR.parent / "NPCI_UPI_Settlement_TestData_50K.csv"
+SOURCE_PATH = STAGE1_DIR.parent / "tools" / "NPCI_UPI_Settlement_TestData_50K.csv"
+if not SOURCE_PATH.exists():
+    SOURCE_PATH = STAGE1_DIR.parent / "NPCI_UPI_Settlement_TestData_50K.csv"
 TARGET_TOTAL = 50000
 
 base_npci = [

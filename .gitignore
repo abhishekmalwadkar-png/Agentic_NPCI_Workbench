@@ -58,4 +58,12 @@ stage1-ui/.wrangler/
 tools/cloudflared.exe
 claude_skills_beta4/
 
+# Large generated test datasets & archives (>50MB)
+*TestData*.csv
+*500K*.csv
+*50K*.csv
+*Unified*.csv
+archived_components/
+
+
 

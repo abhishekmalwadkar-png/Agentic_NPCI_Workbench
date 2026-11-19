@@ -354,17 +354,28 @@ def _parse_folder_records(dir_path: Path, is_matched: bool) -> List[Dict[str, An
     if not dir_path.exists():
         return records
 
-    # Match all non-hidden, non-gitkeep files
-    files = [
+    # Match all non-hidden, valid batch files
+    prefix = "Matched_Records_" if is_matched else "Unmatched_Records_"
+    valid_files = [
         f for f in dir_path.iterdir()
-        if f.is_file() and not f.name.startswith(".") and f.name != ".gitkeep"
+        if f.is_file() and not f.name.startswith((".", "~$")) and f.name != ".gitkeep" and f.name.startswith(prefix)
     ]
-    if not files:
+    if not valid_files:
+        # Fallback to any non-hidden files if prefix not found
+        valid_files = [
+            f for f in dir_path.iterdir()
+            if f.is_file() and not f.name.startswith((".", "~$")) and f.name != ".gitkeep"
+        ]
+    if not valid_files:
         return records
 
-    # Sort files by modification time descending and pick only the latest batch file
-    files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
-    latest_file = files[0]
+    # Prefer .csv over .xlsx for maximum speed and rock-solid reliability
+    csv_candidates = [f for f in valid_files if f.suffix.lower() == ".csv"]
+    if csv_candidates:
+        latest_file = max(csv_candidates, key=lambda f: f.stat().st_mtime)
+    else:
+        latest_file = max(valid_files, key=lambda f: f.stat().st_mtime)
+
     mtime = latest_file.stat().st_mtime
     cache_key = f"{dir_path.resolve()}_{is_matched}"
 
@@ -414,7 +425,7 @@ def _parse_folder_records(dir_path: Path, is_matched: bool) -> List[Dict[str, An
                             raw_rows.append(row_dict)
                 else:
                     import pandas as pd
-                    df = pd.read_excel(f)
+                    df = pd.read_excel(f, engine="openpyxl")
                     if is_matched:
                         amt_col = None
                         for c in df.columns:
@@ -435,17 +446,17 @@ def _parse_folder_records(dir_path: Path, is_matched: bool) -> List[Dict[str, An
                             if k is not None and str(v).strip().lower() not in ["nan", "nat", "none"]
                         })
             except Exception as e:
-                print(f"[_parse_folder_records] Excel read error: {e}")
+                # Silently fallback to CSV if present
+                pass
         else:
             with open(f, "r", encoding="utf-8", errors="ignore") as fp:
-                lines = [line.strip() for line in fp if line.strip() and not line.startswith("===") and not line.startswith("---")]
-            if lines:
-                header = lines[0]
-                delim = ";" if ";" in header else ("\t" if "\t" in header else ",")
-                reader = csv.DictReader(lines, delimiter=delim)
+                reader = csv.DictReader(fp)
+                max_to_read = 500 if is_matched else 2500
+                count = 0
                 for r in reader:
                     raw_rows.append({str(k).strip(): str(v).strip() for k, v in r.items() if k is not None})
-                    if is_matched and len(raw_rows) >= 500:
+                    count += 1
+                    if count >= max_to_read:
                         break
 
         for cleaned in raw_rows:
@@ -566,9 +577,11 @@ def get_matched(limit: int = 200) -> List[Dict[str, Any]]:
 
 def reset_recon_engine():
     """Resets recon cache and state to clean idle standby."""
-    global LAST_RECON_RUN, ALL_BREAKS_CACHE, ALL_MATCHED_CACHE
+    global LAST_RECON_RUN, ALL_BREAKS_CACHE, ALL_MATCHED_CACHE, _FOLDER_CACHE, _MATCHED_META
     ALL_BREAKS_CACHE = []
     ALL_MATCHED_CACHE = []
+    _FOLDER_CACHE.clear()
+    _MATCHED_META.clear()
     LAST_RECON_RUN = {
         "status": "IDLE",
         "run_id": None,

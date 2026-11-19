@@ -4,6 +4,10 @@ import ProductOperationsView from './ProductOperationsView'
 import AeServerExecutionModal from './AeServerExecutionModal'
 import PaymentsCopilotView from './PaymentsCopilotView'
 import RbiNeftRtgsView from './RbiNeftRtgsView'
+import BankingDashboardAnalytics from './BankingDashboardAnalytics'
+import LoginPage from './LoginPage'
+import { fmtInrAudit, toPaisa, inrToWords, InrAuditBadge } from './currencyHelper.jsx'
+import IsoXmlModal from './IsoXmlModal.jsx'
 import './index.css'
 
 class ErrorBoundary extends Component {
@@ -61,7 +65,7 @@ class ErrorBoundary extends Component {
   }
 }
 
-const LIVE_RAILS = ['AEPS', 'NETC', 'IMPS', 'NEFT', 'RTGS']
+const LIVE_RAILS = ['UPI', 'IMPS', 'AEPS', 'NETC', 'NEFT', 'RTGS']
 
 // ── Browser history for in-app navigation ────────────────────────────────────
 // Each tab / rail-scope change is a history entry (#/<tab>?rail=<code>) so the browser
@@ -78,7 +82,7 @@ const API = import.meta.env.VITE_API_URL || ''
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = n => Number(n ?? 0).toLocaleString('en-IN')
-const fmtInr = n => '₹ ' + Number(n ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const fmtInr = n => fmtInrAudit(n)
 const fmtPct = n => `${Number(n ?? 0).toFixed(1)}%`
 const fmtTime = iso => iso ? new Date(iso).toLocaleTimeString('en-IN', { hour12: false }) : '—'
 const fmtDate = iso => iso ? new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'
@@ -262,27 +266,19 @@ function KpiCard({ label, value, sub, color, prefix = '', suffix = '' }) {
 // ── Scenario Bar ──────────────────────────────────────────────────────────────
 function ScenarioBreakdown({ files, scopedRail, reconData }) {
   const totals = {}
-  if (scopedRail === 'UPI' && reconData && reconData.total_records) {
+  if (reconData && reconData.total_records) {
     totals['STP_MATCH_SUCCESS'] = reconData.matched_count || 0
-    const bb = reconData.break_breakdown || {}
+    const bb = reconData.breakdown || reconData.break_breakdown || {}
     Object.entries(bb).forEach(([k, v]) => {
       totals[k] = v
     })
   } else if (files && files.length > 0) {
-    if (scopedRail) {
-      const vol = { UPI: 5, IMPS: 7431, NACH: 6524, AEPS: 1938, RUPAY: 1461, CTS: 1511, BBPS: 525, NETC: 1505 }[scopedRail] || 5
-      totals['STP_MATCH_SUCCESS'] = Math.round(vol * 0.945)
-      totals['CBS_TIMEOUT_AUTO_REVERSAL'] = Math.round(vol * 0.028)
-      totals['AMOUNT_MISMATCH_SUSPENSE'] = Math.round(vol * 0.015)
-      totals['LATE_PRESENTMENT_BREAK'] = Math.round(vol * 0.007)
-      totals['REVERSAL_PENDING_QUEUE'] = Math.round(vol * 0.005)
-    } else {
-      files.forEach(f => {
-        Object.entries(f.scenario_counts || {}).forEach(([k, v]) => {
-          totals[k] = (totals[k] || 0) + v
-        })
+    files.forEach(f => {
+      if (scopedRail && f.rail && f.rail.toUpperCase() !== scopedRail.toUpperCase()) return
+      Object.entries(f.scenario_counts || {}).forEach(([k, v]) => {
+        totals[k] = (totals[k] || 0) + v
       })
-    }
+    })
   }
   const total = Object.values(totals).reduce((a, b) => a + b, 0) || 1
   const sorted = Object.entries(totals).sort(([, a], [, b]) => b - a)
@@ -974,23 +970,22 @@ function FileTable({ files = [], onDownload, activeRailScope }) {
                         fontWeight: 700,
                         background:
                           fRail === 'UPI' ? '#fff7ed' :
-                          fRail === 'IMPS' ? '#f5f3ff' :
-                          fRail === 'AEPS' ? '#eff6ff' :
-                          fRail === 'NETC' ? '#fefce8' :
-                          fRail === 'NEFT' ? '#f0fdf4' : '#faf5ff',
+                            fRail === 'IMPS' ? '#f5f3ff' :
+                              fRail === 'AEPS' ? '#eff6ff' :
+                                fRail === 'NETC' ? '#fefce8' :
+                                  fRail === 'NEFT' ? '#f0fdf4' : '#faf5ff',
                         color:
                           fRail === 'UPI' ? '#c2410c' :
-                          fRail === 'IMPS' ? '#6d28d9' :
-                          fRail === 'AEPS' ? '#1d4ed8' :
-                          fRail === 'NETC' ? '#a16207' :
-                          fRail === 'NEFT' ? '#15803d' : '#7e22ce',
-                        border: `1px solid ${
-                          fRail === 'UPI' ? '#fed7aa' :
+                            fRail === 'IMPS' ? '#6d28d9' :
+                              fRail === 'AEPS' ? '#1d4ed8' :
+                                fRail === 'NETC' ? '#a16207' :
+                                  fRail === 'NEFT' ? '#15803d' : '#7e22ce',
+                        border: `1px solid ${fRail === 'UPI' ? '#fed7aa' :
                           fRail === 'IMPS' ? '#ddd6fe' :
-                          fRail === 'AEPS' ? '#bfdbfe' :
-                          fRail === 'NETC' ? '#fef08a' :
-                          fRail === 'NEFT' ? '#bbf7d0' : '#e9d5ff'
-                        }`
+                            fRail === 'AEPS' ? '#bfdbfe' :
+                              fRail === 'NETC' ? '#fef08a' :
+                                fRail === 'NEFT' ? '#bbf7d0' : '#e9d5ff'
+                          }`
                       }}
                     >
                       {fRail}
@@ -1007,14 +1002,14 @@ function FileTable({ files = [], onDownload, activeRailScope }) {
                         borderRadius: 4,
                         background:
                           (f.file_type || '').includes('Matched') ? '#f0fdf4' :
-                          (f.file_type || '').includes('Unmatched') ? '#fef2f2' :
-                          (f.file_type || '').includes('Ledger') ? '#ecfeff' :
-                          (f.file_type || '').includes('CBS') ? '#fdf4ff' : '#f8fafc',
+                            (f.file_type || '').includes('Unmatched') ? '#fef2f2' :
+                              (f.file_type || '').includes('Ledger') ? '#ecfeff' :
+                                (f.file_type || '').includes('CBS') ? '#fdf4ff' : '#f8fafc',
                         color:
                           (f.file_type || '').includes('Matched') ? '#166534' :
-                          (f.file_type || '').includes('Unmatched') ? '#b91c1c' :
-                          (f.file_type || '').includes('Ledger') ? '#0e7490' :
-                          (f.file_type || '').includes('CBS') ? '#86198f' : '#475569'
+                            (f.file_type || '').includes('Unmatched') ? '#b91c1c' :
+                              (f.file_type || '').includes('Ledger') ? '#0e7490' :
+                                (f.file_type || '').includes('CBS') ? '#86198f' : '#475569'
                       }}
                     >
                       {f.file_type || 'Settlement Batch'}
@@ -1288,7 +1283,7 @@ function DossierModal({ dossier, onClose }) {
         <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: 0, marginBottom: 12 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              
+
               <div className="modal-title">{dossier.dossier_id}</div>
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
@@ -1381,6 +1376,14 @@ function DossierModal({ dossier, onClose }) {
 //  MAIN APP
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function App() {
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('npci_auth_user')
+      return saved ? JSON.parse(saved) : null
+    } catch {
+      return null
+    }
+  })
   const [stats, setStats] = useState({})
   const [files, setFiles] = useState([])
   const [audit, setAudit] = useState([])
@@ -1389,6 +1392,7 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [activeRailScope, setActiveRailScope] = useState(() => readNavFromUrl()?.rail || null)
   const [activeRailName, setActiveRailName] = useState(() => readNavFromUrl()?.rail || '')
+  const [selectedIsoTx, setSelectedIsoTx] = useState(null)
 
   // Push a history entry whenever the tab or rail scope changes; Back / Forward restore it.
   const historyReady = useRef(false)
@@ -1415,6 +1419,14 @@ export default function App() {
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [])
+
+  // Auto-redirect out of RBI workbench if user switches to retail rail
+  useEffect(() => {
+    const isRbi = ['NEFT', 'RTGS'].includes((activeRailScope || '').toUpperCase())
+    if (!isRbi && activeNav === 'rbi_3way') {
+      setActiveNav('recon')
+    }
+  }, [activeRailScope, activeNav])
   const [uploading, setUploading] = useState(false)
   const [lastResult, setLastResult] = useState(null)
   const [pipeStage, setPipeStage] = useState(0)
@@ -1464,8 +1476,29 @@ export default function App() {
   const [aeLogs, setAeLogs] = useState([])
   const [aeFileName, setAeFileName] = useState('NPCI_UPI_Settlement_TestData_50K.csv')
   const [aeTotalRecords, setAeTotalRecords] = useState(50000)
+  const [aeActiveRail, setAeActiveRail] = useState('UPI')
+  const [aeHaltReason, setAeHaltReason] = useState(null)
 
   const fileRef = useRef()
+
+  // 4-Leg Recon Upload Feeds State
+  const [uploadMode, setUploadMode] = useState('4_FEEDS') // '4_FEEDS' | 'SINGLE'
+  const [feedFiles, setFeedFiles] = useState({
+    npci: null,
+    switch: null,
+    cbs: null,
+    gl: null
+  })
+  const [feedUploading, setFeedUploading] = useState({
+    npci: false,
+    switch: false,
+    cbs: false,
+    gl: false
+  })
+  const npciFileRef = useRef()
+  const switchFileRef = useRef()
+  const cbsFileRef = useRef()
+  const glFileRef = useRef()
 
   // Pagination states for all data tabs (10 items per page)
   const [stagingPage, setStagingPage] = useState(1)
@@ -1528,9 +1561,10 @@ export default function App() {
 
   const sleep = ms => new Promise(r => setTimeout(r, ms))
 
-  // Trigger 4-Way Recon Execution
+  // Trigger 4-Way or 3-Way Recon Execution
   const triggerReconRun = async () => {
     setReconRunning(true)
+    const is3Way = ['NEFT', 'RTGS'].includes((activeRailScope || '').toUpperCase())
     try {
       const rq = liveRailQuery()
       const res = await fetch(`${API}/api/recon/run${rq ? `?${rq}` : ''}`, { method: 'POST' })
@@ -1542,6 +1576,10 @@ export default function App() {
       const matchedRes = await fetch(`${API}/api/recon/matched?limit=200${rq ? `&${rq}` : ''}`).then(r => r.json()).catch(() => ({ matched: [] }))
       setReconMatched(matchedRes.matched || [])
       refresh()
+      // Automatically navigate to RBI 3-Way view for NEFT/RTGS, else Recon Engine view
+      const targetNav = is3Way ? 'rbi_3way' : 'recon'
+      setActiveNav(targetNav)
+      window.location.hash = navUrl(targetNav, activeRailScope)
     } catch (e) {
       alert("Error triggering reconciliation: " + e)
     }
@@ -1969,6 +2007,39 @@ export default function App() {
     setUploading(false)
   }
 
+  // Individual 4-leg feed upload handler with rail isolation & filtering
+  const handleFeedUpload = async (legKey, file) => {
+    if (!file) return
+    setFeedUploading(prev => ({ ...prev, [legKey]: true }))
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const rail = activeRailScope || 'UPI'
+      const res = await fetch(`${API}/api/upload?leg=${legKey}&rail=${rail}`, {
+        method: 'POST',
+        body: form
+      })
+      const data = await res.json()
+      setFeedFiles(prev => ({
+        ...prev,
+        [legKey]: {
+          name: file.name,
+          size: file.size,
+          records: data.retained_records || data.records || 50000,
+          filtered: data.filtered_out_count || 0,
+          target_filename: data.target_filename,
+          status: data.status,
+          uploadedAt: new Date().toLocaleTimeString('en-IN', { hour12: false })
+        }
+      }))
+      setAgentText(`[${legKey.toUpperCase()} FEED] '${file.name}' saved to stage1/${data.target_filename || legKey}. ${data.filtered_out_count > 0 ? `Filtered out ${data.filtered_out_count} non-${rail} rows.` : `Scoped for ${rail}.`}`)
+      refresh()
+    } catch (e) {
+      alert(`Error uploading ${legKey} feed: ` + e)
+    }
+    setFeedUploading(prev => ({ ...prev, [legKey]: false }))
+  }
+
   // Comprehensive End-to-End Multi-Stage Demo Trigger
   const triggerDemo = async () => {
     setActiveNav('upload')
@@ -2103,6 +2174,201 @@ export default function App() {
     refresh()
   }
 
+  const handleSubscribeAndRun = async (rail) => {
+    const r = (rail || aeActiveRail || activeRailScope || 'UPI').toUpperCase()
+    try {
+      setAeLogs(prev => [
+        ...prev,
+        `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] SUBSCRIPTION-GATE: Activating customer subscription for rail '${r}'...`
+      ])
+      const res = await fetch(`${API}/api/rail-catalog/subscribe?rail_code=${r}&status=SUBSCRIBED`, { method: 'POST' })
+      if (res.ok) {
+        setAeLogs(prev => [
+          ...prev,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] SUBSCRIPTION-GATE: Rail '${r}' is now SUBSCRIBED! Resuming 4-way reconciliation...`
+        ])
+        refresh()
+        await handleSimulateFileDropAndAnimate(r)
+      }
+    } catch (e) {
+      console.error('Error auto-subscribing rail:', e)
+    }
+  }
+
+  const handleSimulateFileDropAndAnimate = async (targetRail = null) => {
+    const r = (targetRail || activeRailScope || 'UPI').toUpperCase()
+    const isRbi = r === 'NEFT' || r === 'RTGS'
+    const wfName = r === 'IMPS' ? 'NPCI Demo IMPS 4 Way Recon' :
+                   (r === 'AEPS' ? 'NPCI Demo AePS Recon' :
+                   (r === 'NETC' ? 'NPCI DEMO NETC Recon' :
+                   (r === 'NEFT' ? 'RBI Demo NEFT 3-Way Recon & Liquidity' :
+                   (r === 'RTGS' ? 'RBI Demo RTGS Real-Time Gross Settlement' :
+                   'NPCI Demo UPI Reconn'))))
+
+    const simFileName = r === 'NEFT' ? 'RBI_SFMS_NEFT_Batch30_Clearing.csv' :
+                        (r === 'RTGS' ? 'RBI_eKuber_RTGS_Gross_Settlement.csv' :
+                        'NPCI_Unified_Settlement_Master.csv')
+
+    const recCount = r === 'NEFT' ? 15000 : (r === 'RTGS' ? 5000 : 500000)
+
+    // 1. Immediately open AE Server RPA Execution Modal with live UI flow
+    setAeActiveRail(r)
+    setAeHaltReason(null)
+    setAeModalOpen(true)
+    setAeExecutionStatus('RUNNING')
+    setAeFileName(simFileName)
+    setAeTotalRecords(recCount)
+    setAeCurrentStep(1)
+    setAeLogs([
+      `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] INBOUND-SIMULATOR: Ingesting fresh ${isRbi ? `${r} settlement package (${recCount.toLocaleString()} orders)` : '500,000 multi-rail clearing batch'} into 'Input files'...`,
+      `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] AE-SERVER: Initializing runner cluster for '${wfName}' (Port 8080)...`,
+      `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] INBOUND-WATCHER: Monitoring directory: D:\\NPCI-Workbench\\Input files (${isRbi ? `${r} central bank clearing feed` : '500,000 rows across UPI, IMPS, AEPS, NETC'})`
+    ])
+
+    try {
+      // 2. Start backend ingestion concurrently so Step 1 animates smoothly
+      const dropPromise = fetch(`${API}/api/simulator/drop-feed?rail=${r}&record_count=${recCount}`, { method: 'POST' })
+        .then(async res => {
+          if (!res.ok) {
+            const errText = await res.text()
+            throw new Error(`HTTP ${res.status}: ${errText.slice(0, 100)}`)
+          }
+          return res.json()
+        })
+
+      // Step 1 animation delay
+      await sleep(350)
+
+      // 3. Step 2: Gatekeeper & Staging
+      setAeCurrentStep(2)
+      if (isRbi) {
+        setAeLogs(prev => [
+          ...prev,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] INBOUND-WATCHER: Inbound clearing feed received in staging watch folder.`,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] ISO-20022 GATE: Validating pacs.008 schema & digital signature certificates...`,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-03 Cryptkeeper: Computing SHA-256 batch hash & verifying zero duplicate UTRs across central ledger...`
+        ])
+      } else {
+        setAeLogs(prev => [
+          ...prev,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] INBOUND-WATCHER: Inbound 500,000 multi-rail batch received in staging watch folder.`,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] FILTER-GATE: Filtering transactions for subscribed rail '${r}' from 500,000 master pool...`,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-03 Cryptkeeper: Computing SHA-256 hash & validating 4-leg correlation across Unified feeds...`
+        ])
+      }
+
+      // Await backend response at Gatekeeper step
+      const d = await dropPromise
+
+      if (!d.will_trigger_recon) {
+        // Rail not subscribed in UI
+        setAeExecutionStatus('REJECTED_HALTED')
+        setAeHaltReason('UNSUBSCRIBED')
+        setAeLogs(prev => [
+          ...prev,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] INBOUND-WATCHER: ${isRbi ? `${r} clearing feed arrived` : '500,000 multi-rail file arrived in \'Input files\''}, but rail '${r}' is ${d.rail_subscription_status} in UI Rail Catalog.`,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] GATE-KEEPER: AutomationEdge workflow execution SUPPRESSED per governance policy.`,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] ACTION REQUIRED: Click "Subscribe '${r}' & Run Now" to activate auto-recon.`
+        ])
+        return
+      }
+
+      await sleep(350)
+
+      // 4. Step 3: Recon Engine (3-Way for RBI, 4-Way for Retail)
+      setAeCurrentStep(3)
+      const totalFiltered = d.recon_summary?.total_records || (isRbi ? recCount : (r === 'UPI' ? 300000 : r === 'IMPS' ? 125000 : r === 'AEPS' ? 50000 : 25000))
+      const stpRate = d.recon_summary?.stp_rate || (isRbi ? (r === 'RTGS' ? 98.2 : 96.4) : 96.5)
+      const matchedCount = d.recon_summary?.matched_count || Math.round(totalFiltered * (stpRate / 100))
+      const breakCount = d.recon_summary?.break_count || (totalFiltered - matchedCount)
+
+      if (isRbi) {
+        setAeLogs(prev => [
+          ...prev,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] AE-SERVER: Executing continuous 3-Way Triangulation for ${r}...`,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-04 3-Way Engine: Triangulated Finacle CBS vs SFMS Switch vs RBI e-Kuber statement. Matched ${matchedCount.toLocaleString()} orders (${stpRate}% STP rate), isolated ${breakCount.toLocaleString()} breaks.`
+        ])
+      } else {
+        setAeLogs(prev => [
+          ...prev,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] AE-SERVER: Executing 4-Way Reconciliation for ${r}...`,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-04 Recon Engine: Filtered ${totalFiltered.toLocaleString()} '${r}' records from 500k master pool. Matched ${matchedCount.toLocaleString()} clean records (${stpRate}% STP rate), isolated ${breakCount.toLocaleString()} breaks.`
+        ])
+      }
+
+      // 5. Step 4: AI Diagnostic Agent & Live AE Server Workflows
+      await sleep(400)
+      setAeCurrentStep(4)
+      const dispatches = d.dispatched_workflows || []
+      const dispatchLogLines = dispatches.length > 0
+        ? dispatches.map(w => `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] 🚀 AE SERVER SUBMITTED: '${w.workflowName}' (Request #${w.requestId}) -> Status: ${w.status || 'RequestCreated'}`)
+        : [
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] 🚀 AE SERVER SUBMITTED: '${wfName}'`,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] 🚀 AE SERVER SUBMITTED: 'RBI Demo e-Kuber Poster'`
+        ]
+
+      if (isRbi) {
+        setAeLogs(prev => [
+          ...prev,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] AE-SERVER: Dispatching RBI Wholesale Process Studio workflows...`,
+          ...dispatchLogLines,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-07 AI Liquidity Reasoner: Analyzing e-Kuber current account float & generating Maker-Checker dossiers for breaks...`
+        ])
+      } else {
+        setAeLogs(prev => [
+          ...prev,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] AE-SERVER: Parallel dispatching 3 downstream Process Studio workflows...`,
+          ...dispatchLogLines,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-07: Diagnosing root causes, deemed timeouts & RBI T+1 TAT countdown...`
+        ])
+      }
+      await sleep(450)
+
+      // 6. Step 5: Finacle CBS Posting
+      setAeCurrentStep(5)
+      if (isRbi) {
+        setAeLogs(prev => [
+          ...prev,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] AE-SERVER: Launching Finacle CBS & e-Kuber Settlement Bot WF10_RBI_Poster.psw...`,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-10: Posting ${r} multilateral net balance knock-off against GL-11010/GL-9901 and queue clearance.`
+        ])
+      } else {
+        setAeLogs(prev => [
+          ...prev,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] AE-SERVER: Launching Finacle Reversal RPA Bot WF10_Finacle_CBS_Poster.psw...`,
+          `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-10: Auto-crediting customer accounts for deemed timeouts below ₹5,000 threshold.`
+        ])
+      }
+      await sleep(350)
+
+      // 7. Step 6: Audit Crypt-Seal
+      setAeCurrentStep(6)
+      setAeLogs(prev => [
+        ...prev,
+        `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] AE-SERVER: Dispatching WF12_Regulatory_Audit_CryptSeal.psw...`,
+        `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-12: Generating tamper-proof cryptographic Merkle tree digest across ${isRbi ? `${r} batch ${d.batch_id || 'RBI_BATCH'}` : `batch ${d.batch_id}`}...`
+      ])
+      await sleep(350)
+
+      // 8. Step 7: Complete!
+      setAeCurrentStep(7)
+      setAeExecutionStatus('COMPLETED')
+      setAeLogs(prev => [
+        ...prev,
+        `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] WF-12: Audit Merkle root sealed with SHA-256. 100% ${isRbi ? 'RBI DPSS Wholesale Mandate' : 'RBI DPSS T+1 SLA'} compliant!`,
+        `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] AE-SERVER: ALL ${isRbi ? r : 'PROCESS STUDIO'} WORKFLOWS EXECUTED SUCCESSFULLY ON https://t4.automationedge.com/#/requests/list`
+      ])
+
+      await refresh()
+    } catch (err) {
+      setAeExecutionStatus('REJECTED_HALTED')
+      setAeLogs(prev => [
+        ...prev,
+        `[${new Date().toLocaleTimeString('en-IN', { hour12: false })}] SIMULATOR ERROR: ${err.message}`
+      ])
+    }
+  }
+
   const onDrop = e => { e.preventDefault(); setDrag(false); handleUpload(e.dataTransfer.files[0]) }
 
   const triggerFileDownload = (url, fallbackName) => {
@@ -2162,13 +2428,13 @@ export default function App() {
   const railLive = isScoped && (activeRailScope.toUpperCase() === 'UPI' || (reconData?.rail || '').toUpperCase() === activeRailScope.toUpperCase())
   const scopedP1Count = isScoped
     ? (railLive && reconData?.p1_count !== undefined
-        ? reconData.p1_count
-        : (scopedRailVol > 0 ? Math.round(scopedRailVol * 0.048) : 0))
+      ? reconData.p1_count
+      : (scopedRailVol > 0 ? Math.round(scopedRailVol * 0.048) : 0))
     : (hasData ? (stats.p1_count ?? 0) : 0)
   const scopedP2Count = isScoped
     ? (railLive && reconData?.p2_count !== undefined
-        ? reconData.p2_count
-        : (scopedRailVol > 0 ? Math.round(scopedRailVol * 0.007) : 0))
+      ? reconData.p2_count
+      : (scopedRailVol > 0 ? Math.round(scopedRailVol * 0.007) : 0))
     : (hasData ? (stats.p2_count ?? 0) : 0)
   const scopedExcCount = railLive && reconData?.break_count !== undefined
     ? reconData.break_count
@@ -2185,6 +2451,8 @@ export default function App() {
 
   const stp_pct = scopedStpPct
   const exc_pct = scopedExcPct
+
+  const isCurrentRailRbi = ['NEFT', 'RTGS'].includes((activeRailScope || '').toUpperCase())
 
   const navItems = [
     {
@@ -2207,7 +2475,7 @@ export default function App() {
       ),
       label: 'Home Dashboard'
     },
-    {
+    ...(isCurrentRailRbi ? [{
       id: 'rbi_3way',
       icon: (
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2216,8 +2484,8 @@ export default function App() {
           <line x1="12" y1="17" x2="12" y2="21" />
         </svg>
       ),
-      label: 'RBI 3-Way & Liquidity'
-    },
+      label: 'RBI'
+    }] : []),
     {
       id: 'copilot',
       icon: (
@@ -2247,7 +2515,7 @@ export default function App() {
           <line x1="6" y1="20" x2="6" y2="14" />
         </svg>
       ),
-      label: '4-Way Recon Engine'
+      label: 'Recon Engine'
     },
     {
       id: 'investigate',
@@ -2343,6 +2611,19 @@ export default function App() {
   const pagedHitlQueue = filteredHitlQueue.slice((hitlPage - 1) * PAGE_SIZE, hitlPage * PAGE_SIZE)
   const pagedStaging = staging.slice((stagingPage - 1) * PAGE_SIZE, stagingPage * PAGE_SIZE)
 
+  if (!currentUser) {
+    return (
+      <LoginPage
+        onLogin={(user) => {
+          setCurrentUser(user)
+          try {
+            localStorage.setItem('npci_auth_user', JSON.stringify(user))
+          } catch (e) { }
+        }}
+      />
+    )
+  }
+
   return (
     <div className="app-container">
       {/* 4-Way Leg Inspection Modal */}
@@ -2357,13 +2638,23 @@ export default function App() {
         onClose={() => setAeModalOpen(false)}
         currentStep={aeCurrentStep}
         executionStatus={aeExecutionStatus}
+        activeRail={aeActiveRail}
+        haltReason={aeHaltReason}
+        onSubscribeAndRun={handleSubscribeAndRun}
         logs={aeLogs}
         fileName={aeFileName}
         totalRecords={aeTotalRecords}
         serverUrl="https://t4.automationedge.com/#/requests/list"
         username="abhishek.malwatkar@valuedx.com"
-        workflowName="NPCI Demo UPI Reconn"
-        completionMessage="Message : UPI Recon Completed"
+        workflowName={
+          aeActiveRail === 'AEPS' ? 'NPCI Demo AePS Recon' :
+          aeActiveRail === 'IMPS' ? 'NPCI Demo IMPS 4 Way Recon' :
+          aeActiveRail === 'NETC' ? 'NPCI DEMO NETC Recon' :
+          aeActiveRail === 'NEFT' ? 'RBI Demo NEFT 3-Way Recon & Liquidity' :
+          aeActiveRail === 'RTGS' ? 'RBI Demo RTGS Real-Time Gross Settlement' :
+          'NPCI Demo UPI Reconn'
+        }
+        completionMessage={`Message : ${aeActiveRail || 'UPI'} Recon Completed`}
         reconData={reconData}
         recoverySummary={recoverySummary}
       />
@@ -2413,7 +2704,7 @@ export default function App() {
             flexShrink: 0,
             fontSize: 17
           }}>
-            
+
           </div>
           <div className="header-title"><span>ABC Bank</span></div>
         </div>
@@ -2425,6 +2716,8 @@ export default function App() {
             onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#475569' }}
             onClick={async () => {
               if (window.confirm("Clear all logs, vaults, and reset state for fresh file testing?")) {
+                const preservedRail = activeRailScope || 'IMPS'
+                const preservedRailName = activeRailName || preservedRail
                 try {
                   await fetch(`${API}/api/system/clear-all`, { method: 'POST' })
                 } catch (e) {
@@ -2460,8 +2753,15 @@ export default function App() {
                 setHitlQueue([])
                 setMisReport(null)
                 setSealedPack(null)
-                setActiveRailScope(null)
-                setActiveRailName('')
+                setFeedFiles({
+                  npci: null,
+                  switch: null,
+                  cbs: null,
+                  gl: null
+                })
+                setFeedUploading({})
+                setActiveRailScope(preservedRail)
+                setActiveRailName(preservedRailName)
                 setStagingPage(1)
                 setReconPage(1)
                 setDossierPage(1)
@@ -2474,6 +2774,80 @@ export default function App() {
             Clear All Data &amp; Logs
           </button>
           <div className="header-time">{time.toLocaleTimeString('en-IN', { hour12: false })}</div>
+
+          {/* Logged in User Profile & Sign Out */}
+          {currentUser && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '3px 8px 3px 6px',
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: 20,
+              marginLeft: 4,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+            }}>
+              {/* Circular Logo Avatar with Login Initial (Orange) */}
+              <div style={{
+                width: 26,
+                height: 26,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 12,
+                fontWeight: 800,
+                boxShadow: '0 1px 4px rgba(234, 88, 12, 0.3)',
+                textTransform: 'uppercase',
+                flexShrink: 0
+              }}>
+                {(currentUser.username || 'U')[0].toUpperCase()}
+              </div>
+
+              {/* Role Badge in Orange */}
+              <span style={{
+                fontSize: 10,
+                fontWeight: 800,
+                padding: '2.5px 7px',
+                borderRadius: 4,
+                background: '#ffedd5',
+                color: '#c2410c',
+                border: '1px solid #fed7aa',
+                textTransform: 'uppercase',
+                letterSpacing: '0.3px'
+              }}>
+                {currentUser.role}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => {
+                  try { localStorage.removeItem('npci_auth_user') } catch (e) {}
+                  setCurrentUser(null)
+                }}
+                style={{
+                  marginLeft: 2,
+                  padding: '3px 8px',
+                  fontSize: 11,
+                  border: 'none',
+                  background: '#fff1f2',
+                  color: '#e11d48',
+                  borderRadius: 12,
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  transition: 'background 0.15s ease'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#ffe4e6'}
+                onMouseLeave={e => e.currentTarget.style.background = '#fff1f2'}
+                title="Sign out of current session"
+              >
+                Sign out
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -2500,1994 +2874,2200 @@ export default function App() {
         </div>
 
         {/* Main Content */}
-        <div className="main">
+        <div className="main" style={activeNav === 'copilot' ? { padding: 0, overflow: 'hidden' } : {}}>
           {/* Page transition wrapper & Error Boundary */}
           <ErrorBoundary key={activeNav}>
             <div className="page-transition">
-          {/* ═════════════════════════════════════════════════════════════════ */}
-          {/* NPCI PRODUCT OPERATIONS (RAIL-SPECIFIC WORKBENCH: SCREEN #2)      */}
-          {/* ═════════════════════════════════════════════════════════════════ */}
-          {activeNav === 'product_ops' && (
-            <ProductOperationsView
-              initialRail={activeRailScope || selectedRailForOps || 'UPI'}
-              onSelectRail={(railCode) => {
-                setSelectedRailForOps(railCode)
-                setActiveRailScope(railCode)
-              }}
-              onInvestigateTxn={(txnId) => setActiveNav('investigate')}
-            />
-          )}
+              {/* ═════════════════════════════════════════════════════════════════ */}
+              {/* NPCI PRODUCT OPERATIONS (RAIL-SPECIFIC WORKBENCH: SCREEN #2)      */}
+              {/* ═════════════════════════════════════════════════════════════════ */}
+              {activeNav === 'product_ops' && (
+                <ProductOperationsView
+                  initialRail={activeRailScope || selectedRailForOps || 'UPI'}
+                  onSelectRail={(railCode) => {
+                    setSelectedRailForOps(railCode)
+                    setActiveRailScope(railCode)
+                  }}
+                  onInvestigateTxn={(txnId) => setActiveNav('investigate')}
+                />
+              )}
 
-          {/* ═════════════════════════════════════════════════════════════════ */}
-          {/* NPCI PAYMENT RAIL SOLUTION CATALOG & SUBSCRIPTIONS               */}
-          {/* ═════════════════════════════════════════════════════════════════ */}
-          {activeNav === 'catalog' && (
-            <RailCatalogView
-              selectedRailCode={activeRailScope}
-              onLaunchWorkflow={(rail) => {
-                if (rail) {
-                  setSelectedRailForOps(rail)
-                  setActiveRailScope(rail)
-                }
-                setActiveNav('dashboard')
-              }}
-              onOpenRailOps={(rail) => {
-                const meta = railMetadata[rail]
-                setSelectedRailForOps(rail)
-                setActiveRailScope(rail)
-                setActiveRailName(meta?.name || rail)
-                setActiveNav('dashboard')
-              }}
-              onStartRailTrial={handleStartRailTrial}
-              reconData={reconData}
-              reconBreaks={reconBreaks}
-              reconMatched={reconMatched}
-              recoverySummary={recoverySummary}
-              onOpenRecon={() => setActiveNav('recon')}
-              onOpenHitl={() => setActiveNav('hitl')}
-            />
-          )}
+              {/* ═════════════════════════════════════════════════════════════════ */}
+              {/* NPCI PAYMENT RAIL SOLUTION CATALOG & SUBSCRIPTIONS               */}
+              {/* ═════════════════════════════════════════════════════════════════ */}
+              {activeNav === 'catalog' && (
+                <RailCatalogView
+                  selectedRailCode={activeRailScope}
+                  onSubscriptionChange={() => refresh()}
+                  onLaunchWorkflow={(rail) => {
+                    if (rail) {
+                      setSelectedRailForOps(rail)
+                      setActiveRailScope(rail)
+                    }
+                    setActiveNav('dashboard')
+                  }}
+                  onOpenRailOps={(rail) => {
+                    const meta = railMetadata[rail]
+                    setSelectedRailForOps(rail)
+                    setActiveRailScope(rail)
+                    setActiveRailName(meta?.name || rail)
+                    setActiveNav('dashboard')
+                  }}
+                  onStartRailTrial={handleStartRailTrial}
+                  reconData={reconData}
+                  reconBreaks={reconBreaks}
+                  reconMatched={reconMatched}
+                  recoverySummary={recoverySummary}
+                  onOpenRecon={() => setActiveNav('recon')}
+                  onOpenHitl={() => setActiveNav('hitl')}
+                  onSimulateFileDrop={handleSimulateFileDropAndAnimate}
+                />
+              )}
 
-          {/* ═════════════════════════════════════════════════════════════════ */}
-          {/* RBI NEFT & RTGS — 3-WAY RECON, LIQUIDITY & MAKER-CHECKER (UC1-UC8) */}
-          {/* ═════════════════════════════════════════════════════════════════ */}
-          {activeNav === 'rbi_3way' && (
-            <RbiNeftRtgsView
-              apiBase={API}
-              onNavigateCopilot={() => setActiveNav('copilot')}
-            />
-          )}
+              {/* ═════════════════════════════════════════════════════════════════ */}
+              {/* RBI NEFT & RTGS — 3-WAY RECON, LIQUIDITY & MAKER-CHECKER (UC1-UC8) */}
+              {/* ═════════════════════════════════════════════════════════════════ */}
+              {activeNav === 'rbi_3way' && (
+                <RbiNeftRtgsView
+                  apiBase={API}
+                  viewMode="full"
+                  activeRail={activeRailScope}
+                  onNavigateCopilot={() => setActiveNav('copilot')}
+                  onSimulateFileDrop={handleSimulateFileDropAndAnimate}
+                  onNavigateHitl={() => setActiveNav('recovery')}
+                  onNavigateInvestigate={() => setActiveNav('investigate')}
+                />
+              )}
 
-          {/* ═════════════════════════════════════════════════════════════════ */}
-          {/* PAYMENTS COPILOT — UC7: STATUS COPILOT (TEAMS / WEB PORTAL)      */}
-          {/* ═════════════════════════════════════════════════════════════════ */}
-          {activeNav === 'copilot' && (
-            <PaymentsCopilotView
-              apiBase={API}
-              onNavigateWorkbench={(nav) => setActiveNav(nav || 'rbi_3way')}
-            />
-          )}
+              {/* ═════════════════════════════════════════════════════════════════ */}
+              {/* PAYMENTS COPILOT — UC7: STATUS COPILOT (TEAMS / WEB PORTAL)      */}
+              {/* ═════════════════════════════════════════════════════════════════ */}
+              {activeNav === 'copilot' && (
+                <PaymentsCopilotView
+                  apiBase={API}
+                  onNavigateWorkbench={(nav) => setActiveNav(nav || 'rbi_3way')}
+                />
+              )}
 
-          {/* ═════════════════════════════════════════════════════════════════ */}
-          {/* MICROSOFT AGENT FRAMEWORK (MAF) ORCHESTRATOR & CONTEXT GRAPH     */}
-          {/* ═════════════════════════════════════════════════════════════════ */}
-          {activeNav === 'orchestrator' && <>
-            {/* MAF Master Banner */}
-            <div className="maf-banner">
-              <div>
-                <div className="maf-banner-title">
-                  
-                  <span>Microsoft Agent Framework (MAF) &bull; Context Graph Orchestrator</span>
-                  <span className="maf-badge">MAF Multi-Agent Runtime</span>
-                </div>
-                <div className="maf-banner-sub">
-                  Directed Workflow Graph (`WorkflowBuilder`) &bull; Grounded Context Graph Blackboard &bull; Conditional Edge Routing &bull; Multi-Agent State Machine
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                <button
-                  className="btn btn-secondary"
-                  style={{ padding: '9px 16px', fontSize: 12.5, borderColor: '#ea580c', color: '#ea580c' }}
-                  disabled={mafRunning}
-                  onClick={handleTriggerAeChain}
-                >
-                  Trigger Downstream Toolchain (UPI Recon)
-                </button>
-                <button
-                  className="btn btn-primary"
-                  style={{ padding: '9px 18px', fontSize: 12.5, background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)', borderColor: '#ea580c' }}
-                  disabled={mafRunning}
-                  onClick={handleRunOrchestrator}
-                >
-                  {mafRunning ? 'MAF Graph Executing...' : 'Run Autonomous MAF Flow'}
-                </button>
-                <button
-                  className="btn btn-secondary"
-                  style={{ padding: '9px 14px', fontSize: 12.5 }}
-                  onClick={handleResetOrchestrator}
-                >
-                  Reset Graph
-                </button>
-              </div>
-            </div>
+              {/* ═════════════════════════════════════════════════════════════════ */}
+              {/* MICROSOFT AGENT FRAMEWORK (MAF) ORCHESTRATOR & CONTEXT GRAPH     */}
+              {/* ═════════════════════════════════════════════════════════════════ */}
+              {activeNav === 'orchestrator' && <>
+                {/* MAF Master Banner */}
+                <div className="maf-banner">
+                  <div>
+                    <div className="maf-banner-title">
 
-            {/* Autonomous AE Server Watcher & Downstream Toolchain Panel */}
-            <div className="card" style={{
-              background: '#ffffff',
-              border: '1.5px solid #86efac',
-              borderRadius: 14,
-              padding: '16px 20px',
-              marginBottom: 16,
-              boxShadow: '0 4px 14px rgba(22, 163, 74, 0.08)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{
-                    background: '#dcfce7',
-                    border: '1.5px solid #16a34a',
-                    color: '#15803d',
-                    fontSize: 11,
-                    fontWeight: 800,
-                    padding: '3px 10px',
-                    borderRadius: 99,
-                    letterSpacing: '0.4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6
-                  }}>
-                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
-                    AUTONOMOUS WATCHER ACTIVE
-                  </span>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>
-                    Monitoring Workflow: "NPCI Demo UPI Reconn"
-                  </span>
-                </div>
-                <div style={{ fontSize: 11.5, color: '#64748b' }}>
-                  Server: <a href="https://t4.automationedge.com/#/requests/list" target="_blank" rel="noopener noreferrer" style={{ color: '#ea580c', fontWeight: 600 }}>t4.automationedge.com</a> &bull; Continuous Result Polling: <b style={{ color: '#16a34a' }}>2.0s interval</b>
-                </div>
-              </div>
-
-              {/* Downstream Toolchain Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
-                {/* Tool 1 */}
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: '#0f172a' }}>Tool 1: Zero-Delta GL Knock-Off</span>
-                    <span style={{ background: '#dcfce7', color: '#15803d', fontSize: 9.5, fontWeight: 800, padding: '1px 6px', borderRadius: 4 }}>AUTO</span>
-                  </div>
-                  <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>
-                    Reads latest matched batch &bull; Posts zero-delta voucher (GL-14020 vs GL-11010) &bull; Closes settlement STP
-                  </div>
-                </div>
-
-                {/* Tool 2 */}
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: '#0f172a' }}>Tool 2: AI Dual-Track Dispatcher</span>
-                    <span style={{ background: '#ffedd5', color: '#c2410c', fontSize: 9.5, fontWeight: 800, padding: '1px 6px', borderRadius: 4 }}>REASONER</span>
-                  </div>
-                  <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>
-                    Evaluates break root causes &bull; Starts RBI T+1 penalty clock &bull; Calculates financial exposure
-                  </div>
-                </div>
-
-                {/* Tool 3 */}
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: '#0f172a' }}>Tool 3: CBS Reversal Bot</span>
-                    <span style={{ background: '#eff6ff', color: '#1d4ed8', fontSize: 9.5, fontWeight: 800, padding: '1px 6px', borderRadius: 4 }}>EXECUTION</span>
-                  </div>
-                  <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>
-                    Auto-credits &lt; ₹5,000 deemed fails via Finacle bot &bull; Enqueues high-value cases to HITL Cockpit
-                  </div>
-                </div>
-
-                {/* Tool 4 */}
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: '#0f172a' }}>Tool 4: Audit Crypt-Seal</span>
-                    <span style={{ background: '#f1f5f9', color: '#475569', fontSize: 9.5, fontWeight: 800, padding: '1px 6px', borderRadius: 4 }}>SHA-256</span>
-                  </div>
-                  <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>
-                    Bundles telemetry into immutable Merkle digest &bull; Generates 100% RBI compliance evidence pack
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* KPI Overview */}
-            <div className="kpi-grid">
-              <KpiCard
-                label="Coordinated Executors"
-                value={mafGraph?.total_nodes || 6}
-                color="blue"
-                sub="Autonomous MAF Agents"
-              />
-              <KpiCard
-                label="Workflow Graph Progress"
-                value={mafGraph?.pipeline_progress_pct || 100}
-                suffix="%"
-                color="green"
-                sub={`${mafGraph?.completed_nodes || 6} of 6 nodes completed`}
-              />
-              <KpiCard
-                label="Context Graph Domains"
-                value={5}
-                color="purple"
-                sub="Shared state blackboard"
-              />
-              <KpiCard
-                label="Total Memory Capsules"
-                value={mafGraph?.context_graph?.total_memory_capsules || 6}
-                color="amber"
-                sub="State mutation checkpoints"
-              />
-            </div>
-
-            {/* Visual MAF Workflow Graph Canvas */}
-            <div className="maf-graph-canvas">
-              <div className="maf-graph-header">
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)' }}>
-                    MAF Directed Workflow Graph Topology &mdash; 6 Coordinated Executors
-                  </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>
-                    Click any node to inspect its Grounded Memory Capsule &amp; input/output contracts
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span className="badge badge-green">✓ Session: {mafGraph?.context_graph?.session_id || 'MAF_SESSION_ACTIVE'}</span>
-                </div>
-              </div>
-
-              {/* Node Flow Diagram */}
-              <div className="maf-nodes-flow">
-                {/* Step 1: Ingestion */}
-                <div className="maf-node-row">
-                  <div
-                    className={`maf-node-card ${(mafGraph?.executors?.node_ingestion?.status || 'COMPLETED').toLowerCase()} ${selectedMafNode === 'node_ingestion' ? 'selected' : ''}`}
-                    onClick={() => setSelectedMafNode('node_ingestion')}
-                  >
-                    <div className="maf-node-top">
-                      <span className="maf-node-title">1. Ingestion &amp; Validation</span>
-                      <span className="maf-node-rpa">WF-01 &bull; WF-03</span>
+                      <span>Microsoft Agent Framework (MAF) &bull; Context Graph Orchestrator</span>
+                      <span className="maf-badge">MAF Multi-Agent Runtime</span>
                     </div>
-                    <div className="maf-node-desc">
-                      SFTP intake, SHA-256 duplicate registry check, 32-column schema check.
-                    </div>
-                    <div className="maf-node-foot">
-                      <span className="badge badge-green">✓ COMPLETED</span>
-                      <span className="maf-node-dur">{mafGraph?.executors?.node_ingestion?.duration_ms || 100}ms</span>
+                    <div className="maf-banner-sub">
+                      Directed Workflow Graph (`WorkflowBuilder`) &bull; Grounded Context Graph Blackboard &bull; Conditional Edge Routing &bull; Multi-Agent State Machine
                     </div>
                   </div>
-                </div>
-
-                {/* Edge 1 */}
-                <div className="maf-edge-connector">
-                  <div className="edge-line active" />
-                  <span className="edge-condition-badge">Edge 1: file.status == 'VALIDATED' &amp;&amp; records &gt; 0</span>
-                  <div className="edge-line active" />
-                </div>
-
-                {/* Step 2: Recon */}
-                <div className="maf-node-row">
-                  <div
-                    className={`maf-node-card ${(mafGraph?.executors?.node_recon?.status || 'COMPLETED').toLowerCase()} ${selectedMafNode === 'node_recon' ? 'selected' : ''}`}
-                    onClick={() => setSelectedMafNode('node_recon')}
-                  >
-                    <div className="maf-node-top">
-                      <span className="maf-node-title">2. 4-Way Multi-Rail Recon</span>
-                      <span className="maf-node-rpa">WF-04 &bull; WF-05</span>
-                    </div>
-                    <div className="maf-node-desc">
-                      Mathematical 4-way matching across NPCI, Switch, Finacle CBS, and GL.
-                    </div>
-                    <div className="maf-node-foot">
-                      <span className="badge badge-green">✓ 47,250 STP (94.5%)</span>
-                      <span className="maf-node-dur">{mafGraph?.executors?.node_recon?.duration_ms || 731}ms</span>
-                    </div>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      className="btn btn-secondary"
+                      style={{ padding: '9px 16px', fontSize: 12.5, borderColor: '#ea580c', color: '#ea580c' }}
+                      disabled={mafRunning}
+                      onClick={handleTriggerAeChain}
+                    >
+                      Trigger Downstream Toolchain (UPI Recon)
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      style={{ padding: '9px 18px', fontSize: 12.5, background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)', borderColor: '#ea580c' }}
+                      disabled={mafRunning}
+                      onClick={handleRunOrchestrator}
+                    >
+                      {mafRunning ? 'MAF Graph Executing...' : 'Run Autonomous MAF Flow'}
+                    </button>
+                    <button
+                      className="btn btn-secondary"
+                      style={{ padding: '9px 14px', fontSize: 12.5 }}
+                      onClick={handleResetOrchestrator}
+                    >
+                      Reset Graph
+                    </button>
                   </div>
                 </div>
 
-                {/* Edge 2 */}
-                <div className="maf-edge-connector">
-                  <div className="edge-line active" />
-                  <span className="edge-condition-badge">Edge 2: recon.breaks_detected &gt; 0 (2,750 Breaks)</span>
-                  <div className="edge-line active" />
-                </div>
-
-                {/* Step 3: Diagnostic */}
-                <div className="maf-node-row">
-                  <div
-                    className={`maf-node-card ${(mafGraph?.executors?.node_diagnostic?.status || 'COMPLETED').toLowerCase()} ${selectedMafNode === 'node_diagnostic' ? 'selected' : ''}`}
-                    onClick={() => setSelectedMafNode('node_diagnostic')}
-                  >
-                    <div className="maf-node-top">
-                      <span className="maf-node-title">3. AI Diagnostic Reasoning</span>
-                      <span className="maf-node-rpa">WF-07 &bull; WF-08</span>
+                {/* Autonomous AE Server Watcher & Downstream Toolchain Panel */}
+                <div className="card" style={{
+                  background: '#ffffff',
+                  border: '1.5px solid #86efac',
+                  borderRadius: 14,
+                  padding: '16px 20px',
+                  marginBottom: 16,
+                  boxShadow: '0 4px 14px rgba(22, 163, 74, 0.08)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{
+                        background: '#dcfce7',
+                        border: '1.5px solid #16a34a',
+                        color: '#15803d',
+                        fontSize: 11,
+                        fontWeight: 800,
+                        padding: '3px 10px',
+                        borderRadius: 99,
+                        letterSpacing: '0.4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6
+                      }}>
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
+                        AUTONOMOUS WATCHER ACTIVE
+                      </span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>
+                        Monitoring Workflow: "NPCI Demo UPI Reconn"
+                      </span>
                     </div>
-                    <div className="maf-node-desc">
-                      Autonomous root cause analysis, ISO-8583 correlation, RBI T+1 TAT clocking.
-                    </div>
-                    <div className="maf-node-foot">
-                      <span className="badge badge-green">✓ 2,750 Dossiers</span>
-                      <span className="maf-node-dur">{mafGraph?.executors?.node_diagnostic?.duration_ms || 32}ms</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Edge 3 Split */}
-                <div className="maf-edge-connector">
-                  <div className="edge-line active" />
-                  <div style={{ display: 'flex', gap: 120, fontSize: 10, fontFamily: 'JetBrains Mono' }}>
-                    <span className="edge-condition-badge">Edge 3A: amount &lt; ₹50k (Track A)</span>
-                    <span className="edge-condition-badge">Edge 3B: amount &ge; ₹50k (Track B)</span>
-                  </div>
-                  <div className="edge-line active" />
-                </div>
-
-                {/* Step 4 Parallel Branches */}
-                <div className="maf-node-row" style={{ gap: 40 }}>
-                  {/* Track A */}
-                  <div
-                    className={`maf-node-card ${(mafGraph?.executors?.node_auto_recovery?.status || 'COMPLETED').toLowerCase()} ${selectedMafNode === 'node_auto_recovery' ? 'selected' : ''}`}
-                    onClick={() => setSelectedMafNode('node_auto_recovery')}
-                  >
-                    <div className="maf-node-top">
-                      <span className="maf-node-title">4A. Auto-Reversal Bot</span>
-                      <span className="maf-node-rpa">WF-10 Finacle</span>
-                    </div>
-                    <div className="maf-node-desc">
-                      Autonomous RPA execution for timeout breaks below ₹50k threshold.
-                    </div>
-                    <div className="maf-node-foot">
-                      <span className="badge badge-green">✓ 1,612 POSTED</span>
-                      <span className="maf-node-dur">{mafGraph?.executors?.node_auto_recovery?.duration_ms || 9}ms</span>
+                    <div style={{ fontSize: 11.5, color: '#64748b' }}>
+                      Server: <a href="https://t4.automationedge.com/#/requests/list" target="_blank" rel="noopener noreferrer" style={{ color: '#ea580c', fontWeight: 600 }}>t4.automationedge.com</a> &bull; Continuous Result Polling: <b style={{ color: '#16a34a' }}>2.0s interval</b>
                     </div>
                   </div>
 
-                  {/* Track B */}
-                  <div
-                    className={`maf-node-card ${(mafGraph?.executors?.node_hitl_approval?.status || 'COMPLETED').toLowerCase()} ${selectedMafNode === 'node_hitl_approval' ? 'selected' : ''}`}
-                    onClick={() => setSelectedMafNode('node_hitl_approval')}
-                  >
-                    <div className="maf-node-top">
-                      <span className="maf-node-title">4B. Operations Cockpit</span>
-                      <span className="maf-node-rpa">WF-11 HITL</span>
-                    </div>
-                    <div className="maf-node-desc">
-                      Manager electronic dual-authorization for high-value breaks or mismatches.
-                    </div>
-                    <div className="maf-node-foot">
-                      <span className="badge badge-green">✓ DUAL-AUTH SIGNED</span>
-                      <span className="maf-node-dur">{mafGraph?.executors?.node_hitl_approval?.duration_ms || 7}ms</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Edge 4 Join */}
-                <div className="maf-edge-connector">
-                  <div className="edge-line active" />
-                  <span className="edge-condition-badge">Edge 4 &amp; 5: all_reversals_posted == true</span>
-                  <div className="edge-line active" />
-                </div>
-
-                {/* Step 5: Audit */}
-                <div className="maf-node-row">
-                  <div
-                    className={`maf-node-card ${(mafGraph?.executors?.node_audit_compliance?.status || 'COMPLETED').toLowerCase()} ${selectedMafNode === 'node_audit_compliance' ? 'selected' : ''}`}
-                    onClick={() => setSelectedMafNode('node_audit_compliance')}
-                  >
-                    <div className="maf-node-top">
-                      <span className="maf-node-title">5. Regulatory MIS &amp; Audit Pack</span>
-                      <span className="maf-node-rpa">WF-12 &bull; WF-13</span>
-                    </div>
-                    <div className="maf-node-desc">
-                      SHA-256 cryptographic seal generation &amp; RBI DPSS T+1 compliance certificate.
-                    </div>
-                    <div className="maf-node-foot">
-                      <span className="badge badge-green">✓ SHA-256 SEALED</span>
-                      <span className="maf-node-dur">&lt; 1ms</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Context Graph Grounded Blackboard */}
-            <div className="card">
-              <div className="card-title">
-                <div className="card-title-left">
-                  <div className="card-title-dot" />
-                  <span>Grounded Context Graph Blackboard (Shared Enterprise Memory)</span>
-                </div>
-                <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
-                  State capsules maintained across all 6 MAF Executors
-                </span>
-              </div>
-
-              <div className="cg-grid">
-                {/* 1. FileContext */}
-                <div className="cg-card">
-                  <div className="cg-header">
-                    <span className="cg-title">FileContext</span>
-                    <span className="badge badge-green">VALIDATED</span>
-                  </div>
-                  <div className="cg-content">
-                    <div><b>File:</b> {mafGraph?.context_graph?.domains?.file_context?.filename || 'NPCI_UPI_Settlement_TestData_50K.csv'}</div>
-                    <div><b>Records:</b> {fmt(mafGraph?.context_graph?.domains?.file_context?.records || 50000)}</div>
-                    <div><b>SHA-256:</b> ed37c56dab72b9...</div>
-                    <div><b>Vault:</b> stage1/staging_vault/</div>
-                  </div>
-                </div>
-
-                {/* 2. ReconContext */}
-                <div className="cg-card">
-                  <div className="cg-header">
-                    <span className="cg-title">ReconContext</span>
-                    <span className="badge badge-green">4-WAY SYNCED</span>
-                  </div>
-                  <div className="cg-content">
-                    <div><b>STP Count:</b> 47,250 (94.5%)</div>
-                    <div><b>Breaks:</b> 2,750 (P1: 2,400, P2: 350)</div>
-                    <div><b>Variance:</b> ₹ -7,46,727.28</div>
-                    <div><b>Legs Matched:</b> 4 of 4</div>
-                  </div>
-                </div>
-
-                {/* 3. DiagnosticContext */}
-                <div className="cg-card">
-                  <div className="cg-header">
-                    <span className="cg-title">DiagnosticContext</span>
-                    <span className="badge badge-purple">AI REASONED</span>
-                  </div>
-                  <div className="cg-content">
-                    <div><b>Dossiers:</b> 2,750 diagnosed</div>
-                    <div><b>Avg Confidence:</b> 98.2%</div>
-                    <div><b>Top Root Cause:</b> CBS Timeout</div>
-                    <div><b>SLA &lt;4h Critical:</b> 650 cases</div>
-                  </div>
-                </div>
-
-                {/* 4. ExecutionContext */}
-                <div className="cg-card">
-                  <div className="cg-header">
-                    <span className="cg-title">ExecutionContext</span>
-                    <span className="badge badge-green">FINACLE POSTED</span>
-                  </div>
-                  <div className="cg-content">
-                    <div><b>Track A (STP):</b> 1,612 posted (₹78.11L)</div>
-                    <div><b>Track B (HITL):</b> 1,138 dual-authorized</div>
-                    <div><b>CBS Status:</b> POSTED_SUCCESS</div>
-                    <div><b>Posting Ref:</b> FIN_AUTO_96527_4410</div>
-                  </div>
-                </div>
-
-                {/* 5. ComplianceContext */}
-                <div className="cg-card">
-                  <div className="cg-header">
-                    <span className="cg-title">ComplianceContext</span>
-                    <span className="badge badge-blue">RBI SEALED</span>
-                  </div>
-                  <div className="cg-content">
-                    <div><b>RBI DPSS SLA:</b> 100.0% Compliant</div>
-                    <div><b>Daily Penalty Saved:</b> ₹ 2,40,000 / Day</div>
-                    <div><b>Annualized Savings:</b> ₹ 8,76,00,000</div>
-                    <div><b>Seal:</b> 00d1a2abc86b1745...</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Two-Column: Memory Capsules & Telemetry Console */}
-            <div className="two-col">
-              {/* Memory Capsules Timeline */}
-              <div className="card">
-                <div className="card-title">
-                  <div className="card-title-left">
-                    <div className="card-title-dot" />
-                    <span>Context Memory Capsules (Audit Timeline)</span>
-                  </div>
-                </div>
-                <div className="capsule-timeline">
-                  {(mafGraph?.context_graph?.recent_memory_capsules || [
-                    { capsule_id: 'CAP_8F12A', timestamp: '12:06:43', domain: 'file', agent_source: 'WF-03 Gatekeeper Bot', summary: 'FileContext staged' },
-                    { capsule_id: 'CAP_9C34B', timestamp: '12:06:44', domain: 'recon', agent_source: 'WF-04 Recon Engine Agent', summary: 'ReconContext 47,250 STP' },
-                    { capsule_id: 'CAP_4E78D', timestamp: '12:06:44', domain: 'diagnostic', agent_source: 'WF-07 AI Investigation Agent', summary: '2,750 Evidence Dossiers' },
-                    { capsule_id: 'CAP_1A99F', timestamp: '12:06:44', domain: 'execution', agent_source: 'WF-10 Finacle RPA Bot', summary: '1,612 Track A Reversals' },
-                    { capsule_id: 'CAP_7B23E', timestamp: '12:06:44', domain: 'execution', agent_source: 'WF-11 Operations Cockpit', summary: 'P1 Batch Authorization' },
-                    { capsule_id: 'CAP_3D44C', timestamp: '12:06:44', domain: 'compliance', agent_source: 'WF-12 Audit Crypt-Seal Bot', summary: 'SHA-256 Audit Seal' },
-                  ]).map((cap, i) => (
-                    <div key={i} className="capsule-item">
-                      <div>
-                        <span className="capsule-id">{cap.capsule_id}</span>
-                        <span style={{ fontSize: 10.5, color: 'var(--text-muted)', marginLeft: 8 }}>&bull; {cap.domain}</span>
-                        <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-main)', marginTop: 2 }}>{cap.summary}</div>
+                  {/* Downstream Toolchain Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10 }}>
+                    {/* Tool 1 */}
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: '#0f172a' }}>Tool 1: Zero-Delta GL Knock-Off</span>
+                        <span style={{ background: '#dcfce7', color: '#15803d', fontSize: 9.5, fontWeight: 800, padding: '1px 6px', borderRadius: 4 }}>AUTO</span>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: 10, fontFamily: 'JetBrains Mono', color: 'var(--text-muted)' }}>{cap.timestamp}</div>
-                        <span className="badge badge-gray" style={{ fontSize: 9.5, padding: '2px 6px', marginTop: 2 }}>{cap.agent_source}</span>
+                      <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>
+                        Reads latest matched batch &bull; Posts zero-delta voucher (GL-14020 vs GL-11010) &bull; Closes settlement STP
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* Real-Time Telemetry Stream Console */}
-              <div className="card">
-                <div className="card-title">
-                  <div className="card-title-left">
-                    <div className="card-title-dot" />
-                    <span>MAF Orchestrator Telemetry Stream</span>
-                  </div>
-                </div>
-                <div className="telemetry-stream-box">
-                  {(mafGraph?.telemetry_log || [
-                    { timestamp: '12:06:43.102', executor_id: 'ORCHESTRATOR', message: 'Starting MAF Workflow execution for dataset' },
-                    { timestamp: '12:06:43.204', executor_id: 'node_ingestion', message: 'Verified SHA-256 checksum & 32-column schema' },
-                    { timestamp: '12:06:43.935', executor_id: 'node_recon', message: 'Cross-matching 4 legs: 47,250 STP, 2,750 Breaks' },
-                    { timestamp: '12:06:43.967', executor_id: 'node_diagnostic', message: 'Diagnosed 2,750 dossiers (98.2% confidence)' },
-                    { timestamp: '12:06:43.976', executor_id: 'node_auto_recovery', message: 'Finacle RPA Bot posted 1,612 customer credit adjustments' },
-                    { timestamp: '12:06:43.983', executor_id: 'node_hitl_approval', message: 'Chief Operations Officer batch-authorized P1 breaks' },
-                    { timestamp: '12:06:43.985', executor_id: 'node_audit_compliance', message: 'Audit Pack Sealed: SHA-256 00d1a2abc86b1745...' },
-                    { timestamp: '12:06:43.986', executor_id: 'ORCHESTRATOR', message: 'MAF Workflow Graph execution completed with 100% SLA compliance!' }
-                  ]).map((log, i) => (
-                    <div key={i} className="tel-line">
-                      <span className="tel-ts">{log.timestamp}</span>
-                      <span className="tel-src">[{log.executor_id}]</span>
-                      <span className="tel-msg">{log.message}</span>
+                    {/* Tool 2 */}
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: '#0f172a' }}>Tool 2: AI Dual-Track Dispatcher</span>
+                        <span style={{ background: '#ffedd5', color: '#c2410c', fontSize: 9.5, fontWeight: 800, padding: '1px 6px', borderRadius: 4 }}>REASONER</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>
+                        Evaluates break root causes &bull; Starts RBI T+1 penalty clock &bull; Calculates financial exposure
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </>}
 
-          {/* ═════════════════════════════════════════════════════════════════ */}
-          {/* STAGE 3: AI BREAK INVESTIGATION AGENT VIEW                       */}
-          {/* ═════════════════════════════════════════════════════════════════ */}
-          {activeNav === 'investigate' && <>
-            {/* AI Agent Banner */}
-            <div className="ai-banner">
-              <div className="ai-banner-left">
-                <div>
-                  <div className="ai-banner-title">Stage 3: AI Break Investigation Agent</div>
-                  <div className="ai-banner-sub">
-                    Autonomous Diagnostic Reasoning &bull; Log Correlation (ISO-8583 / CBS) &bull; RBI T+1 TAT Countdown &bull; Evidence Dossier Pack
-                  </div>
-                </div>
-              </div>
-              <button
-                className="btn btn-primary"
-                style={{ padding: '10px 20px', fontSize: 13 }}
-                disabled={agentRunning}
-                onClick={triggerAgentInvestigation}
-              >
-                {agentRunning ? 'Diagnosing 2,750 Breaks…' : 'Run AI Root-Cause Investigation'}
-              </button>
-            </div>
-
-            {/* AI Investigation KPIs */}
-            {agentSummary && (
-              <div className="kpi-grid">
-                <KpiCard label="Total Breaks Analyzed" value={agentSummary.total_breaks_analyzed} color="purple" sub="Stage 2 exceptions" />
-                <KpiCard label="P1 Critical Breaks" value={agentSummary.p1_critical_count} color="red" sub="RBI TAT clock active" />
-                <KpiCard label="Auto-Resolvable (STP)" value={agentSummary.auto_resolvable_count} color="green" sub="Under ₹50k threshold" />
-                <KpiCard label="HITL Approval Req." value={agentSummary.hitl_required_count} color="amber" sub="High-value / complex" />
-              </div>
-            )}
-
-            {/* RBI SLA Urgency Cards */}
-            {agentSummary && (
-              <div className="sla-grid">
-                <div className="sla-card critical">
-                  <span className="sla-label">Critical (&lt; 4h to Breach)</span>
-                  <div className="sla-val" style={{ color: 'var(--red)' }}>
-                    {fmt(agentSummary.sla_urgency_breakdown?.critical_under_4h)}
-                  </div>
-                  <div className="sla-sub">High penalty threat &mdash; immediate auto-reversal queue</div>
-                </div>
-
-                <div className="sla-card warning">
-                  <span className="sla-label">Urgent (4 &ndash; 12h to Breach)</span>
-                  <div className="sla-val" style={{ color: 'var(--amber)' }}>
-                    {fmt(agentSummary.sla_urgency_breakdown?.warning_4_to_12h)}
-                  </div>
-                  <div className="sla-sub">Approaching T+1 window &mdash; prioritized for batch review</div>
-                </div>
-
-                <div className="sla-card normal">
-                  <span className="sla-label">Standard (&gt; 12h Window)</span>
-                  <div className="sla-val" style={{ color: 'var(--green)' }}>
-                    {fmt(agentSummary.sla_urgency_breakdown?.normal_above_12h)}
-                  </div>
-                  <div className="sla-sub">Standard resolution queue &mdash; within regulatory grace</div>
-                </div>
-              </div>
-            )}
-
-            {/* Evidence Dossier Explorer */}
-            <div className="card">
-              <div className="card-title">
-                <div className="card-title-left">
-                  <div className="card-title-dot" />
-                  <span>Evidence Dossier &amp; Root Cause Explorer ({filteredDossiers.length} records)</span>
-                </div>
-                <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
-                  Click &ldquo;View Dossier&rdquo; for full AI diagnostic breakdown &amp; approval routing
-                </span>
-              </div>
-
-              {/* Dossier Filter Tabs */}
-              <div className="filter-tabs">
-                {[
-                  ['ALL', `All Dossiers (${agentSummary?.total_breaks_analyzed || 0})`],
-                  ['CRITICAL', `Critical &lt;4h (${agentSummary?.sla_urgency_breakdown?.critical_under_4h || 0})`],
-                  ['AUTO', `Auto-Resolvable (${agentSummary?.auto_resolvable_count || 0})`],
-                  ['HITL', `HITL Required (${agentSummary?.hitl_required_count || 0})`],
-                  ['TIMEOUT', `CBS Timeout (${agentSummary?.root_cause_breakdown?.CBS_TIMEOUT ?? 0})`],
-                  ['AMOUNT_MISMATCH', `Amount Mismatch (${agentSummary?.root_cause_breakdown?.AMOUNT_MISMATCH ?? 0})`],
-                  ['REVERSAL_MISSING', `Reversal Missing (${agentSummary?.root_cause_breakdown?.REVERSAL_MISSING ?? 0})`],
-                  ['DEEMED_FAIL', `Deemed Fail (${agentSummary?.root_cause_breakdown?.DEEMED_FAIL ?? 0})`],
-                ].map(([val, label]) => (
-                  <button
-                    key={val}
-                    className={`filter-tab ${dossierFilter === val ? 'active' : ''}`}
-                    onClick={() => { setDossierFilter(val); setDossierPage(1); }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Dossier ID</th>
-                      <th>RRN</th>
-                      <th>Amount</th>
-                      <th>Root Cause Finding</th>
-                      <th>Confidence</th>
-                      <th>RBI Clock</th>
-                      <th>Resolution Route</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pagedDossiers.map((d, i) => (
-                      <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setSelectedDossier(d)}>
-                        <td><code style={{ fontSize: 11, fontWeight: 700 }}>{d.dossier_id}</code></td>
-                        <td>{d.rrn}</td>
-                        <td><b>{fmtInr(d.cbs_amount)}</b></td>
-                        <td style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          <b>{d.category}</b>
-                        </td>
-                        <td>
-                          <span style={{ color: 'var(--green)', fontWeight: 700 }}>{d.confidence_score}%</span>
-                        </td>
-                        <td>
-                          <span className={`badge ${d.sla_urgency === 'CRITICAL' ? 'badge-red' : d.sla_urgency === 'WARNING' ? 'badge-amber' : 'badge-green'}`}>
-                            {d.sla_countdown}
-                          </span>
-                        </td>
-                        <td>
-                          {d.is_hitl_required ? (
-                            <span className="badge badge-amber">HITL Approval</span>
-                          ) : (
-                            <span className="badge badge-green">Auto-Refund</span>
-                          )}
-                        </td>
-                        <td>
-                          <button className="btn btn-secondary" style={{ padding: '3px 8px', fontSize: 11 }} onClick={(e) => { e.stopPropagation(); setSelectedDossier(d) }}>
-                            View Dossier
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {!filteredDossiers.length && (
-                      <tr>
-                        <td colSpan={8} style={{ textAlign: 'center', padding: 30, color: 'var(--text-faint)' }}>
-                          No dossiers match filter. Run AI Investigation to generate records.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-                <Pagination totalItems={filteredDossiers.length} pageSize={PAGE_SIZE} currentPage={dossierPage} onPageChange={setDossierPage} />
-              </div>
-            </div>
-          </>}
-
-          {/* ═════════════════════════════════════════════════════════════════ */}
-          {/* STAGE 4 & 5: DUAL-TRACK RECOVERY & OPERATIONS COCKPIT            */}
-          {/* ═════════════════════════════════════════════════════════════════ */}
-          {activeNav === 'recovery' && <>
-            {/* Top Operations Header */}
-            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }}>
-              <div>
-                <div className="page-title">Stages 4 &amp; 5: Operations Approval Cockpit &amp; Finacle Execution Bot</div>
-                <div className="page-sub">
-                  Dual-track financial recovery: Autonomous Finacle RPA Bot (&lt; ₹50,000) + Human-in-the-Loop Sign-Off (&ge; ₹50,000) under RBI T+1 TAT mandate
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <div className="bot-beacon">
-                  <span className="beacon-dot" />
-                  <span>Finacle CBS RPA Bot: ONLINE (142ms)</span>
-                </div>
-                <button
-                  className="btn btn-primary"
-                  style={{ padding: '9px 18px', fontSize: 12.5 }}
-                  disabled={batchLoading}
-                  onClick={handleBatchApproveP1}
-                >
-                  {batchLoading ? 'Dispatched to Finacle CBS...' : `Batch Approve All P1 Breaks (${hitlQueue.length} Cases)`}
-                </button>
-              </div>
-            </div>
-
-            {/* Dual-Track Visual Architecture */}
-            <div className="dual-track-container">
-              {/* Track A: Autonomous Bot */}
-              <div className="track-card track-auto">
-                <div className="track-header">
-                  <span className="track-tag">Track A &bull; Autonomous STP Bot (WF-10)</span>
-                  
-                </div>
-                <div className="track-title">Autonomous Finacle Reversal Bot</div>
-                <div className="track-desc">
-                  Self-driving RPA execution for verified CBS timeouts and deemed failures below ₹50,000. Immediately dispatches credit adjustment reversals into Finacle CBS without manual touch.
-                </div>
-                <div className="track-stats-row">
-                  <div>
-                    <div className="track-stat-num" style={{ color: '#059669' }}>
-                      {fmt(recoverySummary?.auto_resolvable_count ?? 0)}
+                    {/* Tool 3 */}
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: '#0f172a' }}>Tool 3: CBS Reversal Bot</span>
+                        <span style={{ background: '#eff6ff', color: '#1d4ed8', fontSize: 9.5, fontWeight: 800, padding: '1px 6px', borderRadius: 4 }}>EXECUTION</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>
+                        Auto-credits &lt; ₹5,000 deemed fails via Finacle bot &bull; Enqueues high-value cases to HITL Cockpit
+                      </div>
                     </div>
-                    <div className="track-stat-lbl">Auto-Executed Txns</div>
-                  </div>
-                  <div>
-                    <div className="track-stat-num" style={{ color: '#0f172a' }}>
-                      {recoverySummary?.auto_resolvable_amount ? fmtInr(recoverySummary.auto_resolvable_amount) : '₹ 0.00'}
-                    </div>
-                    <div className="track-stat-lbl">Dispatched Funds</div>
-                  </div>
-                  <div>
-                    <span className="badge badge-green">100% STP POSTED</span>
-                  </div>
-                </div>
-              </div>
 
-              {/* Track B: HITL Operations Cockpit */}
-              <div className="track-card track-hitl">
-                <div className="track-header">
-                  <span className="track-tag">Track B &bull; HITL Manager Cockpit (WF-11)</span>
-                  
-                </div>
-                <div className="track-title">Operations Manager Dual-Approval</div>
-                <div className="track-desc">
-                  Mandatory human authorization for high-value breaks (&ge; ₹50,000) and amount discrepancies. Authorized managers inspect root-cause evidence dossiers and release credits to Finacle.
-                </div>
-                <div className="track-stats-row">
-                  <div>
-                    <div className="track-stat-num" style={{ color: '#ea580c' }}>
-                      {fmt(recoverySummary?.hitl_pending_count ?? hitlQueue.length ?? 0)}
-                    </div>
-                    <div className="track-stat-lbl">Pending Review</div>
-                  </div>
-                  <div>
-                    <div className="track-stat-num" style={{ color: '#0f172a' }}>
-                      {fmt(recoverySummary?.hitl_approved_count || 0)}
-                    </div>
-                    <div className="track-stat-lbl">Manager Approved</div>
-                  </div>
-                  <div>
-                    <span className="badge badge-amber">DUAL-AUTH ACTIVE</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Recovery KPI Cards */}
-            <div className="kpi-grid">
-              <KpiCard
-                label="Total Reversals Posted"
-                value={recoverySummary?.total_cbs_reversals_posted ?? 0}
-                color="green"
-                sub="Dispatched to Finacle pool"
-              />
-              <KpiCard
-                label="Autonomous Bot Volume"
-                value={recoverySummary?.auto_resolvable_amount ? Math.round(recoverySummary.auto_resolvable_amount) : 0}
-                prefix="₹ "
-                color="blue"
-                sub="Threshold < ₹50k (STP)"
-              />
-              <KpiCard
-                label="Pending Manager Action"
-                value={recoverySummary?.hitl_pending_count ?? hitlQueue.length ?? 0}
-                color="amber"
-                sub="Awaiting electronic sign-off"
-              />
-              <KpiCard
-                label="RBI Penalties Avoided"
-                value={recoverySummary?.hitl_pending_count ? (recoverySummary.hitl_pending_count * 100) : 0}
-                prefix="₹ "
-                suffix=" / Day"
-                color="purple"
-                sub="T+1 SLA Guaranteed"
-              />
-            </div>
-
-            {/* Interactive HITL Queue Table */}
-            <div className="card">
-              <div className="card-title">
-                <div className="card-title-left">
-                  <div className="card-title-dot" />
-                  <span>Operations Approval Queue ({filteredHitlQueue.length} cases displayed)</span>
-                </div>
-                <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
-                  Electronic dual-authorization &bull; Instant Finacle CBS posting
-                </span>
-              </div>
-
-              {/* Filter Tabs */}
-              <div className="filter-tabs">
-                {[
-                  ['ALL', `All Cases (${hitlQueue.length})`],
-                  ['P1', 'P1 Urgent (TAT Active)'],
-                  ['AMOUNT_MISMATCH', 'Amount Mismatch'],
-                  ['PENDING', `Pending (${recoverySummary?.hitl_pending_count ?? hitlQueue.filter(c => c.status === 'PENDING').length ?? 0})`],
-                  ['APPROVED', `Approved & Posted (${recoverySummary?.hitl_approved_count || 0})`],
-                  ['REJECTED', 'Rejected'],
-                  ['ESCALATED', 'Escalated'],
-                ].map(([val, label]) => (
-                  <button
-                    key={val}
-                    className={`filter-tab ${hitlFilter === val ? 'active' : ''}`}
-                    onClick={() => { setHitlFilter(val); setHitlPage(1); }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>TXN ID</th>
-                      <th>RRN / Rail</th>
-                      <th>Amount</th>
-                      <th>Scenario / Root Cause</th>
-                      <th>RBI SLA Countdown</th>
-                      <th>Recommended Resolution</th>
-                      <th>CBS Posting Status</th>
-                      <th>Operations Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pagedHitlQueue.map((q, i) => (
-                      <tr key={i}>
-                        <td><code style={{ fontSize: 11, fontWeight: 700 }}>{q.txn_id}</code></td>
-                        <td>
-                          <div><b>{q.rrn}</b></div>
-                          <div style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{q.rail} &bull; {q.cycle_id}</div>
-                        </td>
-                        <td><b>{fmtInr(q.amount)}</b></td>
-                        <td>
-                          <Badge type={q.scenario} label={q.scenario.replace(/_/g, ' ')} />
-                        </td>
-                        <td>
-                          <span className={`badge ${q.priority === 'P1' ? 'badge-red' : 'badge-amber'}`}>
-                            {q.sla_countdown}
-                          </span>
-                        </td>
-                        <td style={{ maxWidth: 220, fontSize: 11.5, lineHeight: 1.4 }}>
-                          {q.action_label}
-                        </td>
-                        <td>
-                          {q.status === 'APPROVED_AND_POSTED' && (
-                            <div>
-                              <span className="badge badge-green">✓ FINACLE POSTED</span>
-                              <div style={{ fontSize: 10, fontFamily: 'JetBrains Mono', color: 'var(--text-muted)', marginTop: 2 }}>
-                                {q.posting_ref || 'CBS-POST-TXN-8812'}
-                              </div>
-                            </div>
-                          )}
-                          {q.status === 'REJECTED' && (
-                            <div>
-                              <span className="badge badge-red">✕ REJECTED</span>
-                              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
-                                {q.rejection_reason || 'Manual rejection'}
-                              </div>
-                            </div>
-                          )}
-                          {q.status === 'ESCALATED' && (
-                            <div>
-                              <span className="badge badge-purple">ESCALATED (P1)</span>
-                              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
-                                {q.escalation_note || 'Sent to Committee'}
-                              </div>
-                            </div>
-                          )}
-                          {(!q.status || q.status === 'PENDING_APPROVAL') && (
-                            <span className="badge badge-amber">PENDING APPROVAL</span>
-                          )}
-                        </td>
-                        <td>
-                          <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'nowrap' }}>
-                            {(!q.status || q.status === 'PENDING_APPROVAL' || q.status === 'ESCALATED') ? (
-                              <>
-                                {/* APPROVE BUTTON */}
-                                <button
-                                  className="btn btn-primary"
-                                  style={{
-                                    padding: '5px 9px',
-                                    fontSize: 11,
-                                    whiteSpace: 'nowrap',
-                                    fontWeight: 700,
-                                    background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
-                                    borderColor: '#ea580c',
-                                    color: '#ffffff'
-                                  }}
-                                  disabled={approvingTxn[q.txn_id]}
-                                  onClick={() => handleApproveTxn(q)}
-                                  title="Approve transaction and post to Finacle CBS"
-                                >
-                                  {approvingTxn[q.txn_id] ? 'Posting…' : '✓ Approve'}
-                                </button>
-
-                                {/* REJECT BUTTON */}
-                                <button
-                                  className="btn btn-secondary"
-                                  style={{
-                                    padding: '5px 8px',
-                                    fontSize: 11,
-                                    whiteSpace: 'nowrap',
-                                    fontWeight: 700,
-                                    background: '#fef2f2',
-                                    color: '#dc2626',
-                                    borderColor: '#fca5a5'
-                                  }}
-                                  onClick={() => handleRejectTxn(q)}
-                                  title="Reject transaction and suspend posting"
-                                >
-                                  ✕ Reject
-                                </button>
-
-                                {/* ESCALATE BUTTON */}
-                                <button
-                                  className="btn btn-secondary"
-                                  style={{
-                                    padding: '5px 8px',
-                                    fontSize: 11,
-                                    whiteSpace: 'nowrap',
-                                    fontWeight: 700,
-                                    background: '#fffbeb',
-                                    color: '#b45309',
-                                    borderColor: '#fde68a'
-                                  }}
-                                  onClick={() => handleEscalateTxn(q)}
-                                  title="Escalate to Risk Committee & Operations Head"
-                                >
-                                  Escalate
-                                </button>
-                              </>
-                            ) : q.status === 'APPROVED_AND_POSTED' ? (
-                              <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 11, color: '#16a34a', borderColor: '#86efac', background: '#f0fdf4', fontWeight: 700 }} disabled>
-                                Approved ✓
-                              </button>
-                            ) : (
-                              <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 11, color: '#dc2626', borderColor: '#fca5a5', background: '#fef2f2', fontWeight: 700 }} disabled>
-                                Rejected ✕
-                              </button>
-                            )}
-
-                            {/* DOSSIER INSPECT BUTTON */}
-                            <button
-                              className="btn btn-secondary"
-                              style={{ padding: '5px 8px', fontSize: 11 }}
-                              onClick={() => {
-                                const d = dossierList.find(x => x.txn_id === q.txn_id)
-                                if (d) setSelectedDossier(d)
-                                else alert(`Evidence dossier for ${q.txn_id} loaded. Root Cause: ${q.category}`)
-                              }}
-                              title="Inspect AI Evidence Dossier"
-                            >
-                              
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {!filteredHitlQueue.length && (
-                      <tr>
-                        <td colSpan={8} style={{ textAlign: 'center', padding: 30, color: 'var(--text-faint)' }}>
-                          No cases match the selected filter.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-                <Pagination totalItems={filteredHitlQueue.length} pageSize={PAGE_SIZE} currentPage={hitlPage} onPageChange={setHitlPage} />
-              </div>
-            </div>
-          </>}
-
-          {/* ═════════════════════════════════════════════════════════════════ */}
-          {/* STAGE 6: REGULATORY MIS & CRYPTOGRAPHIC AUDIT PACK                */}
-          {/* ═════════════════════════════════════════════════════════════════ */}
-          {activeNav === 'reports' && <>
-            {/* Official Cryptographic Certificate Seal Card */}
-            <div className="audit-seal-card">
-              <div className="seal-header">
-                <div className="seal-title-area">
-                  <div className="seal-icon-emblem"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
-                  <div>
-                    <div className="seal-main-title">
-                      Reserve Bank of India &mdash; Automated Clearing &amp; Settlement Compliance Pack
-                    </div>
-                    <div className="seal-sub-title">
-                      Mandated under RBI Circular DPSS.CO.PD No.629/02.01.014/2019-20 &bull; ISO 27001 Cryptographic Assurance
+                    {/* Tool 4 */}
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: '#0f172a' }}>Tool 4: Audit Crypt-Seal</span>
+                        <span style={{ background: '#f1f5f9', color: '#475569', fontSize: 9.5, fontWeight: 800, padding: '1px 6px', borderRadius: 4 }}>SHA-256</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>
+                        Bundles telemetry into immutable Merkle digest &bull; Generates 100% RBI compliance evidence pack
+                      </div>
                     </div>
                   </div>
                 </div>
-                <button
-                  className="btn btn-primary"
-                  style={{ padding: '10px 20px', fontSize: 13, background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)' }}
-                  disabled={sealing}
-                  onClick={handleSealAuditPack}
-                >
-                  {sealing ? 'Generating SHA-256 Seal...' : (sealedPack ? 'Re-Seal Audit Pack' : 'Seal Cryptographic Audit Pack')}
-                </button>
-              </div>
 
-              <div className="seal-hash-banner">
-                <div>
-                  <span style={{ color: 'rgba(255,255,255,0.6)', marginRight: 8 }}>SHA-256 SEAL:</span>
-                  <span className="seal-hash-text">
-                    {sealedPack?.cryptographic_sha256_seal || '112c83e539a1b6e6136bb1f5949955b1306c649814f0b13fd0fd368eac3a1eeb'}
-                  </span>
+                {/* KPI Overview */}
+                <div className="kpi-grid">
+                  <KpiCard
+                    label="Coordinated Executors"
+                    value={mafGraph?.total_nodes || 6}
+                    color="blue"
+                    sub="Autonomous MAF Agents"
+                  />
+                  <KpiCard
+                    label="Workflow Graph Progress"
+                    value={mafGraph?.pipeline_progress_pct || 100}
+                    suffix="%"
+                    color="green"
+                    sub={`${mafGraph?.completed_nodes || 6} of 6 nodes completed`}
+                  />
+                  <KpiCard
+                    label="Context Graph Domains"
+                    value={5}
+                    color="purple"
+                    sub="Shared state blackboard"
+                  />
+                  <KpiCard
+                    label="Total Memory Capsules"
+                    value={mafGraph?.context_graph?.total_memory_capsules || 6}
+                    color="amber"
+                    sub="State mutation checkpoints"
+                  />
                 </div>
-                <div style={{ color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span>✓ VERIFIED IMMUTABLE</span>
-                  <span style={{ color: 'rgba(255,255,255,0.4)' }}>&bull;</span>
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>
-                    {sealedPack?.timestamp ? fmtDate(sealedPack.timestamp) : '28 Oct 2026, 11:49 IST'}
-                  </span>
-                </div>
-              </div>
-            </div>
 
-            {/* Penalty Mitigation Highlight Box */}
-            <div className="penalty-counter-card">
-              <div className="penalty-left">
-                <div className="penalty-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    RBI DPSS Customer Penalty Mitigation Guarantee
+                {/* Visual MAF Workflow Graph Canvas */}
+                <div className="maf-graph-canvas">
+                  <div className="maf-graph-header">
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)' }}>
+                        MAF Directed Workflow Graph Topology &mdash; 6 Coordinated Executors
+                      </div>
+                      <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>
+                        Click any node to inspect its Grounded Memory Capsule &amp; input/output contracts
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="badge badge-green">✓ Session: {mafGraph?.context_graph?.session_id || 'MAF_SESSION_ACTIVE'}</span>
+                    </div>
                   </div>
-                  <div className="penalty-val">₹ 2,40,000 / Day Avoided</div>
-                  <div className="penalty-sub">
-                    Direct compensation saved across 2,400 P1 customer debits (₹100/day compensation rule). <b>Annualized Savings: ₹8,76,00,000 (₹8.76 Cr)</b>.
-                  </div>
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <span className="badge badge-green" style={{ fontSize: 12, padding: '6px 14px' }}>
-                  100.0% T+1 SLA COMPLIANT
-                </span>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>Zero Regulatory Infractions</div>
-              </div>
-            </div>
 
-            {/* 6-Stage Process Flow Status Timeline */}
-            <div className="timeline-stages-grid">
-              <div className="stage-step-card complete">
-                <div className="stage-step-num">Stage 1 &bull; Ingestion</div>
-                <div className="stage-step-name">File Vault Staging</div>
-                <div className="stage-step-bot">✓ WF-01 &bull; WF-03</div>
-              </div>
-              <div className="stage-step-card complete">
-                <div className="stage-step-num">Stage 2 &bull; Reconciliation</div>
-                <div className="stage-step-name">4-Way Multi-Rail Recon</div>
-                <div className="stage-step-bot">✓ WF-04 &bull; 94.5% STP</div>
-              </div>
-              <div className="stage-step-card complete">
-                <div className="stage-step-num">Stage 3 &bull; AI Diagnostics</div>
-                <div className="stage-step-name">Investigation Agent</div>
-                <div className="stage-step-bot">✓ WF-07 &bull; 2,750 Dossiers</div>
-              </div>
-              <div className="stage-step-card complete">
-                <div className="stage-step-num">Stage 4 &bull; Auto-Recovery</div>
-                <div className="stage-step-name">Autonomous Reversal Bot</div>
-                <div className="stage-step-bot">✓ WF-10 &bull; 1,612 Posted</div>
-              </div>
-              <div className="stage-step-card complete">
-                <div className="stage-step-num">Stage 5 &bull; Operations Cockpit</div>
-                <div className="stage-step-name">Manager HITL Approval</div>
-                <div className="stage-step-bot">✓ WF-11 &bull; Finacle CBS</div>
-              </div>
-              <div className="stage-step-card complete">
-                <div className="stage-step-num">Stage 6 &bull; Regulatory MIS</div>
-                <div className="stage-step-name">Cryptographic Audit Pack</div>
-                <div className="stage-step-bot">✓ WF-12 &bull; WF-13 Sealed</div>
-              </div>
-            </div>
+                  {/* Node Flow Diagram */}
+                  <div className="maf-nodes-flow">
+                    {/* Step 1: Ingestion */}
+                    <div className="maf-node-row">
+                      <div
+                        className={`maf-node-card ${(mafGraph?.executors?.node_ingestion?.status || 'COMPLETED').toLowerCase()} ${selectedMafNode === 'node_ingestion' ? 'selected' : ''}`}
+                        onClick={() => setSelectedMafNode('node_ingestion')}
+                      >
+                        <div className="maf-node-top">
+                          <span className="maf-node-title">1. Ingestion &amp; Validation</span>
+                          <span className="maf-node-rpa">WF-01 &bull; WF-03</span>
+                        </div>
+                        <div className="maf-node-desc">
+                          SFTP intake, SHA-256 duplicate registry check, 32-column schema check.
+                        </div>
+                        <div className="maf-node-foot">
+                          <span className="badge badge-green">✓ COMPLETED</span>
+                          <span className="maf-node-dur">{mafGraph?.executors?.node_ingestion?.duration_ms || 100}ms</span>
+                        </div>
+                      </div>
+                    </div>
 
-            {/* Executive Settlement MIS KPIs */}
-            <div className="kpi-grid">
-              <KpiCard label="Settlement Volume" value={50000} color="blue" sub="UPI / IMPS clearing batch" />
-              <KpiCard label="Cleared Funds" value={148520341} prefix="₹ " color="green" sub="Total ledger volume" />
-              <KpiCard label="Straight-Through (STP)" value={94.5} suffix="%" color="green" sub="47,250 auto-reconciled" />
-              <KpiCard label="Total Exceptions Resolved" value={2750} color="purple" sub="100% resolution coverage" />
-            </div>
+                    {/* Edge 1 */}
+                    <div className="maf-edge-connector">
+                      <div className="edge-line active" />
+                      <span className="edge-condition-badge">Edge 1: file.status == 'VALIDATED' &amp;&amp; records &gt; 0</span>
+                      <div className="edge-line active" />
+                    </div>
 
-            {/* Cryptographic Inspection Pack JSON Viewer */}
-            <div className="card">
-              <div className="card-title">
-                <div className="card-title-left">
-                  <div className="card-title-dot" />
-                  <span>Official Regulatory Audit Dossier (Machine-Readable JSON Package)</span>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    className="btn btn-secondary"
-                    style={{ padding: '4px 10px', fontSize: 11 }}
-                    onClick={() => {
-                      const text = JSON.stringify(sealedPack || misReport, null, 2)
-                      navigator.clipboard.writeText(text)
-                      alert("Cryptographic Audit Pack copied to clipboard!")
-                    }}
-                  >
-                    Copy Audit JSON
-                  </button>
-                  <button
-                    className="btn btn-primary"
-                    style={{ padding: '4px 12px', fontSize: 11 }}
-                    onClick={() => {
-                      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sealedPack || misReport, null, 2))
-                      const downloadAnchor = document.createElement('a')
-                      downloadAnchor.setAttribute("href", dataStr)
-                      downloadAnchor.setAttribute("download", `RBI_AUDIT_PACK_${new Date().toISOString().slice(0, 10)}.json`)
-                      document.body.appendChild(downloadAnchor)
-                      downloadAnchor.click()
-                      downloadAnchor.remove()
-                    }}
-                  >
-                    Download Audit Package
-                  </button>
-                </div>
-              </div>
+                    {/* Step 2: Recon */}
+                    <div className="maf-node-row">
+                      <div
+                        className={`maf-node-card ${(mafGraph?.executors?.node_recon?.status || 'COMPLETED').toLowerCase()} ${selectedMafNode === 'node_recon' ? 'selected' : ''}`}
+                        onClick={() => setSelectedMafNode('node_recon')}
+                      >
+                        <div className="maf-node-top">
+                          <span className="maf-node-title">2. 4-Way Multi-Rail Recon</span>
+                          <span className="maf-node-rpa">WF-04 &bull; WF-05</span>
+                        </div>
+                        <div className="maf-node-desc">
+                          Mathematical 4-way matching across NPCI, Switch, Finacle CBS, and GL.
+                        </div>
+                        <div className="maf-node-foot">
+                          <span className="badge badge-green">✓ 47,250 STP (94.5%)</span>
+                          <span className="maf-node-dur">{mafGraph?.executors?.node_recon?.duration_ms || 731}ms</span>
+                        </div>
+                      </div>
+                    </div>
 
-              <div className="json-viewer-card">
-                <pre>{JSON.stringify(sealedPack || {
-                  "audit_pack_id": "RBI_AUDIT_PACK_20261028_114940",
-                  "regulatory_framework": "RBI DPSS.CO.PD No.629/02.01.014/2019-20 & ISO 27001",
-                  "timestamp": "2026-10-28T11:49:40.125841",
-                  "cryptographic_sha256_seal": "112c83e539a1b6e6136bb1f5949955b1306c649814f0b13fd0fd368eac3a1eeb",
-                  "stage1_file_staged": "NPCI_UPI_Settlement_TestData_50K.csv",
-                  "stage2_reconciliation": {
-                    "total_records": 50000,
-                    "matched_stp_rate": "94.5%",
-                    "total_breaks": 2750,
-                    "p1_breaks": 2400,
-                    "p2_breaks": 350
-                  },
-                  "stage3_ai_investigation": {
-                    "breaks_diagnosed": 2750,
-                    "confidence_avg": "98.2%",
-                    "top_root_cause": "CBS Timeout (15s Window Exceeded)"
-                  },
-                  "stage4_and_5_execution": {
-                    "autonomous_reversals_posted": 1612,
-                    "manager_approved_postings": recoverySummary?.hitl_approved_count || 0,
-                    "total_cbs_credits_executed": recoverySummary?.total_cbs_reversals_posted || 1612
-                  },
-                  "compliance_outcome": {
-                    "rbi_tat_sla_compliance": "100.0%",
-                    "penalties_prevented_inr": 240000,
-                    "annualized_savings_inr": 87600000
-                  }
-                }, null, 2)}</pre>
-              </div>
-            </div>
-          </>}
+                    {/* Edge 2 */}
+                    <div className="maf-edge-connector">
+                      <div className="edge-line active" />
+                      <span className="edge-condition-badge">Edge 2: recon.breaks_detected &gt; 0 (2,750 Breaks)</span>
+                      <div className="edge-line active" />
+                    </div>
 
-          {/* ═════════════════════════════════════════════════════════════════ */}
-          {/* STAGE 2: 4-WAY RECONCILIATION ENGINE VIEW                        */}
-          {/* ═════════════════════════════════════════════════════════════════ */}
-          {activeNav === 'recon' && <>
-            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-              <div>
-                <div className="page-title">Stage 2: 4-Way Multi-Rail Reconciliation Engine</div>
-                <div className="page-sub">
-                  Mathematical cross-reconciliation across NPCI Clearing, Payment Switch, Core Banking (Finacle/Flexcube), and General Ledger (GL)
-                </div>
-              </div>
-            </div>
+                    {/* Step 3: Diagnostic */}
+                    <div className="maf-node-row">
+                      <div
+                        className={`maf-node-card ${(mafGraph?.executors?.node_diagnostic?.status || 'COMPLETED').toLowerCase()} ${selectedMafNode === 'node_diagnostic' ? 'selected' : ''}`}
+                        onClick={() => setSelectedMafNode('node_diagnostic')}
+                      >
+                        <div className="maf-node-top">
+                          <span className="maf-node-title">3. AI Diagnostic Reasoning</span>
+                          <span className="maf-node-rpa">WF-07 &bull; WF-08</span>
+                        </div>
+                        <div className="maf-node-desc">
+                          Autonomous root cause analysis, ISO-8583 correlation, RBI T+1 TAT clocking.
+                        </div>
+                        <div className="maf-node-foot">
+                          <span className="badge badge-green">✓ 2,750 Dossiers</span>
+                          <span className="maf-node-dur">{mafGraph?.executors?.node_diagnostic?.duration_ms || 32}ms</span>
+                        </div>
+                      </div>
+                    </div>
 
-            {/* 4 Inbound Systems Status Grid */}
-            <div className="source-grid">
-              <div className="source-card">
-                <div className="source-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
-                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-                    <line x1="6" y1="6" x2="6.01" y2="6" />
-                    <line x1="6" y1="18" x2="6.01" y2="18" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="source-name">1. NPCI Settlement</div>
-                  <div className="source-meta">Staging Vault: Validated</div>
-                </div>
-                <div className="source-status"><span className="source-status-dot" /> READY</div>
-                <a
-                  href={`${API}/api/recon/input-file/npci`}
-                  download="NPCI_UPI_Settlement_Master.csv"
-                  className="source-download-btn"
-                  title="Download NPCI Settlement Master Input CSV"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
-                  <span>CSV</span>
-                </a>
-              </div>
+                    {/* Edge 3 Split */}
+                    <div className="maf-edge-connector">
+                      <div className="edge-line active" />
+                      <div style={{ display: 'flex', gap: 120, fontSize: 10, fontFamily: 'JetBrains Mono' }}>
+                        <span className="edge-condition-badge">Edge 3A: amount &lt; ₹50k (Track A)</span>
+                        <span className="edge-condition-badge">Edge 3B: amount &ge; ₹50k (Track B)</span>
+                      </div>
+                      <div className="edge-line active" />
+                    </div>
 
-              <div className="source-card">
-                <div className="source-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-                    <line x1="8" y1="21" x2="16" y2="21" />
-                    <line x1="12" y1="17" x2="12" y2="21" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="source-name">2. Payment Switch</div>
-                  <div className="source-meta">Base24 Gateway AUTHORIZED</div>
-                </div>
-                <div className="source-status"><span className="source-status-dot" /> ONLINE</div>
-                <a
-                  href={`${API}/api/recon/input-file/switch`}
-                  download="Switch_Base24_Logs.csv"
-                  className="source-download-btn"
-                  title="Download Switch Base24 Logs Input CSV"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
-                  <span>CSV</span>
-                </a>
-              </div>
+                    {/* Step 4 Parallel Branches */}
+                    <div className="maf-node-row" style={{ gap: 40 }}>
+                      {/* Track A */}
+                      <div
+                        className={`maf-node-card ${(mafGraph?.executors?.node_auto_recovery?.status || 'COMPLETED').toLowerCase()} ${selectedMafNode === 'node_auto_recovery' ? 'selected' : ''}`}
+                        onClick={() => setSelectedMafNode('node_auto_recovery')}
+                      >
+                        <div className="maf-node-top">
+                          <span className="maf-node-title">4A. Auto-Reversal Bot</span>
+                          <span className="maf-node-rpa">WF-10 Finacle</span>
+                        </div>
+                        <div className="maf-node-desc">
+                          Autonomous RPA execution for timeout breaks below ₹50k threshold.
+                        </div>
+                        <div className="maf-node-foot">
+                          <span className="badge badge-green">✓ 1,612 POSTED</span>
+                          <span className="maf-node-dur">{mafGraph?.executors?.node_auto_recovery?.duration_ms || 9}ms</span>
+                        </div>
+                      </div>
 
-              <div className="source-card">
-                <div className="source-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="3" y1="21" x2="21" y2="21" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                    <polyline points="5 10 5 21" />
-                    <polyline points="19 10 19 21" />
-                    <polyline points="10 10 10 21" />
-                    <polyline points="14 10 14 21" />
-                    <polygon points="12 2 2 7 22 7 12 2" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="source-name">3. Core Banking (CBS)</div>
-                  <div className="source-meta">Finacle 10.x DEBITED Log</div>
-                </div>
-                <div className="source-status"><span className="source-status-dot" /> SYNCED</div>
-                <a
-                  href={`${API}/api/recon/input-file/cbs`}
-                  download="Finacle_CBS_Dump.csv"
-                  className="source-download-btn"
-                  title="Download Finacle CBS Dump Input CSV"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
-                  <span>CSV</span>
-                </a>
-              </div>
+                      {/* Track B */}
+                      <div
+                        className={`maf-node-card ${(mafGraph?.executors?.node_hitl_approval?.status || 'COMPLETED').toLowerCase()} ${selectedMafNode === 'node_hitl_approval' ? 'selected' : ''}`}
+                        onClick={() => setSelectedMafNode('node_hitl_approval')}
+                      >
+                        <div className="maf-node-top">
+                          <span className="maf-node-title">4B. Operations Cockpit</span>
+                          <span className="maf-node-rpa">WF-11 HITL</span>
+                        </div>
+                        <div className="maf-node-desc">
+                          Manager electronic dual-authorization for high-value breaks or mismatches.
+                        </div>
+                        <div className="maf-node-foot">
+                          <span className="badge badge-green">✓ DUAL-AUTH SIGNED</span>
+                          <span className="maf-node-dur">{mafGraph?.executors?.node_hitl_approval?.duration_ms || 7}ms</span>
+                        </div>
+                      </div>
+                    </div>
 
-              <div className="source-card">
-                <div className="source-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 3v18" />
-                    <path d="m16 8 4 6H4l4-6" />
-                    <path d="M4 14a4 4 0 0 0 8 0" />
-                    <path d="M12 14a4 4 0 0 0 8 0" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="source-name">4. General Ledger (GL)</div>
-                  <div className="source-meta">Clearing Pool Suspense A/C</div>
-                </div>
-                <div className="source-status"><span className="source-status-dot" /> ACTIVE</div>
-                <a
-                  href={`${API}/api/recon/input-file/gl`}
-                  download="GL_Suspense_Pool.csv"
-                  className="source-download-btn"
-                  title="Download General Ledger Suspense Input CSV"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
-                  <span>CSV</span>
-                </a>
-              </div>
-            </div>
+                    {/* Edge 4 Join */}
+                    <div className="maf-edge-connector">
+                      <div className="edge-line active" />
+                      <span className="edge-condition-badge">Edge 4 &amp; 5: all_reversals_posted == true</span>
+                      <div className="edge-line active" />
+                    </div>
 
-            {/* 3 Core Output Buckets */}
-            {reconData && (
-              <div className="bucket-grid">
-                <div
-                  className="bucket-card green"
-                  style={{ cursor: 'pointer', transition: 'all 0.2s ease', border: breakFilter === 'MATCHED' ? '2px solid #16a34a' : undefined }}
-                  onClick={() => { setBreakFilter('MATCHED'); setReconPage(1); }}
-                  title="Click to view all 4-Way Matched STP Records"
-                >
-                  <div className="bucket-header">
-                    <span className="bucket-tag">Bucket 1 &bull; Matched STP</span>
-                  </div>
-                  <div className="bucket-count">
-                    {fmt(reconData.matched_count)}
-                    <span className="bucket-pct">({reconData.stp_rate}%)</span>
-                  </div>
-                  <div className="bucket-desc">
-                    All 4 systems agree in status, timing, and financial amount. Zero-delta balancing entry posted.
-                  </div>
-                  <div className="bucket-action">
-                    <span>View Matched STP Records ({fmt(reconData.matched_count)}) &rarr;</span>
+                    {/* Step 5: Audit */}
+                    <div className="maf-node-row">
+                      <div
+                        className={`maf-node-card ${(mafGraph?.executors?.node_audit_compliance?.status || 'COMPLETED').toLowerCase()} ${selectedMafNode === 'node_audit_compliance' ? 'selected' : ''}`}
+                        onClick={() => setSelectedMafNode('node_audit_compliance')}
+                      >
+                        <div className="maf-node-top">
+                          <span className="maf-node-title">5. Regulatory MIS &amp; Audit Pack</span>
+                          <span className="maf-node-rpa">WF-12 &bull; WF-13</span>
+                        </div>
+                        <div className="maf-node-desc">
+                          SHA-256 cryptographic seal generation &amp; RBI DPSS T+1 compliance certificate.
+                        </div>
+                        <div className="maf-node-foot">
+                          <span className="badge badge-green">✓ SHA-256 SEALED</span>
+                          <span className="maf-node-dur">&lt; 1ms</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="bucket-card amber">
-                  <div className="bucket-header">
-                    <span className="bucket-tag">Bucket 2 &bull; Timing Drift</span>
-                  </div>
-                  <div className="bucket-count">
-                    {fmt(reconData.timing_count || 0)}
-                    <span className="bucket-pct">(0.0%)</span>
-                  </div>
-                  <div className="bucket-desc">
-                    Transactions in-flight across cycle cut-off windows. Zero financial break &mdash; checked next cycle.
-                  </div>
-                  <div className="bucket-action">
-                    <span>Next Cycle Roll-Forward</span>
-                  </div>
-                </div>
-
-                <div className="bucket-card red">
-                  <div className="bucket-header">
-                    <span className="bucket-tag">Bucket 3 &bull; Recon Breaks</span>
-                  </div>
-                  <div className="bucket-count">
-                    {fmt(reconData.break_count)}
-                    <span className="bucket-pct" style={{ color: 'var(--red)' }}>
-                      ({fmtPct(reconData.break_count / (reconData.total_records || 1) * 100)})
+                {/* Context Graph Grounded Blackboard */}
+                <div className="card">
+                  <div className="card-title">
+                    <div className="card-title-left">
+                      <div className="card-title-dot" />
+                      <span>Grounded Context Graph Blackboard (Shared Enterprise Memory)</span>
+                    </div>
+                    <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
+                      State capsules maintained across all 6 MAF Executors
                     </span>
                   </div>
-                  <div className="bucket-desc">
-                    Discrepancies diagnosed: 3 low-value auto-refunded (&lt; ₹5k), 1 high-value routed to HITL Cockpit.
-                  </div>
-                  <div className="bucket-action" style={{ cursor: 'pointer' }} onClick={() => setActiveNav('investigate')}>
-                    <span>Hand Over to AI Investigation Agent &rarr;</span>
-                  </div>
-                </div>
-              </div>
-            )}
 
-            {/* Interactive Breaks & Matched Records Explorer */}
-            <div className="card">
-              <div className="card-title">
-                <div className="card-title-left">
-                  <div className="card-title-dot" style={{ background: breakFilter === 'MATCHED' ? '#16a34a' : '#ea580c' }} />
-                  <span>{breakFilter === 'MATCHED' ? `4-Way Matched STP Records (${filteredBreaks.length} displayed)` : `Recon Breaks & Exception Explorer (${filteredBreaks.length} displayed)`}</span>
-                </div>
-                <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
-                  Click any transaction to inspect all 4 legs side-by-side
-                </span>
-              </div>
-
-              {/* Filter Tabs */}
-              <div className="filter-tabs">
-                {[
-                  ['MATCHED', `Matched STP (${reconData?.matched_count ?? reconMatched.length ?? 0})`],
-                  ['ALL', `All Breaks (${reconData?.break_count ?? reconBreaks.length ?? 0})`],
-                  ['P1', `P1 Critical (${reconData?.p1_count ?? 0})`],
-                  ['CBS_TIMEOUT', `CBS Timeout (${reconData?.break_breakdown?.CBS_TIMEOUT ?? reconBreaks.filter(b => b.scenario === 'CBS_TIMEOUT').length ?? 0})`],
-                  ['AMOUNT_MISMATCH', `Amount Mismatch (${reconData?.break_breakdown?.AMOUNT_MISMATCH ?? reconBreaks.filter(b => b.scenario === 'AMOUNT_MISMATCH').length ?? 0})`],
-                  ['DEEMED_FAIL', `Deemed Fail (${reconData?.break_breakdown?.DEEMED_FAIL ?? reconBreaks.filter(b => b.scenario === 'DEEMED_FAIL').length ?? 0})`],
-                  ['REVERSAL_MISSING', `Reversal Missing (${reconData?.break_breakdown?.REVERSAL_MISSING ?? reconBreaks.filter(b => b.scenario === 'REVERSAL_MISSING').length ?? 0})`],
-                ].map(([val, label]) => (
-                  <button
-                    key={val}
-                    className={`filter-tab ${breakFilter === val ? 'active' : ''}`}
-                    onClick={() => { setBreakFilter(val); setReconPage(1); }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>TXN ID</th>
-                      <th>RRN</th>
-                      <th>Rail</th>
-                      <th>NPCI Amt</th>
-                      <th>CBS Amt</th>
-                      <th>Delta</th>
-                      <th>Scenario / Root Cause</th>
-                      <th>Priority</th>
-                      <th>RBI Clock</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pagedBreaks.map((b, i) => (
-                      <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setSelectedBreak(b)}>
-                        <td>
-                          <code style={{ fontSize: 11, fontWeight: 700 }}>{b.txn_id}</code>
-                          {b.source_file && <div style={{ fontSize: 9.5, color: 'var(--text-muted)', marginTop: 2 }}>{b.source_file}</div>}
-                        </td>
-                        <td>{b.rrn}</td>
-                        <td><b>{b.rail}</b></td>
-                        <td>{fmtInr(b.npci_amount)}</td>
-                        <td>{fmtInr(b.cbs_amount)}</td>
-                        <td style={{ color: b.variance !== 0 ? 'var(--red)' : 'inherit', fontWeight: 700 }}>
-                          {b.variance !== 0 ? fmtInr(b.variance) : '₹ 0.00'}
-                        </td>
-                        <td><Badge type={b.scenario === 'SUCCESS' ? 'MATCHED' : b.scenario} label={b.scenario === 'SUCCESS' ? '4-Way Matched' : b.scenario.replace(/_/g, ' ')} /></td>
-                        <td><Badge type={b.priority === 'STP' ? 'NORMAL' : b.priority} label={b.priority === 'STP' ? 'STP 100%' : b.priority} /></td>
-                        <td>
-                          {b.penalty_clock_started === 'Yes' ? (
-                            <span style={{ color: 'var(--red)', fontWeight: 700, fontSize: 11 }}>T+1 Clock</span>
-                          ) : (
-                            <span style={{ color: b.scenario === 'SUCCESS' ? 'var(--green)' : 'var(--text-faint)', fontSize: 11, fontWeight: b.scenario === 'SUCCESS' ? 600 : 400 }}>
-                              {b.scenario === 'SUCCESS' ? 'Balanced' : 'Normal'}
-                            </span>
-                          )}
-                        </td>
-                        <td>
-                          <button className="btn btn-secondary" style={{ padding: '3px 8px', fontSize: 11 }} onClick={(e) => { e.stopPropagation(); setSelectedBreak(b) }}>
-                            Inspect
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {!filteredBreaks.length && (
-                      <tr>
-                        <td colSpan={10} style={{ textAlign: 'center', padding: 30, color: 'var(--text-faint)' }}>
-                          {breakFilter === 'MATCHED'
-                            ? 'No matched records yet. Run 4-Way Reconciliation or export from Process Studio to load matched records.'
-                            : 'No breaks match selected filter. Run reconciliation to load records.'}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-                <Pagination totalItems={filteredBreaks.length} pageSize={PAGE_SIZE} currentPage={reconPage} onPageChange={setReconPage} />
-              </div>
-            </div>
-          </>}
-
-          {/* === DASHBOARD === */}
-          {activeNav === 'dashboard' && <>
-            <div className="page-header" style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-                <div>
-                  <div className="page-title" style={{ fontSize: 20, fontWeight: 800 }}>
-                    {isScoped
-                      ? `NPCI Operations Control Tower — ${activeRailName || activeRailScope}`
-                      : 'NPCI Operations Control Tower — Unified Multi-Rail View'}
-                  </div>
-                  <div className="page-sub">
-                    {isScoped
-                      ? `Catalogue Scope: ${activeRailName || activeRailScope} (${activeRailScope}) • Real-time 4-way reconciliation & STP metrics`
-                      : 'Good Morning, Operations Manager • Real-time multi-agent clearing, 4-way reconciliation & settlement across all 8 NPCI payment rails'}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={() => setActiveNav('catalog')}>
-                    Rail Solutions Catalog &rarr;
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* ── NEFT / RTGS Quick-Access Banner (shown only when rail scope is NEFT or RTGS) ── */}
-            {(activeRailScope === 'NEFT' || activeRailScope === 'RTGS') && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 12,
-                background: 'linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 100%)',
-                borderRadius: 12,
-                padding: '14px 20px',
-                marginBottom: 18,
-                boxShadow: '0 4px 16px rgba(29,78,216,0.18)'
-              }}>
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: '#93c5fd', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    {activeRailScope} — RBI Settlement Operations Active
-                  </div>
-                  <div style={{ fontSize: 13.5, fontWeight: 700, color: '#ffffff', marginTop: 3 }}>
-                    {activeRailScope === 'RTGS'
-                      ? 'Real-Time Gross Settlement via RBI e-Kuber — UC1 Pre-Validation, UC2/UC3 Liquidity Monitor, UC5/UC6 3-Way Recon, UC7 Copilot, UC8 TAT Reporting'
-                      : 'National Electronic Funds Transfer via RBI e-Kuber — UC4 Inward Credit & Return, UC5/UC6 3-Way Recon, UC7 Copilot, UC8 Regulatory Reporting'}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  <button
-                    className="btn"
-                    style={{ background: '#ffffff', color: '#1d4ed8', fontWeight: 700, fontSize: 12, padding: '7px 16px', border: 'none', borderRadius: 8, cursor: 'pointer' }}
-                    onClick={() => setActiveNav('rbi_3way')}
-                  >
-                    RBI 3-Way Recon &amp; Liquidity
-                  </button>
-                  <button
-                    className="btn"
-                    style={{ background: 'rgba(255,255,255,0.15)', color: '#ffffff', fontWeight: 700, fontSize: 12, padding: '7px 16px', border: '1.5px solid rgba(255,255,255,0.4)', borderRadius: 8, cursor: 'pointer' }}
-                    onClick={() => setActiveNav('copilot')}
-                  >
-                    Payments Copilot (UC7)
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Executive Banking Overview Cards (Clean & Focused) */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-              gap: 16,
-              marginBottom: 20
-            }}>
-              {/* Card 1: Batch Intake */}
-              <div className="card" style={{ padding: '18px 20px', borderLeft: '4px solid #ea580c' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                  {activeRailScope ? `${activeRailName || activeRailScope} Ingested Batch` : 'UPI 2.0 Ingested Batch'}
-                </div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>
-                  {scopedRailVol} <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>Transactions</span>
-                </div>
-                <div style={{ fontSize: 11.5, color: '#ea580c', fontWeight: 600, marginTop: 4 }}>
-                  {scopedRailVol > 0 ? `Cycle: ${activeRailScope ? activeRailScope.toUpperCase() : 'UPI'}-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-CY01 • Active` : 'Cycle: Standby • Awaiting File Intake'}
-                </div>
-              </div>
-
-              {/* Card 2: Straight-Through Settle */}
-              <div className="card" style={{ padding: '18px 20px', borderLeft: '4px solid #16a34a' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                  Straight-Through (STP) Settled
-                </div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: '#16a34a', marginTop: 4 }}>
-                  {reconData?.matched_count ?? 0} <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>Txn ({reconData?.stp_rate ? `${reconData.stp_rate}%` : '0.0%'})</span>
-                </div>
-                <div style={{ fontSize: 11.5, color: '#15803d', fontWeight: 600, marginTop: 4 }}>
-                  {reconData?.matched_count
-                    ? `Zero-Delta ${activeRailScope === 'NETC' ? 'GL-9908' : activeRailScope === 'AEPS' ? 'GL-9904' : activeRailScope === 'IMPS' ? 'GL-9902' : 'GL-14020'} Knocked Off (₹${(reconData.matched_amount || 0).toLocaleString()})`
-                    : `Zero-Delta ${activeRailScope === 'NETC' ? 'GL-9908' : activeRailScope === 'AEPS' ? 'GL-9904' : activeRailScope === 'IMPS' ? 'GL-9902' : 'GL-14020'} Knock-Off Standby (₹0.00)`}
-                </div>
-              </div>
-
-              {/* Card 3: AI Break Resolution */}
-              <div className="card" style={{ padding: '18px 20px', borderLeft: '4px solid #e11d48' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                  AI Exception Breaks (Dual-Track)
-                </div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: '#e11d48', marginTop: 4 }}>
-                  {reconData?.break_count ?? 0} <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>Breaks (₹{(reconData?.break_amount ?? 0).toLocaleString()})</span>
-                </div>
-                <div style={{ fontSize: 11.5, color: '#be123c', fontWeight: 600, marginTop: 4 }}>
-                  {reconData?.break_count ? `${reconData.auto_refund_count || 0} Auto-Reversed (< ₹5k) • ${reconData.hitl_count || 0} HITL Cockpit` : '0 Auto-Reversed • 0 HITL Cockpit'}
-                </div>
-              </div>
-
-              {/* Card 4: RBI Regulatory SLA */}
-              <div className="card" style={{ padding: '18px 20px', borderLeft: '4px solid #2563eb' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                  Regulatory Mandate SLA
-                </div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: '#2563eb', marginTop: 4 }}>
-                  100.0% <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>Compliant</span>
-                </div>
-                <div style={{ fontSize: 11.5, color: '#1d4ed8', fontWeight: 600, marginTop: 4 }}>
-                  RBI Circular DPSS.CO.PD No.629 (T+1 TAT)
-                </div>
-              </div>
-            </div>
-
-            <div className="two-col">
-              <div className="card">
-                <div className="card-title">
-                  <div className="card-title-left"><div className="card-title-dot" /><span>Scenario Breakdown {isScoped ? `(${activeRailScope})` : ''}</span></div>
-                </div>
-                <ScenarioBreakdown files={files} scopedRail={activeRailScope} reconData={reconData} />
-              </div>
-              <div className="card">
-                <div className="card-title">
-                  <div className="card-title-left"><div className="card-title-dot" /><span>Recent Audit Events {isScoped ? `(${activeRailScope})` : ''}</span></div>
-                </div>
-                <AuditLog logs={audit} scopedRail={activeRailScope} />
-              </div>
-            </div>
-          </>}
-
-          {/* === UPLOAD TAB === */}
-          {activeNav === 'upload' && <>
-            <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-              <div>
-                <div className="page-title">
-                  Upload &amp; Validate Settlement File {activeRailScope && <span style={{ color: '#ea580c' }}>&bull; {activeRailName || activeRailScope}</span>}
-                </div>
-                <div className="page-sub">
-                  {activeRailScope
-                    ? `Drop or run a settlement file — The pipeline automatically parses, filters, and scopes only ${activeRailScope} transactions through all 6 stages.`
-                    : 'Drop an NPCI clearing CSV/DAT file — the agent executes SHA-256 checks, schema validation, and vault staging'}
-                </div>
-              </div>
-            </div>
-
-            <Pipeline stage={pipeStage} agentText={agentText} isDuplicate={isDuplicate} isUploading={uploading} />
-
-            <div className="card">
-              <div className="card-title">
-                <div className="card-title-left">
-                  <div className="card-title-dot" />
-                  <span>File Ingestion Zone {activeRailScope ? `(${activeRailScope} Rail Isolated)` : ''}</span>
-                </div>
-                <button
-                  className="btn btn-secondary"
-                  style={{
-                    padding: '5px 14px',
-                    fontSize: 11.5,
-                    fontWeight: 700,
-                    borderColor: '#ea580c',
-                    color: '#ea580c',
-                    background: '#fff'
-                  }}
-                  onClick={triggerDemo}
-                >
-                  Run {activeRailScope ? `${activeRailScope} ` : ''}Sample Demo
-                </button>
-              </div>
-
-              <div className={`upload-zone-wrapper ${drag ? 'drag' : ''} ${uploading ? 'active' : ''}`}>
-                <div
-                  className="upload-zone"
-                  onDragOver={e => { e.preventDefault(); setDrag(true) }}
-                  onDragLeave={() => setDrag(false)}
-                  onDrop={onDrop}
-                  onClick={() => !uploading && fileRef.current.click()}
-                >
-                  {uploading && <div className="scan-laser" />}
-
-                  {uploading ? (
-                    <div className="upload-processing">
-                      <div className="spinner-ring" />
-                      <div className="up-label">Processing Settlement File Through 6 Gates...</div>
-                      <div className="up-sub">{agentText}</div>
+                  <div className="cg-grid">
+                    {/* 1. FileContext */}
+                    <div className="cg-card">
+                      <div className="cg-header">
+                        <span className="cg-title">FileContext</span>
+                        <span className="badge badge-green">VALIDATED</span>
+                      </div>
+                      <div className="cg-content">
+                        <div><b>File:</b> {mafGraph?.context_graph?.domains?.file_context?.filename || 'NPCI_UPI_Settlement_TestData_50K.csv'}</div>
+                        <div><b>Records:</b> {fmt(mafGraph?.context_graph?.domains?.file_context?.records || 50000)}</div>
+                        <div><b>SHA-256:</b> ed37c56dab72b9...</div>
+                        <div><b>Vault:</b> stage1/staging_vault/</div>
+                      </div>
                     </div>
-                  ) : (
-                    <>
-                      <div className="up-icon-wrap"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></div>
-                      <div className="up-label">Drag &amp; drop your NPCI settlement file here</div>
-                      <div className="up-sub">or click to browse &mdash; Supports .csv, .dat, .txt (up to 500,000 records)</div>
-                      <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={e => { e.stopPropagation(); fileRef.current.click() }}>
-                        Choose File from Computer
-                      </button>
-                    </>
-                  )}
-                  <input ref={fileRef} type="file" accept=".csv,.txt,.dat" style={{ display: 'none' }}
-                    onChange={e => handleUpload(e.target.files[0])} />
+
+                    {/* 2. ReconContext */}
+                    <div className="cg-card">
+                      <div className="cg-header">
+                        <span className="cg-title">ReconContext</span>
+                        <span className="badge badge-green">4-WAY SYNCED</span>
+                      </div>
+                      <div className="cg-content">
+                        <div><b>STP Count:</b> 47,250 (94.5%)</div>
+                        <div><b>Breaks:</b> 2,750 (P1: 2,400, P2: 350)</div>
+                        <div><b>Variance:</b> ₹ -7,46,727.28</div>
+                        <div><b>Legs Matched:</b> 4 of 4</div>
+                      </div>
+                    </div>
+
+                    {/* 3. DiagnosticContext */}
+                    <div className="cg-card">
+                      <div className="cg-header">
+                        <span className="cg-title">DiagnosticContext</span>
+                        <span className="badge badge-purple">AI REASONED</span>
+                      </div>
+                      <div className="cg-content">
+                        <div><b>Dossiers:</b> 2,750 diagnosed</div>
+                        <div><b>Avg Confidence:</b> 98.2%</div>
+                        <div><b>Top Root Cause:</b> CBS Timeout</div>
+                        <div><b>SLA &lt;4h Critical:</b> 650 cases</div>
+                      </div>
+                    </div>
+
+                    {/* 4. ExecutionContext */}
+                    <div className="cg-card">
+                      <div className="cg-header">
+                        <span className="cg-title">ExecutionContext</span>
+                        <span className="badge badge-green">FINACLE POSTED</span>
+                      </div>
+                      <div className="cg-content">
+                        <div><b>Track A (STP):</b> 1,612 posted (₹78.11L)</div>
+                        <div><b>Track B (HITL):</b> 1,138 dual-authorized</div>
+                        <div><b>CBS Status:</b> POSTED_SUCCESS</div>
+                        <div><b>Posting Ref:</b> FIN_AUTO_96527_4410</div>
+                      </div>
+                    </div>
+
+                    {/* 5. ComplianceContext */}
+                    <div className="cg-card">
+                      <div className="cg-header">
+                        <span className="cg-title">ComplianceContext</span>
+                        <span className="badge badge-blue">RBI SEALED</span>
+                      </div>
+                      <div className="cg-content">
+                        <div><b>RBI DPSS SLA:</b> 100.0% Compliant</div>
+                        <div><b>Daily Penalty Saved:</b> ₹ 2,40,000 / Day</div>
+                        <div><b>Annualized Savings:</b> ₹ 8,76,00,000</div>
+                        <div><b>Seal:</b> 00d1a2abc86b1745...</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <ValidationResult result={lastResult} />
-            </div>
-          </>}
+                {/* Bottom Two-Column: Memory Capsules & Telemetry Console */}
+                <div className="two-col">
+                  {/* Memory Capsules Timeline */}
+                  <div className="card">
+                    <div className="card-title">
+                      <div className="card-title-left">
+                        <div className="card-title-dot" />
+                        <span>Context Memory Capsules (Audit Timeline)</span>
+                      </div>
+                    </div>
+                    <div className="capsule-timeline">
+                      {(mafGraph?.context_graph?.recent_memory_capsules || [
+                        { capsule_id: 'CAP_8F12A', timestamp: '12:06:43', domain: 'file', agent_source: 'WF-03 Gatekeeper Bot', summary: 'FileContext staged' },
+                        { capsule_id: 'CAP_9C34B', timestamp: '12:06:44', domain: 'recon', agent_source: 'WF-04 Recon Engine Agent', summary: 'ReconContext 47,250 STP' },
+                        { capsule_id: 'CAP_4E78D', timestamp: '12:06:44', domain: 'diagnostic', agent_source: 'WF-07 AI Investigation Agent', summary: '2,750 Evidence Dossiers' },
+                        { capsule_id: 'CAP_1A99F', timestamp: '12:06:44', domain: 'execution', agent_source: 'WF-10 Finacle RPA Bot', summary: '1,612 Track A Reversals' },
+                        { capsule_id: 'CAP_7B23E', timestamp: '12:06:44', domain: 'execution', agent_source: 'WF-11 Operations Cockpit', summary: 'P1 Batch Authorization' },
+                        { capsule_id: 'CAP_3D44C', timestamp: '12:06:44', domain: 'compliance', agent_source: 'WF-12 Audit Crypt-Seal Bot', summary: 'SHA-256 Audit Seal' },
+                      ]).map((cap, i) => (
+                        <div key={i} className="capsule-item">
+                          <div>
+                            <span className="capsule-id">{cap.capsule_id}</span>
+                            <span style={{ fontSize: 10.5, color: 'var(--text-muted)', marginLeft: 8 }}>&bull; {cap.domain}</span>
+                            <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-main)', marginTop: 2 }}>{cap.summary}</div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: 10, fontFamily: 'JetBrains Mono', color: 'var(--text-muted)' }}>{cap.timestamp}</div>
+                            <span className="badge badge-gray" style={{ fontSize: 9.5, padding: '2px 6px', marginTop: 2 }}>{cap.agent_source}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-          {/* === FILE REGISTRY === */}
-          {activeNav === 'files' && <>
-            <div className="page-header">
-              <div className="page-title">File Registry</div>
-              <div className="page-sub">Historical register of all processed settlement batches and cryptographic checksums</div>
-            </div>
-            <div className="card"><FileTable files={files} onDownload={downloadRegistryFile} activeRailScope={activeRailScope} /></div>
-          </>}
+                  {/* Real-Time Telemetry Stream Console */}
+                  <div className="card">
+                    <div className="card-title">
+                      <div className="card-title-left">
+                        <div className="card-title-dot" />
+                        <span>MAF Orchestrator Telemetry Stream</span>
+                      </div>
+                    </div>
+                    <div className="telemetry-stream-box">
+                      {(mafGraph?.telemetry_log || [
+                        { timestamp: '12:06:43.102', executor_id: 'ORCHESTRATOR', message: 'Starting MAF Workflow execution for dataset' },
+                        { timestamp: '12:06:43.204', executor_id: 'node_ingestion', message: 'Verified SHA-256 checksum & 32-column schema' },
+                        { timestamp: '12:06:43.935', executor_id: 'node_recon', message: 'Cross-matching 4 legs: 47,250 STP, 2,750 Breaks' },
+                        { timestamp: '12:06:43.967', executor_id: 'node_diagnostic', message: 'Diagnosed 2,750 dossiers (98.2% confidence)' },
+                        { timestamp: '12:06:43.976', executor_id: 'node_auto_recovery', message: 'Finacle RPA Bot posted 1,612 customer credit adjustments' },
+                        { timestamp: '12:06:43.983', executor_id: 'node_hitl_approval', message: 'Chief Operations Officer batch-authorized P1 breaks' },
+                        { timestamp: '12:06:43.985', executor_id: 'node_audit_compliance', message: 'Audit Pack Sealed: SHA-256 00d1a2abc86b1745...' },
+                        { timestamp: '12:06:43.986', executor_id: 'ORCHESTRATOR', message: 'MAF Workflow Graph execution completed with 100% SLA compliance!' }
+                      ]).map((log, i) => (
+                        <div key={i} className="tel-line">
+                          <span className="tel-ts">{log.timestamp}</span>
+                          <span className="tel-src">[{log.executor_id}]</span>
+                          <span className="tel-msg">{log.message}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </>}
 
-          {/* === STAGING VAULT === */}
-          {activeNav === 'staging' && <>
-            <div className="page-header">
-              <div className="page-title">Staging Vault</div>
-              <div className="page-sub">Tamper-proof storage holding clean, validated files ready for Stage 2 Reconciliation</div>
-            </div>
-            <div className="card">
-              <div className="card-title">
-                <div className="card-title-left"><div className="card-title-dot" /><span>Vault Directory: stage1/staging_vault/ ({staging.length} files)</span></div>
-              </div>
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr><th>Filename</th><th>Size</th><th>Ingested Time</th><th>Vault Status</th><th>Action</th></tr>
-                  </thead>
-                  <tbody>
-                    {pagedStaging.map((f, i) => (
-                      <tr key={i}>
-                        <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <button
-                              onClick={() => downloadStagingFile(f.name)}
-                              title={`Download ${f.name} from Staging Vault`}
+              {/* ═════════════════════════════════════════════════════════════════ */}
+              {/* STAGE 3: AI BREAK INVESTIGATION AGENT VIEW                       */}
+              {/* ═════════════════════════════════════════════════════════════════ */}
+              {activeNav === 'investigate' && (
+                isCurrentRailRbi ? (
+                  <RbiNeftRtgsView
+                    apiBase={API}
+                    viewMode="investigate"
+                    activeRail={activeRailScope}
+                    onNavigateCopilot={() => setActiveNav('copilot')}
+                    onSimulateFileDrop={handleSimulateFileDropAndAnimate}
+                    onNavigateHitl={() => setActiveNav('recovery')}
+                  />
+                ) : (
+                  <>
+                    {/* Page Header */}
+                    <div className="page-header" style={{ marginBottom: 14 }}>
+                      <div className="page-title">Stage 3: AI Break Investigation Agent</div>
+                      <div className="page-sub">
+                        Autonomous Diagnostic Reasoning &bull; Log Correlation (ISO-8583 / CBS) &bull; RBI T+1 TAT Countdown &bull; Evidence Dossier Pack
+                      </div>
+                    </div>
+
+                {/* AI Investigation KPIs */}
+                {agentSummary && (
+                  <div className="kpi-grid">
+                    <KpiCard label="Total Breaks Analyzed" value={agentSummary.total_breaks_analyzed} color="purple" sub="Stage 2 exceptions" />
+                    <KpiCard label="P1 Critical Breaks" value={agentSummary.p1_critical_count} color="red" sub="RBI TAT clock active" />
+                    <KpiCard label="Auto-Resolvable (STP)" value={agentSummary.auto_resolvable_count} color="green" sub="Under ₹50k threshold" />
+                    <KpiCard label="HITL Approval Req." value={agentSummary.hitl_required_count} color="amber" sub="High-value / complex" />
+                  </div>
+                )}
+
+                {/* RBI SLA Urgency Cards */}
+                {agentSummary && (
+                  <div className="sla-grid">
+                    <div className="sla-card critical">
+                      <span className="sla-label">Critical (&lt; 4h to Breach)</span>
+                      <div className="sla-val" style={{ color: 'var(--red)' }}>
+                        {fmt(agentSummary.sla_urgency_breakdown?.critical_under_4h)}
+                      </div>
+                      <div className="sla-sub">High penalty threat &mdash; immediate auto-reversal queue</div>
+                    </div>
+
+                    <div className="sla-card warning">
+                      <span className="sla-label">Urgent (4 &ndash; 12h to Breach)</span>
+                      <div className="sla-val" style={{ color: 'var(--amber)' }}>
+                        {fmt(agentSummary.sla_urgency_breakdown?.warning_4_to_12h)}
+                      </div>
+                      <div className="sla-sub">Approaching T+1 window &mdash; prioritized for batch review</div>
+                    </div>
+
+                    <div className="sla-card normal">
+                      <span className="sla-label">Standard (&gt; 12h Window)</span>
+                      <div className="sla-val" style={{ color: 'var(--green)' }}>
+                        {fmt(agentSummary.sla_urgency_breakdown?.normal_above_12h)}
+                      </div>
+                      <div className="sla-sub">Standard resolution queue &mdash; within regulatory grace</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Evidence Dossier Explorer */}
+                <div className="card">
+                  <div className="card-title">
+                    <div className="card-title-left">
+                      <div className="card-title-dot" />
+                      <span>Evidence Dossier &amp; Root Cause Explorer ({filteredDossiers.length} records)</span>
+                    </div>
+                    <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
+                      Click &ldquo;View Dossier&rdquo; for full AI diagnostic breakdown &amp; approval routing
+                    </span>
+                  </div>
+
+                  {/* Dossier Filter Tabs */}
+                  <div className="filter-tabs">
+                    {[
+                      ['ALL', `All Dossiers (${agentSummary?.total_breaks_analyzed || 0})`],
+                      ['CRITICAL', `Critical &lt;4h (${agentSummary?.sla_urgency_breakdown?.critical_under_4h || 0})`],
+                      ['AUTO', `Auto-Resolvable (${agentSummary?.auto_resolvable_count || 0})`],
+                      ['HITL', `HITL Required (${agentSummary?.hitl_required_count || 0})`],
+                      ['TIMEOUT', `CBS Timeout (${agentSummary?.root_cause_breakdown?.CBS_TIMEOUT ?? 0})`],
+                      ['AMOUNT_MISMATCH', `Amount Mismatch (${agentSummary?.root_cause_breakdown?.AMOUNT_MISMATCH ?? 0})`],
+                      ['REVERSAL_MISSING', `Reversal Missing (${agentSummary?.root_cause_breakdown?.REVERSAL_MISSING ?? 0})`],
+                      ['DEEMED_FAIL', `Deemed Fail (${agentSummary?.root_cause_breakdown?.DEEMED_FAIL ?? 0})`],
+                    ].map(([val, label]) => (
+                      <button
+                        key={val}
+                        className={`filter-tab ${dossierFilter === val ? 'active' : ''}`}
+                        onClick={() => { setDossierFilter(val); setDossierPage(1); }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Dossier ID</th>
+                          <th>RRN</th>
+                          <th>Amount</th>
+                          <th>Root Cause Finding</th>
+                          <th>Confidence</th>
+                          <th>RBI Clock</th>
+                          <th>Resolution Route</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pagedDossiers.map((d, i) => (
+                          <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setSelectedDossier(d)}>
+                            <td><code style={{ fontSize: 11, fontWeight: 700 }}>{d.dossier_id}</code></td>
+                            <td>{d.rrn}</td>
+                            <td><b>{fmtInr(d.cbs_amount)}</b></td>
+                            <td style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <b>{d.category}</b>
+                            </td>
+                            <td>
+                              <span style={{ color: 'var(--green)', fontWeight: 700 }}>{d.confidence_score}%</span>
+                            </td>
+                            <td>
+                              <span className={`badge ${d.sla_urgency === 'CRITICAL' ? 'badge-red' : d.sla_urgency === 'WARNING' ? 'badge-amber' : 'badge-green'}`}>
+                                {d.sla_countdown}
+                              </span>
+                            </td>
+                            <td>
+                              {d.is_hitl_required ? (
+                                <span className="badge badge-amber">HITL Approval</span>
+                              ) : (
+                                <span className="badge badge-green">Auto-Refund</span>
+                              )}
+                            </td>
+                            <td>
+                              <button className="btn btn-secondary" style={{ padding: '3px 8px', fontSize: 11 }} onClick={(e) => { e.stopPropagation(); setSelectedDossier(d) }}>
+                                View Dossier
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {!filteredDossiers.length && (
+                          <tr>
+                            <td colSpan={8} style={{ textAlign: 'center', padding: 30, color: 'var(--text-faint)' }}>
+                              No dossiers match filter. Run AI Investigation to generate records.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                    <Pagination totalItems={filteredDossiers.length} pageSize={PAGE_SIZE} currentPage={dossierPage} onPageChange={setDossierPage} />
+                  </div>
+                </div>
+              </>))}
+
+              {/* ═════════════════════════════════════════════════════════════════ */}
+              {/* STAGE 4 & 5: DUAL-TRACK RECOVERY & OPERATIONS COCKPIT            */}
+              {/* ═════════════════════════════════════════════════════════════════ */}
+              {activeNav === 'recovery' && (
+                isCurrentRailRbi ? (
+                  <RbiNeftRtgsView
+                    apiBase={API}
+                    viewMode="hitl"
+                    activeRail={activeRailScope}
+                    onNavigateCopilot={() => setActiveNav('copilot')}
+                    onSimulateFileDrop={handleSimulateFileDropAndAnimate}
+                  />
+                ) : (
+                  <>
+                    {/* Top Operations Header */}
+                    <div className="page-header" style={{ marginBottom: 14 }}>
+                      <div className="page-title">Stages 4 &amp; 5: Operations Approval Cockpit &amp; Finacle Execution Bot</div>
+                      <div className="page-sub">
+                        Dual-track financial recovery: Autonomous Finacle RPA Bot (&lt; ₹50,000) + Human-in-the-Loop Sign-Off (&ge; ₹50,000) under RBI T+1 TAT mandate
+                      </div>
+                    </div>
+
+                {/* Interactive HITL Queue Table */}
+                <div className="card">
+                  <div className="card-title">
+                    <div className="card-title-left">
+                      <div className="card-title-dot" />
+                      <span>Operations Approval Queue ({filteredHitlQueue.length} cases displayed)</span>
+                    </div>
+                    <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
+                      Electronic dual-authorization &bull; Instant Finacle CBS posting
+                    </span>
+                  </div>
+
+                  {/* Filter Tabs */}
+                  <div className="filter-tabs">
+                    {[
+                      ['ALL', `All Cases (${hitlQueue.length})`],
+                      ['P1', 'P1 Urgent (TAT Active)'],
+                      ['AMOUNT_MISMATCH', 'Amount Mismatch'],
+                      ['PENDING', `Pending (${recoverySummary?.hitl_pending_count ?? hitlQueue.filter(c => c.status === 'PENDING').length ?? 0})`],
+                      ['APPROVED', `Approved & Posted (${recoverySummary?.hitl_approved_count || 0})`],
+                      ['REJECTED', 'Rejected'],
+                      ['ESCALATED', 'Escalated'],
+                    ].map(([val, label]) => (
+                      <button
+                        key={val}
+                        className={`filter-tab ${hitlFilter === val ? 'active' : ''}`}
+                        onClick={() => { setHitlFilter(val); setHitlPage(1); }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>TXN ID</th>
+                          <th>RRN / Rail</th>
+                          <th>Amount</th>
+                          <th>Scenario / Root Cause</th>
+                          <th>RBI SLA Countdown</th>
+                          <th>Recommended Resolution</th>
+                          <th>CBS Posting Status</th>
+                          <th>Operations Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pagedHitlQueue.map((q, i) => (
+                          <tr key={i}>
+                            <td><code style={{ fontSize: 11, fontWeight: 700 }}>{q.txn_id}</code></td>
+                            <td>
+                              <div><b>{q.rrn}</b></div>
+                              <div style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{q.rail} &bull; {q.cycle_id}</div>
+                            </td>
+                            <td><b>{fmtInr(q.amount)}</b></td>
+                            <td>
+                              <Badge type={q.scenario} label={q.scenario.replace(/_/g, ' ')} />
+                            </td>
+                            <td>
+                              <span className={`badge ${q.priority === 'P1' ? 'badge-red' : 'badge-amber'}`}>
+                                {q.sla_countdown}
+                              </span>
+                            </td>
+                            <td style={{ maxWidth: 220, fontSize: 11.5, lineHeight: 1.4 }}>
+                              {q.action_label}
+                            </td>
+                            <td>
+                              {q.status === 'APPROVED_AND_POSTED' && (
+                                <div>
+                                  <span className="badge badge-green">✓ FINACLE POSTED</span>
+                                  <div style={{ fontSize: 10, fontFamily: 'JetBrains Mono', color: 'var(--text-muted)', marginTop: 2 }}>
+                                    {q.posting_ref || 'CBS-POST-TXN-8812'}
+                                  </div>
+                                </div>
+                              )}
+                              {q.status === 'REJECTED' && (
+                                <div>
+                                  <span className="badge badge-red">✕ REJECTED</span>
+                                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+                                    {q.rejection_reason || 'Manual rejection'}
+                                  </div>
+                                </div>
+                              )}
+                              {q.status === 'ESCALATED' && (
+                                <div>
+                                  <span className="badge badge-purple">ESCALATED (P1)</span>
+                                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+                                    {q.escalation_note || 'Sent to Committee'}
+                                  </div>
+                                </div>
+                              )}
+                              {q.status === 'AUTO_APPROVED' && (
+                                <div>
+                                  <span className="badge badge-blue">⚡ QUEUED FOR CBS</span>
+                                  <div style={{ fontSize: 10, fontFamily: 'JetBrains Mono', color: 'var(--text-muted)', marginTop: 2 }}>
+                                    Auto-Approved
+                                  </div>
+                                </div>
+                              )}
+                              {(!q.status || q.status === 'PENDING_APPROVAL') && (
+                                <span className="badge badge-amber">PENDING APPROVAL</span>
+                              )}
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'nowrap' }}>
+                                {(!q.status || q.status === 'PENDING_APPROVAL' || q.status === 'ESCALATED') ? (
+                                  <>
+                                    {/* APPROVE BUTTON */}
+                                    <button
+                                      className="btn btn-primary"
+                                      style={{
+                                        padding: '5px 9px',
+                                        fontSize: 11,
+                                        whiteSpace: 'nowrap',
+                                        fontWeight: 700,
+                                        background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
+                                        borderColor: '#ea580c',
+                                        color: '#ffffff'
+                                      }}
+                                      disabled={approvingTxn[q.txn_id]}
+                                      onClick={() => handleApproveTxn(q)}
+                                      title="Approve transaction and post to Finacle CBS"
+                                    >
+                                      {approvingTxn[q.txn_id] ? 'Posting…' : '✓ Approve'}
+                                    </button>
+
+                                    {/* REJECT BUTTON */}
+                                    <button
+                                      className="btn btn-secondary"
+                                      style={{
+                                        padding: '5px 8px',
+                                        fontSize: 11,
+                                        whiteSpace: 'nowrap',
+                                        fontWeight: 700,
+                                        background: '#fef2f2',
+                                        color: '#dc2626',
+                                        borderColor: '#fca5a5'
+                                      }}
+                                      onClick={() => handleRejectTxn(q)}
+                                      title="Reject transaction and suspend posting"
+                                    >
+                                      ✕ Reject
+                                    </button>
+
+                                    {/* ESCALATE BUTTON */}
+                                    <button
+                                      className="btn btn-secondary"
+                                      style={{
+                                        padding: '5px 8px',
+                                        fontSize: 11,
+                                        whiteSpace: 'nowrap',
+                                        fontWeight: 700,
+                                        background: '#fffbeb',
+                                        color: '#b45309',
+                                        borderColor: '#fde68a'
+                                      }}
+                                      onClick={() => handleEscalateTxn(q)}
+                                      title="Escalate to Risk Committee & Operations Head"
+                                    >
+                                      Escalate
+                                    </button>
+                                  </>
+                                ) : q.status === 'APPROVED_AND_POSTED' ? (
+                                  <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 11, color: '#16a34a', borderColor: '#86efac', background: '#f0fdf4', fontWeight: 700 }} disabled>
+                                    Approved ✓
+                                  </button>
+                                ) : q.status === 'AUTO_APPROVED' ? (
+                                  <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 11, color: '#1d4ed8', borderColor: '#93c5fd', background: '#eff6ff', fontWeight: 700 }} disabled>
+                                    Auto-Approved ⚡
+                                  </button>
+                                ) : (
+                                  <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 11, color: '#dc2626', borderColor: '#fca5a5', background: '#fef2f2', fontWeight: 700 }} disabled>
+                                    Rejected ✕
+                                  </button>
+                                )}
+
+                                {/* DOSSIER INSPECT BUTTON */}
+                                <button
+                                  className="btn btn-secondary"
+                                  style={{ padding: '5px 8px', fontSize: 11 }}
+                                  onClick={() => {
+                                    const d = dossierList.find(x => x.txn_id === q.txn_id)
+                                    if (d) setSelectedDossier(d)
+                                    else alert(`Evidence dossier for ${q.txn_id} loaded. Root Cause: ${q.category}`)
+                                  }}
+                                  title="Inspect AI Evidence Dossier"
+                                >
+
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {!filteredHitlQueue.length && (
+                          <tr>
+                            <td colSpan={8} style={{ textAlign: 'center', padding: 30, color: 'var(--text-faint)' }}>
+                              No cases match the selected filter.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                    <Pagination totalItems={filteredHitlQueue.length} pageSize={PAGE_SIZE} currentPage={hitlPage} onPageChange={setHitlPage} />
+                  </div>
+                </div>
+              </>))}
+
+              {/* ═════════════════════════════════════════════════════════════════ */}
+              {/* STAGE 6: REGULATORY MIS & CRYPTOGRAPHIC AUDIT PACK                */}
+              {/* ═════════════════════════════════════════════════════════════════ */}
+              {activeNav === 'reports' && <>
+                {/* Official Cryptographic Certificate Seal Card */}
+                <div className="audit-seal-card">
+                  <div className="seal-header">
+                    <div className="seal-title-area">
+                      <div className="seal-icon-emblem"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
+                      <div>
+                        <div className="seal-main-title">
+                          Reserve Bank of India &mdash; Automated Clearing &amp; Settlement Compliance Pack
+                        </div>
+                        <div className="seal-sub-title">
+                          Mandated under RBI Circular DPSS.CO.PD No.629/02.01.014/2019-20 &bull; ISO 27001 Cryptographic Assurance
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      className="btn btn-primary"
+                      style={{ padding: '10px 20px', fontSize: 13, background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)' }}
+                      disabled={sealing}
+                      onClick={handleSealAuditPack}
+                    >
+                      {sealing ? 'Generating SHA-256 Seal...' : (sealedPack ? 'Re-Seal Audit Pack' : 'Seal Cryptographic Audit Pack')}
+                    </button>
+                  </div>
+
+                  <div className="seal-hash-banner">
+                    <div>
+                      <span style={{ color: 'rgba(255,255,255,0.6)', marginRight: 8 }}>SHA-256 SEAL:</span>
+                      <span className="seal-hash-text">
+                        {sealedPack?.cryptographic_sha256_seal || '112c83e539a1b6e6136bb1f5949955b1306c649814f0b13fd0fd368eac3a1eeb'}
+                      </span>
+                    </div>
+                    <div style={{ color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span>✓ VERIFIED IMMUTABLE</span>
+                      <span style={{ color: 'rgba(255,255,255,0.4)' }}>&bull;</span>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>
+                        {sealedPack?.timestamp ? fmtDate(sealedPack.timestamp) : '28 Oct 2026, 11:49 IST'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Penalty Mitigation Highlight Box */}
+                <div className="penalty-counter-card">
+                  <div className="penalty-left">
+                    <div className="penalty-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        RBI DPSS Customer Penalty Mitigation Guarantee
+                      </div>
+                      <div className="penalty-val">₹ 2,40,000 / Day Avoided</div>
+                      <div className="penalty-sub">
+                        Direct compensation saved across 2,400 P1 customer debits (₹100/day compensation rule). <b>Annualized Savings: ₹8,76,00,000 (₹8.76 Cr)</b>.
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <span className="badge badge-green" style={{ fontSize: 12, padding: '6px 14px' }}>
+                      100.0% T+1 SLA COMPLIANT
+                    </span>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>Zero Regulatory Infractions</div>
+                  </div>
+                </div>
+
+                {/* 6-Stage Process Flow Status Timeline */}
+                <div className="timeline-stages-grid">
+                  <div className="stage-step-card complete">
+                    <div className="stage-step-num">Stage 1 &bull; Ingestion</div>
+                    <div className="stage-step-name">File Vault Staging</div>
+                    <div className="stage-step-bot">✓ WF-01 &bull; WF-03</div>
+                  </div>
+                  <div className="stage-step-card complete">
+                    <div className="stage-step-num">Stage 2 &bull; Reconciliation</div>
+                    <div className="stage-step-name">4-Way Multi-Rail Recon</div>
+                    <div className="stage-step-bot">✓ WF-04 &bull; 94.5% STP</div>
+                  </div>
+                  <div className="stage-step-card complete">
+                    <div className="stage-step-num">Stage 3 &bull; AI Diagnostics</div>
+                    <div className="stage-step-name">Investigation Agent</div>
+                    <div className="stage-step-bot">✓ WF-07 &bull; 2,750 Dossiers</div>
+                  </div>
+                  <div className="stage-step-card complete">
+                    <div className="stage-step-num">Stage 4 &bull; Auto-Recovery</div>
+                    <div className="stage-step-name">Autonomous Reversal Bot</div>
+                    <div className="stage-step-bot">✓ WF-10 &bull; 1,612 Posted</div>
+                  </div>
+                  <div className="stage-step-card complete">
+                    <div className="stage-step-num">Stage 5 &bull; Operations Cockpit</div>
+                    <div className="stage-step-name">Manager HITL Approval</div>
+                    <div className="stage-step-bot">✓ WF-11 &bull; Finacle CBS</div>
+                  </div>
+                  <div className="stage-step-card complete">
+                    <div className="stage-step-num">Stage 6 &bull; Regulatory MIS</div>
+                    <div className="stage-step-name">Cryptographic Audit Pack</div>
+                    <div className="stage-step-bot">✓ WF-12 &bull; WF-13 Sealed</div>
+                  </div>
+                </div>
+
+                {/* Executive Settlement MIS KPIs */}
+                <div className="kpi-grid">
+                  <KpiCard label="Settlement Volume" value={50000} color="blue" sub="UPI / IMPS clearing batch" />
+                  <KpiCard label="Cleared Funds" value={148520341} prefix="₹ " color="green" sub="Total ledger volume" />
+                  <KpiCard label="Straight-Through (STP)" value={94.5} suffix="%" color="green" sub="47,250 auto-reconciled" />
+                  <KpiCard label="Total Exceptions Resolved" value={2750} color="purple" sub="100% resolution coverage" />
+                </div>
+
+                {/* Cryptographic Inspection Pack JSON Viewer */}
+                <div className="card">
+                  <div className="card-title">
+                    <div className="card-title-left">
+                      <div className="card-title-dot" />
+                      <span>Official Regulatory Audit Dossier (Machine-Readable JSON Package)</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        className="btn btn-secondary"
+                        style={{ padding: '4px 10px', fontSize: 11 }}
+                        onClick={() => {
+                          const text = JSON.stringify(sealedPack || misReport, null, 2)
+                          navigator.clipboard.writeText(text)
+                          alert("Cryptographic Audit Pack copied to clipboard!")
+                        }}
+                      >
+                        Copy Audit JSON
+                      </button>
+                      <button
+                        className="btn btn-primary"
+                        style={{ padding: '4px 12px', fontSize: 11 }}
+                        onClick={() => {
+                          const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sealedPack || misReport, null, 2))
+                          const downloadAnchor = document.createElement('a')
+                          downloadAnchor.setAttribute("href", dataStr)
+                          downloadAnchor.setAttribute("download", `RBI_AUDIT_PACK_${new Date().toISOString().slice(0, 10)}.json`)
+                          document.body.appendChild(downloadAnchor)
+                          downloadAnchor.click()
+                          downloadAnchor.remove()
+                        }}
+                      >
+                        Download Audit Package
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="json-viewer-card">
+                    <pre>{JSON.stringify(sealedPack || {
+                      "audit_pack_id": "RBI_AUDIT_PACK_20261028_114940",
+                      "regulatory_framework": "RBI DPSS.CO.PD No.629/02.01.014/2019-20 & ISO 27001",
+                      "timestamp": "2026-10-28T11:49:40.125841",
+                      "cryptographic_sha256_seal": "112c83e539a1b6e6136bb1f5949955b1306c649814f0b13fd0fd368eac3a1eeb",
+                      "stage1_file_staged": "NPCI_UPI_Settlement_TestData_50K.csv",
+                      "stage2_reconciliation": {
+                        "total_records": 50000,
+                        "matched_stp_rate": "94.5%",
+                        "total_breaks": 2750,
+                        "p1_breaks": 2400,
+                        "p2_breaks": 350
+                      },
+                      "stage3_ai_investigation": {
+                        "breaks_diagnosed": 2750,
+                        "confidence_avg": "98.2%",
+                        "top_root_cause": "CBS Timeout (15s Window Exceeded)"
+                      },
+                      "stage4_and_5_execution": {
+                        "autonomous_reversals_posted": 1612,
+                        "manager_approved_postings": recoverySummary?.hitl_approved_count || 0,
+                        "total_cbs_credits_executed": recoverySummary?.total_cbs_reversals_posted || 1612
+                      },
+                      "compliance_outcome": {
+                        "rbi_tat_sla_compliance": "100.0%",
+                        "penalties_prevented_inr": 240000,
+                        "annualized_savings_inr": 87600000
+                      }
+                    }, null, 2)}</pre>
+                  </div>
+                </div>
+              </>}
+
+              {/* ═════════════════════════════════════════════════════════════════ */}
+              {/* STAGE 2: RECONCILIATION ENGINE VIEW (4-WAY RETAIL / 3-WAY RBI)    */}
+              {/* ═════════════════════════════════════════════════════════════════ */}
+              {activeNav === 'recon' && (
+                isCurrentRailRbi ? (
+                  <RbiNeftRtgsView
+                    apiBase={API}
+                    viewMode="recon"
+                    activeRail={activeRailScope}
+                    onNavigateCopilot={() => setActiveNav('copilot')}
+                    onSimulateFileDrop={handleSimulateFileDropAndAnimate}
+                    onNavigateHitl={() => setActiveNav('recovery')}
+                    onNavigateInvestigate={() => setActiveNav('investigate')}
+                  />
+                ) : (
+                  <>
+                    <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                      <div>
+                        <div className="page-title">Stage 2: 4-Way Multi-Rail Reconciliation Engine</div>
+                        <div className="page-sub">
+                          Mathematical cross-reconciliation across NPCI Clearing, Payment Switch, Core Banking (Finacle/Flexcube), and General Ledger (GL)
+                        </div>
+                      </div>
+                    </div>
+
+                {/* 4 Inbound Systems Status Grid */}
+                <div className="source-grid">
+                  <div className="source-card">
+                    <div className="source-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                        <line x1="6" y1="6" x2="6.01" y2="6" />
+                        <line x1="6" y1="18" x2="6.01" y2="18" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="source-name">1. NPCI Settlement</div>
+                      <div className="source-meta">Staging Vault: Validated</div>
+                    </div>
+                    <div className="source-status"><span className="source-status-dot" /> READY</div>
+                    <a
+                      href={`${API}/api/recon/input-file/npci`}
+                      download="NPCI_UPI_Settlement_Master.csv"
+                      className="source-download-btn"
+                      title="Download NPCI Settlement Master Input CSV"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      <span>CSV</span>
+                    </a>
+                  </div>
+
+                  <div className="source-card">
+                    <div className="source-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                        <line x1="8" y1="21" x2="16" y2="21" />
+                        <line x1="12" y1="17" x2="12" y2="21" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="source-name">2. Payment Switch</div>
+                      <div className="source-meta">Base24 Gateway AUTHORIZED</div>
+                    </div>
+                    <div className="source-status"><span className="source-status-dot" /> ONLINE</div>
+                    <a
+                      href={`${API}/api/recon/input-file/switch`}
+                      download="Switch_Base24_Logs.csv"
+                      className="source-download-btn"
+                      title="Download Switch Base24 Logs Input CSV"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      <span>CSV</span>
+                    </a>
+                  </div>
+
+                  <div className="source-card">
+                    <div className="source-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="3" y1="21" x2="21" y2="21" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                        <polyline points="5 10 5 21" />
+                        <polyline points="19 10 19 21" />
+                        <polyline points="10 10 10 21" />
+                        <polyline points="14 10 14 21" />
+                        <polygon points="12 2 2 7 22 7 12 2" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="source-name">3. Core Banking (CBS)</div>
+                      <div className="source-meta">Finacle 10.x DEBITED Log</div>
+                    </div>
+                    <div className="source-status"><span className="source-status-dot" /> SYNCED</div>
+                    <a
+                      href={`${API}/api/recon/input-file/cbs`}
+                      download="Finacle_CBS_Dump.csv"
+                      className="source-download-btn"
+                      title="Download Finacle CBS Dump Input CSV"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      <span>CSV</span>
+                    </a>
+                  </div>
+
+                  <div className="source-card">
+                    <div className="source-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 3v18" />
+                        <path d="m16 8 4 6H4l4-6" />
+                        <path d="M4 14a4 4 0 0 0 8 0" />
+                        <path d="M12 14a4 4 0 0 0 8 0" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="source-name">4. General Ledger (GL)</div>
+                      <div className="source-meta">Clearing Pool Suspense A/C</div>
+                    </div>
+                    <div className="source-status"><span className="source-status-dot" /> ACTIVE</div>
+                    <a
+                      href={`${API}/api/recon/input-file/gl`}
+                      download="GL_Suspense_Pool.csv"
+                      className="source-download-btn"
+                      title="Download General Ledger Suspense Input CSV"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      <span>CSV</span>
+                    </a>
+                  </div>
+                </div>
+
+                {/* 3 Core Output Buckets */}
+                {reconData && (
+                  <div className="bucket-grid">
+                    <div
+                      className="bucket-card green"
+                      style={{ cursor: 'pointer', transition: 'all 0.2s ease', border: breakFilter === 'MATCHED' ? '2px solid #16a34a' : undefined }}
+                      onClick={() => { setBreakFilter('MATCHED'); setReconPage(1); }}
+                      title="Click to view all 4-Way Matched STP Records"
+                    >
+                      <div className="bucket-header">
+                        <span className="bucket-tag">Bucket 1 &bull; Matched STP</span>
+                      </div>
+                      <div className="bucket-count">
+                        {fmt(reconData.matched_count)}
+                        <span className="bucket-pct">({reconData.stp_rate}%)</span>
+                      </div>
+                      <div className="bucket-desc">
+                        All 4 systems agree in status, timing, and financial amount. Zero-delta balancing entry posted.
+                      </div>
+                      <div className="bucket-action">
+                        <span>View Matched STP Records ({fmt(reconData.matched_count)}) &rarr;</span>
+                      </div>
+                    </div>
+
+                    <div className="bucket-card amber">
+                      <div className="bucket-header">
+                        <span className="bucket-tag">Bucket 2 &bull; Timing Drift</span>
+                      </div>
+                      <div className="bucket-count">
+                        {fmt(reconData.timing_count || 0)}
+                        <span className="bucket-pct">(0.0%)</span>
+                      </div>
+                      <div className="bucket-desc">
+                        Transactions in-flight across cycle cut-off windows. Zero financial break &mdash; checked next cycle.
+                      </div>
+                      <div className="bucket-action">
+                        <span>Next Cycle Roll-Forward</span>
+                      </div>
+                    </div>
+
+                    <div className="bucket-card red">
+                      <div className="bucket-header">
+                        <span className="bucket-tag">Bucket 3 &bull; Recon Breaks</span>
+                      </div>
+                      <div className="bucket-count">
+                        {fmt(reconData.break_count)}
+                        <span className="bucket-pct" style={{ color: 'var(--red)' }}>
+                          ({fmtPct(reconData.break_count / (reconData.total_records || 1) * 100)})
+                        </span>
+                      </div>
+                      <div className="bucket-desc">
+                        Discrepancies diagnosed: 3 low-value auto-refunded (&lt; ₹5k), 1 high-value routed to HITL Cockpit.
+                      </div>
+                      <div className="bucket-action" style={{ cursor: 'pointer' }} onClick={() => setActiveNav('investigate')}>
+                        <span>Hand Over to AI Investigation Agent &rarr;</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Interactive Breaks & Matched Records Explorer */}
+                <div className="card">
+                  <div className="card-title">
+                    <div className="card-title-left">
+                      <div className="card-title-dot" style={{ background: breakFilter === 'MATCHED' ? '#16a34a' : '#ea580c' }} />
+                      <span>{breakFilter === 'MATCHED' ? `4-Way Matched STP Records (${filteredBreaks.length} displayed)` : `Recon Breaks & Exception Explorer (${filteredBreaks.length} displayed)`}</span>
+                    </div>
+                    <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
+                      Click any transaction to inspect all 4 legs side-by-side
+                    </span>
+                  </div>
+
+                  {/* Filter Tabs */}
+                  <div className="filter-tabs">
+                    {[
+                      ['MATCHED', `Matched STP (${reconData?.matched_count ?? reconMatched.length ?? 0})`],
+                      ['ALL', `All Breaks (${reconData?.break_count ?? reconBreaks.length ?? 0})`],
+                      ['P1', `P1 Critical (${reconData?.p1_count ?? 0})`],
+                      ['CBS_TIMEOUT', `CBS Timeout (${reconData?.break_breakdown?.CBS_TIMEOUT ?? reconBreaks.filter(b => b.scenario === 'CBS_TIMEOUT').length ?? 0})`],
+                      ['AMOUNT_MISMATCH', `Amount Mismatch (${reconData?.break_breakdown?.AMOUNT_MISMATCH ?? reconBreaks.filter(b => b.scenario === 'AMOUNT_MISMATCH').length ?? 0})`],
+                      ['DEEMED_FAIL', `Deemed Fail (${reconData?.break_breakdown?.DEEMED_FAIL ?? reconBreaks.filter(b => b.scenario === 'DEEMED_FAIL').length ?? 0})`],
+                      ['REVERSAL_MISSING', `Reversal Missing (${reconData?.break_breakdown?.REVERSAL_MISSING ?? reconBreaks.filter(b => b.scenario === 'REVERSAL_MISSING').length ?? 0})`],
+                    ].map(([val, label]) => (
+                      <button
+                        key={val}
+                        className={`filter-tab ${breakFilter === val ? 'active' : ''}`}
+                        onClick={() => { setBreakFilter(val); setReconPage(1); }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>TXN ID</th>
+                          <th>RRN</th>
+                          <th>Rail</th>
+                          <th>NPCI Amt</th>
+                          <th>CBS Amt</th>
+                          <th>Delta</th>
+                          <th>Scenario / Root Cause</th>
+                          <th>Priority</th>
+                          <th>RBI Clock</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pagedBreaks.map((b, i) => (
+                          <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setSelectedBreak(b)}>
+                            <td>
+                              <code style={{ fontSize: 11, fontWeight: 700 }}>{b.txn_id}</code>
+                              {b.source_file && <div style={{ fontSize: 9.5, color: 'var(--text-muted)', marginTop: 2 }}>{b.source_file}</div>}
+                            </td>
+                            <td>{b.rrn}</td>
+                            <td><b>{b.rail}</b></td>
+                            <td title={`${inrToWords(b.npci_amount)} • [${toPaisa(b.npci_amount).toLocaleString('en-IN')} Paise]`}>
+                              <div style={{ fontWeight: 650 }}>{fmtInrAudit(b.npci_amount)}</div>
+                              <div style={{ fontSize: 9, color: '#0d9488', fontWeight: 600 }}>{toPaisa(b.npci_amount).toLocaleString('en-IN')} P</div>
+                            </td>
+                            <td title={`${inrToWords(b.cbs_amount)} • [${toPaisa(b.cbs_amount).toLocaleString('en-IN')} Paise]`}>
+                              <div style={{ fontWeight: 650 }}>{fmtInrAudit(b.cbs_amount)}</div>
+                              <div style={{ fontSize: 9, color: '#0d9488', fontWeight: 600 }}>{toPaisa(b.cbs_amount).toLocaleString('en-IN')} P</div>
+                            </td>
+                            <td style={{ color: b.variance !== 0 ? 'var(--red)' : 'inherit', fontWeight: 700 }}>
+                              {b.variance !== 0 ? fmtInrAudit(b.variance) : '₹ 0.00'}
+                            </td>
+                            <td><Badge type={b.scenario === 'SUCCESS' ? 'MATCHED' : b.scenario} label={b.scenario === 'SUCCESS' ? '4-Way Matched' : b.scenario.replace(/_/g, ' ')} /></td>
+                            <td><Badge type={b.priority === 'STP' ? 'NORMAL' : b.priority} label={b.priority === 'STP' ? 'STP 100%' : b.priority} /></td>
+                            <td>
+                              {b.penalty_clock_started === 'Yes' ? (
+                                <span style={{ color: 'var(--red)', fontWeight: 700, fontSize: 11 }}>T+1 Clock</span>
+                              ) : (
+                                <span style={{ color: b.scenario === 'SUCCESS' ? 'var(--green)' : 'var(--text-faint)', fontSize: 11, fontWeight: b.scenario === 'SUCCESS' ? 600 : 400 }}>
+                                  {b.scenario === 'SUCCESS' ? 'Balanced' : 'Normal'}
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                                <button className="btn btn-secondary" style={{ padding: '3px 7px', fontSize: 10.5 }} onClick={(e) => { e.stopPropagation(); setSelectedBreak(b) }}>
+                                  Inspect
+                                </button>
+                                <button
+                                  style={{
+                                    padding: '2.5px 6px',
+                                    fontSize: 9.5,
+                                    fontWeight: 700,
+                                    borderRadius: 4,
+                                    border: '1px solid #fed7aa',
+                                    background: '#fff7ed',
+                                    color: '#ea580c',
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedIsoTx({
+                                      utr: b.txn_id,
+                                      amount: b.npci_amount || b.cbs_amount,
+                                      rail: b.rail || 'UPI',
+                                      status: b.scenario === 'SUCCESS' ? 'SETTLED' : 'BREAK_' + b.scenario,
+                                      status_label: b.scenario === 'SUCCESS' ? 'Settled' : 'Break: ' + b.scenario,
+                                      remitter: 'Remitter Customer (' + (b.rail || 'UPI') + ')',
+                                      beneficiary: 'Beneficiary Bank',
+                                      voucher: 'NPCI-NTSL-' + (b.rrn || b.txn_id)
+                                    });
+                                  }}
+                                  title="Inspect official ISO 20022 XML message payload"
+                                >
+                                  ⟨/⟩ XML
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {!filteredBreaks.length && (
+                          <tr>
+                            <td colSpan={10} style={{ textAlign: 'center', padding: 30, color: 'var(--text-faint)' }}>
+                              {breakFilter === 'MATCHED'
+                                ? 'No matched records yet. Run 4-Way Reconciliation or export from Process Studio to load matched records.'
+                                : 'No breaks match selected filter. Run reconciliation to load records.'}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                    <Pagination totalItems={filteredBreaks.length} pageSize={PAGE_SIZE} currentPage={reconPage} onPageChange={setReconPage} />
+                  </div>
+                </div>
+              </>))}
+
+              {/* === DASHBOARD === */}
+              {activeNav === 'dashboard' && <>
+                <div className="page-header" style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                    <div>
+                      <div className="page-title" style={{ fontSize: 20, fontWeight: 800 }}>
+                        {isScoped
+                          ? `NPCI Operations Control Tower — ${activeRailName || activeRailScope}`
+                          : 'NPCI Operations Control Tower — Unified Multi-Rail View'}
+                      </div>
+                      <div className="page-sub">
+                        {isScoped
+                          ? `Catalogue Scope: ${activeRailName || activeRailScope} (${activeRailScope}) • Real-time 4-way reconciliation & STP metrics`
+                          : 'Good Morning, Operations Manager • Real-time multi-agent clearing, 4-way reconciliation & settlement across all 8 NPCI payment rails'}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={() => setActiveNav('catalog')}>
+                        Rail Solutions Catalog &rarr;
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+
+
+                {/* Executive Banking Overview Cards (Clean & Focused) */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                  gap: 16,
+                  marginBottom: 20
+                }}>
+                  {/* Card 1: Batch Intake */}
+                  <div className="card" style={{ padding: '12px 16px', borderLeft: '4px solid #ea580c' }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                      {activeRailScope ? `${activeRailName || activeRailScope} Ingested Batch` : 'UPI 2.0 Ingested Batch'}
+                    </div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>
+                      {scopedRailVol} <span style={{ fontSize: 11.5, fontWeight: 600, color: '#94a3b8' }}>Transactions</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: '#ea580c', fontWeight: 600, marginTop: 3 }}>
+                      {scopedRailVol > 0 ? `Cycle: ${activeRailScope ? activeRailScope.toUpperCase() : 'UPI'}-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-CY01 • Active` : 'Cycle: Standby • Awaiting File Intake'}
+                    </div>
+                  </div>
+
+                  {/* Card 2: Straight-Through Settle */}
+                  <div className="card" style={{ padding: '12px 16px', borderLeft: '4px solid #16a34a' }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                      Straight-Through (STP) Settled
+                    </div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: '#16a34a', marginTop: 4 }}>
+                      {reconData?.matched_count ?? 0} <span style={{ fontSize: 11.5, fontWeight: 600, color: '#94a3b8' }}>Txn ({reconData?.stp_rate ? `${reconData.stp_rate}%` : '0.0%'})</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: '#15803d', fontWeight: 600, marginTop: 3 }}>
+                      {reconData?.matched_count
+                        ? `Zero-Delta ${activeRailScope === 'NETC' ? 'GL-9908' : activeRailScope === 'AEPS' ? 'GL-9904' : activeRailScope === 'IMPS' ? 'GL-9902' : 'GL-14020'} Knocked Off (₹${(reconData.matched_amount || 0).toLocaleString()})`
+                        : `Zero-Delta ${activeRailScope === 'NETC' ? 'GL-9908' : activeRailScope === 'AEPS' ? 'GL-9904' : activeRailScope === 'IMPS' ? 'GL-9902' : 'GL-14020'} Knock-Off Standby (₹0.00)`}
+                    </div>
+                  </div>
+
+                  {/* Card 3: AI Break Resolution */}
+                  <div className="card" style={{ padding: '12px 16px', borderLeft: '4px solid #e11d48' }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                      AI Exception Breaks (Dual-Track)
+                    </div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: '#e11d48', marginTop: 4 }}>
+                      {reconData?.break_count ?? 0} <span style={{ fontSize: 11.5, fontWeight: 600, color: '#94a3b8' }}>Breaks (₹{(reconData?.break_amount ?? 0).toLocaleString()})</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: '#be123c', fontWeight: 600, marginTop: 3 }}>
+                      {reconData?.break_count ? `${reconData.auto_refund_count || 0} Auto-Reversed (< ₹5k) • ${reconData.hitl_count || 0} HITL Cockpit` : '0 Auto-Reversed • 0 HITL Cockpit'}
+                    </div>
+                  </div>
+
+                  {/* Card 4: RBI Regulatory SLA */}
+                  <div className="card" style={{ padding: '12px 16px', borderLeft: '4px solid #2563eb' }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                      Regulatory Mandate SLA
+                    </div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: '#2563eb', marginTop: 4 }}>
+                      100.0% <span style={{ fontSize: 11.5, fontWeight: 600, color: '#94a3b8' }}>Compliant</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: '#1d4ed8', fontWeight: 600, marginTop: 3 }}>
+                      RBI Circular DPSS.CO.PD No.629 (T+1 TAT)
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Enterprise Banking Analytics & Interactive Donut Charts ── */}
+                <BankingDashboardAnalytics reconData={reconData} files={files} scopedRail={activeRailScope} />
+
+                <div className="two-col">
+                  <div className="card">
+                    <div className="card-title">
+                      <div className="card-title-left"><div className="card-title-dot" /><span>Scenario Breakdown {isScoped ? `(${activeRailScope})` : ''}</span></div>
+                    </div>
+                    <ScenarioBreakdown files={files} scopedRail={activeRailScope} reconData={reconData} />
+                  </div>
+                  <div className="card">
+                    <div className="card-title">
+                      <div className="card-title-left"><div className="card-title-dot" /><span>Recent Audit Events {isScoped ? `(${activeRailScope})` : ''}</span></div>
+                    </div>
+                    <AuditLog logs={audit} scopedRail={activeRailScope} />
+                  </div>
+                </div>
+              </>}
+
+              {/* === UPLOAD TAB === */}
+              {activeNav === 'upload' && <>
+                <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                  <div>
+                    <div className="page-title">
+                      Upload &amp; Validate Settlement File {activeRailScope && <span style={{ color: '#ea580c' }}>&bull; {activeRailName || activeRailScope}</span>}
+                    </div>
+                    <div className="page-sub">
+                      {activeRailScope
+                        ? `Drop or run a settlement file — The pipeline automatically parses, filters, and scopes only ${activeRailScope} transactions through all 6 stages.`
+                        : 'Drop an NPCI clearing CSV/DAT file — the agent executes SHA-256 checks, schema validation, and vault staging'}
+                    </div>
+                  </div>
+                </div>
+
+                <Pipeline stage={pipeStage} agentText={agentText} isDuplicate={isDuplicate} isUploading={uploading} />
+
+                <div className="card">
+                  <div className="card-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                    <div className="card-title-left">
+                      <div className="card-title-dot" />
+                      <span>File Ingestion Zone {activeRailScope ? `(${activeRailScope} Rail Isolated${['NEFT', 'RTGS'].includes((activeRailScope || '').toUpperCase()) ? ' • 3-Way Triangulation' : ''})` : ''}</span>
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <button
+                        className="btn"
+                        style={{
+                          padding: '5px 14px',
+                          fontSize: 11.5,
+                          fontWeight: 700,
+                          background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 6,
+                          boxShadow: '0 2px 6px rgba(2, 132, 199, 0.25)',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => handleSimulateFileDropAndAnimate()}
+                        title="Injects fresh clearing batch into 'Input files', triggers inbound watcher, and animates live AutomationEdge workflows"
+                      >
+                        ⚡ Simulate File Drop ({activeRailScope || 'UPI'})
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    {/* Informative Guidance Banner & Rail Selector */}
+                      <div style={{
+                        fontSize: 12,
+                        color: '#334155',
+                        marginBottom: 14,
+                        background: '#f8fafc',
+                        padding: '10px 14px',
+                        borderLeft: '4px solid #ea580c',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: 10
+                      }}>
+                        <div>
+                          Upload or replace any of the {['NEFT', 'RTGS'].includes((activeRailScope || '').toUpperCase()) ? '3' : '4'} reconciliation feed files manually. Multi-rail rows are automatically filtered to keep only <b style={{ color: '#ea580c' }}>{activeRailScope || 'IMPS'}</b> transactions before executing workflows.
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: '#475569' }}>Active Scope:</span>
+                          <div style={{ display: 'inline-flex', background: '#e2e8f0', borderRadius: 6, padding: 2, gap: 2 }}>
+                            {['IMPS', 'UPI', 'AEPS', 'NETC', 'NEFT', 'RTGS'].map(r => {
+                              const isCur = (activeRailScope || 'IMPS') === r
+                              return (
+                                <button
+                                  key={r}
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveRailScope(r)
+                                    setActiveRailName(r)
+                                    setFeedFiles({ npci: null, switch: null, cbs: null, gl: null })
+                                    window.location.hash = navUrl('upload', r)
+                                  }}
+                                  style={{
+                                    padding: '3px 10px',
+                                    fontSize: 11,
+                                    fontWeight: isCur ? 800 : 600,
+                                    background: isCur ? '#ea580c' : 'transparent',
+                                    color: isCur ? '#ffffff' : '#334155',
+                                    border: 'none',
+                                    borderRadius: 4,
+                                    cursor: 'pointer',
+                                    boxShadow: isCur ? '0 1px 3px rgba(0,0,0,0.15)' : 'none',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                >
+                                  {r}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Upload Options Grid: 3 Legs for NEFT/RTGS, 4 Legs for Retail */}
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: ['NEFT', 'RTGS'].includes((activeRailScope || '').toUpperCase())
+                          ? 'repeat(auto-fit, minmax(280px, 1fr))'
+                          : 'repeat(auto-fit, minmax(250px, 1fr))',
+                        gap: 12,
+                        marginBottom: 16
+                      }}>
+                        {(['NEFT', 'RTGS'].includes((activeRailScope || '').toUpperCase()) ? [
+                          {
+                            key: 'cbs',
+                            num: 'Leg 1',
+                            title: 'Core Banking (CBS) Dump',
+                            desc: 'Finacle customer account debits & credits, values and GL-14022 suspense',
+                            icon: '🏦',
+                            color: '#059669',
+                            targetFile: activeRailScope === 'NEFT' ? 'Finacle_CBS_NEFT_Dump.csv' : 'Finacle_CBS_RTGS_Dump.csv',
+                            ref: cbsFileRef
+                          },
+                          {
+                            key: 'switch',
+                            num: 'Leg 2',
+                            title: 'Payment Switch Logs',
+                            desc: 'SFMS ISO 20022 message dispatch (pacs.008 / pacs.004) & network delivery ACKs',
+                            icon: '⚡',
+                            color: '#6366f1',
+                            targetFile: activeRailScope === 'NEFT' ? 'RBI_SFMS_NEFT_Batch30_Clearing.csv' : 'SFMS_ISO20022_RTGS_Logs.csv',
+                            ref: switchFileRef
+                          },
+                          {
+                            key: 'npci',
+                            num: 'Leg 3',
+                            title: 'RBI e-Kuber Settlement Statement',
+                            desc: activeRailScope === 'NEFT'
+                              ? 'Half-hourly batch settlement voucher & multilateral netting report'
+                              : 'Real-Time Gross Settlement voucher lines & central float balance',
+                            icon: '🏛️',
+                            color: '#0284c7',
+                            targetFile: activeRailScope === 'NEFT' ? 'RBI_eKuber_NEFT_Statement.csv' : 'RBI_eKuber_RTGS_Gross_Settlement.csv',
+                            ref: npciFileRef
+                          }
+                        ] : [
+                          {
+                            key: 'npci',
+                            num: 'Leg 1',
+                            title: 'NPCI Settlement Master',
+                            desc: 'Raw clearing cycle feed from NPCI Central Switch',
+                            icon: '🏛️',
+                            color: '#0284c7',
+                            targetFile: activeRailScope === 'IMPS' ? 'NPCI_IMPS_SETTLEMENT_MASTER.csv' : activeRailScope === 'AEPS' ? 'NPCI_AePS_Settlement_Master.csv' : activeRailScope === 'NETC' ? 'NPCI_NETC_Mapper_Clearing.csv' : 'NPCI_UPI_Settlement_Master.csv',
+                            ref: npciFileRef
+                          },
+                          {
+                            key: 'switch',
+                            num: 'Leg 2',
+                            title: 'Payment Switch Logs',
+                            desc: 'Base24 / ISO-8583 Authorization & Timeout Journal',
+                            icon: '⚡',
+                            color: '#6366f1',
+                            targetFile: activeRailScope === 'IMPS' ? 'BASE24_SWITCH_IMPS.csv' : activeRailScope === 'AEPS' ? 'UIDAI_Aadhaar_Auth_Gateway.csv' : activeRailScope === 'NETC' ? 'NPCI_NETC_Mapper_Clearing.csv' : 'Switch_Base24_Logs.csv',
+                            ref: switchFileRef
+                          },
+                          {
+                            key: 'cbs',
+                            num: 'Leg 3',
+                            title: 'Core Banking (CBS) Dump',
+                            desc: 'Finacle customer account debits & credits',
+                            icon: '🏦',
+                            color: '#059669',
+                            targetFile: activeRailScope === 'IMPS' ? 'FINACLE_CBS_IMPS.csv' : activeRailScope === 'AEPS' ? 'BC_Device_Terminal_Journal.csv' : activeRailScope === 'NETC' ? 'FASTag_Wallet_CBS_Dump.csv' : 'Finacle_CBS_Dump.csv',
+                            ref: cbsFileRef
+                          },
+                          {
+                            key: 'gl',
+                            num: 'Leg 4',
+                            title: 'GL Suspense Pool',
+                            desc: 'Interim clearing suspense ledger (GL-14020)',
+                            icon: '⚖️',
+                            color: '#ea580c',
+                            targetFile: activeRailScope === 'IMPS' ? 'GL_14022_SUSPENSE_POOL.csv' : activeRailScope === 'AEPS' ? 'BC_Agent_Float_GL9904.csv' : activeRailScope === 'NETC' ? 'NETC_Concessionaire_GL9908.csv' : 'GL_Suspense_Pool.csv',
+                            ref: glFileRef
+                          }
+                        ]).map(leg => {
+                          const uploaded = feedFiles[leg.key]
+                          const isUp = feedUploading[leg.key]
+
+                          return (
+                            <div
+                              key={leg.key}
                               style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifySelf: 'center',
-                                width: 28,
-                                height: 28,
-                                borderRadius: 6,
-                                border: '1.5px solid #cbd5e1',
-                                background: '#ffffff',
-                                color: '#0f172a',
-                                cursor: 'pointer',
-                                flexShrink: 0,
-                                transition: 'all 0.15s ease'
+                                background: uploaded ? '#f0fdf4' : '#ffffff',
+                                border: uploaded ? '1.5px solid #86efac' : '1.5px solid #e2e8f0',
+                                padding: 14,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                                position: 'relative'
                               }}
-                              onMouseEnter={e => { e.currentTarget.style.borderColor = '#ea580c'; e.currentTarget.style.color = '#ea580c'; e.currentTarget.style.background = '#fff7ed' }}
-                              onMouseLeave={e => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.color = '#0f172a'; e.currentTarget.style.background = '#ffffff' }}
                             >
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <div>
+                                {/* Title & Desc */}
+                                <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', lineHeight: 1.3 }}>
+                                  {leg.title}
+                                </div>
+                                <div style={{ fontSize: 11, color: '#64748b', marginTop: 3, lineHeight: 1.35, minHeight: 28 }}>
+                                  {leg.desc}
+                                </div>
+                              </div>
+
+                              {/* Upload / Status Section */}
+                              <div style={{ marginTop: 12, borderTop: '1px solid #e2e8f0', paddingTop: 10 }}>
+                                {uploaded ? (
+                                  <div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11 }}>
+                                      <span style={{ color: '#166534', fontWeight: 700 }}>✓ Uploaded</span>
+                                      <span style={{ color: '#64748b', fontSize: 10 }}>{uploaded.uploadedAt}</span>
+                                    </div>
+                                    <div style={{ fontSize: 11.5, fontWeight: 700, color: '#0f172a', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={uploaded.name}>
+                                      {uploaded.name}
+                                    </div>
+                                    <div style={{ fontSize: 10.5, color: '#15803d', marginTop: 2 }}>
+                                      {(uploaded.records || 50000).toLocaleString()} txns &bull; {(uploaded.size / 1024).toFixed(1)} KB
+                                      {uploaded.filtered > 0 && <span style={{ color: '#c2410c', marginLeft: 4 }}>({uploaded.filtered} non-{activeRailScope || 'UPI'} filtered)</span>}
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className="btn btn-secondary"
+                                      style={{
+                                        marginTop: 8,
+                                        width: '100%',
+                                        padding: '5px 8px',
+                                        fontSize: 11,
+                                        justifyContent: 'center'
+                                      }}
+                                      onClick={() => leg.ref.current.click()}
+                                    >
+                                      Replace File
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div>
+                                    <button
+                                      type="button"
+                                      className="btn btn-secondary"
+                                      disabled={isUp}
+                                      style={{
+                                        width: '100%',
+                                        padding: '7px 10px',
+                                        fontSize: 11.5,
+                                        fontWeight: 700,
+                                        justifyContent: 'center',
+                                        background: isUp ? '#f8fafc' : '#ffffff',
+                                        borderColor: leg.color,
+                                        color: leg.color
+                                      }}
+                                      onClick={() => leg.ref.current.click()}
+                                    >
+                                      {isUp ? 'Uploading & Filtering...' : 'Choose File'}
+                                    </button>
+                                    <div style={{ fontSize: 10, color: '#94a3b8', textAlign: 'center', marginTop: 4 }}>
+                                      Supports .csv, .txt, .dat, .xlsx
+                                    </div>
+                                  </div>
+                                )}
+
+                                <input
+                                  ref={leg.ref}
+                                  type="file"
+                                  accept=".csv,.txt,.dat,.xlsx,.xls"
+                                  style={{ display: 'none' }}
+                                  onChange={e => handleFeedUpload(leg.key, e.target.files[0])}
+                                />
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      {/* 4-Feeds Bottom Action Bar */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: 12,
+                        background: '#f8fafc',
+                        border: '1.5px solid #e2e8f0',
+                        padding: '10px 16px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#0f172a' }}>
+                            Feeds Ready for Recon:
+                          </span>
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 800,
+                            padding: '2px 8px',
+                            background: '#e0f2fe',
+                            color: '#0369a1',
+                            border: '1px solid #bae6fd'
+                          }}>
+                            {['NEFT', 'RTGS'].includes((activeRailScope || '').toUpperCase())
+                              ? `${['cbs', 'switch', 'npci'].filter(k => Boolean(feedFiles[k])).length} of 3 Feeds Uploaded Custom`
+                              : `${Object.values(feedFiles).filter(Boolean).length} of 4 Feeds Uploaded Custom`}
+                          </span>
+                          <span style={{ fontSize: 11, color: '#64748b' }}>
+                            (Pre-loaded feeds active for un-uploaded feeds)
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          style={{
+                            padding: '8px 20px',
+                            fontSize: 12.5,
+                            fontWeight: 800,
+                            background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+                            border: '1px solid #9a3412',
+                            color: '#ffffff',
+                            boxShadow: '0 2px 8px rgba(234, 88, 12, 0.3)',
+                            cursor: 'pointer'
+                          }}
+                          onClick={triggerReconRun}
+                          disabled={reconRunning}
+                        >
+                          {reconRunning
+                            ? (['NEFT', 'RTGS'].includes((activeRailScope || '').toUpperCase()) ? 'Triangulating Feeds...' : 'Reconciling Feeds...')
+                            : (['NEFT', 'RTGS'].includes((activeRailScope || '').toUpperCase())
+                                ? `Run 3-Way Triangulation Bot (${activeRailScope})`
+                                : `Run 4-Way Reconciliation Bot (${activeRailScope || 'IMPS'})`)}
+                        </button>
+                      </div>
+                    </div>
+
+                  <ValidationResult result={lastResult} />
+                </div>
+              </>}
+
+              {/* === FILE REGISTRY === */}
+              {activeNav === 'files' && <>
+                <div className="page-header">
+                  <div className="page-title">File Registry</div>
+                  <div className="page-sub">Historical register of all processed settlement batches and cryptographic checksums</div>
+                </div>
+                <div className="card"><FileTable files={files} onDownload={downloadRegistryFile} activeRailScope={activeRailScope} /></div>
+              </>}
+
+              {/* === STAGING VAULT === */}
+              {activeNav === 'staging' && <>
+                <div className="page-header">
+                  <div className="page-title">Staging Vault</div>
+                  <div className="page-sub">Tamper-proof storage holding clean, validated files ready for Stage 2 Reconciliation</div>
+                </div>
+                <div className="card">
+                  <div className="card-title">
+                    <div className="card-title-left"><div className="card-title-dot" /><span>Vault Directory: stage1/staging_vault/ ({staging.length} files)</span></div>
+                  </div>
+                  <div className="table-wrap">
+                    <table>
+                      <thead>
+                        <tr><th>Filename</th><th>Size</th><th>Ingested Time</th><th>Vault Status</th><th>Action</th></tr>
+                      </thead>
+                      <tbody>
+                        {pagedStaging.map((f, i) => (
+                          <tr key={i}>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <button
+                                  onClick={() => downloadStagingFile(f.name)}
+                                  title={`Download ${f.name} from Staging Vault`}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifySelf: 'center',
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: 6,
+                                    border: '1.5px solid #cbd5e1',
+                                    background: '#ffffff',
+                                    color: '#0f172a',
+                                    cursor: 'pointer',
+                                    flexShrink: 0,
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#ea580c'; e.currentTarget.style.color = '#ea580c'; e.currentTarget.style.background = '#fff7ed' }}
+                                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.color = '#0f172a'; e.currentTarget.style.background = '#ffffff' }}
+                                >
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="7 10 12 15 17 10" />
+                                    <line x1="12" y1="15" x2="12" y2="3" />
+                                  </svg>
+                                </button>
+                                <span style={{ fontFamily: 'JetBrains Mono', fontSize: 12, fontWeight: 600 }}>{f.name}</span>
+                              </div>
+                            </td>
+                            <td>{f.size_kb} KB</td>
+                            <td>{fmtDate(f.modified)}</td>
+                            <td><Badge type="VALIDATED" label="Ready for Recon" /></td>
+                            <td>
+                              <button
+                                className="btn btn-secondary"
+                                style={{ padding: '3px 9px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                                onClick={() => downloadStagingFile(f.name)}
+                              >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                  <polyline points="7 10 12 15 17 10" />
+                                  <line x1="12" y1="15" x2="12" y2="3" />
+                                </svg>
+                                Download
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {!staging.length && <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-faint)', padding: 24 }}>No files in staging vault yet</td></tr>}
+                      </tbody>
+                    </table>
+                    <Pagination totalItems={staging.length} pageSize={PAGE_SIZE} currentPage={stagingPage} onPageChange={setStagingPage} />
+                  </div>
+                  <div style={{ marginTop: 16, padding: 14, background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0', fontSize: 12.5, color: '#166534' }}>
+                    <b>Stage 2 Handoff:</b> Validated batches in this vault are immediately consumed by the <b>4-Way Multi-Rail Recon Engine</b>.
+                  </div>
+                </div>
+              </>}
+
+              {/* === AUDIT LOG === */}
+              {activeNav === 'audit' && <>
+                <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                  <div>
+                    <div className="page-title">Tamper-Proof Audit Trail &amp; Evidence Files</div>
+                    <div className="page-sub">Immutable security &amp; event ledger &mdash; RBI IT compliance and ISO 27001 audit ready</div>
+                  </div>
+                  <button
+                    className="btn btn-secondary"
+                    style={{ padding: '7px 14px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 8, borderColor: '#ea580c', color: '#ea580c', background: '#fff7ed' }}
+                    onClick={downloadAuditLogs}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Download Audit Trail (JSON)
+                  </button>
+                </div>
+
+                {/* Official Compliance Evidence Files */}
+                <div className="card" style={{ marginBottom: 16 }}>
+                  <div className="card-title">
+                    <div className="card-title-left"><div className="card-title-dot" /><span>Compliance Evidence Files &amp; Sealed Packages</span></div>
+                  </div>
+                  <div className="table-wrap">
+                    <table>
+                      <thead>
+                        <tr><th>Evidence File</th><th>Format</th><th>Status</th><th>Record Count</th><th>Download</th></tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <button
+                                onClick={downloadAuditLogs}
+                                title="Download RBI NPCI Audit Trail JSON"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: 6,
+                                  border: '1.5px solid #cbd5e1',
+                                  background: '#ffffff',
+                                  color: '#0f172a',
+                                  cursor: 'pointer',
+                                  flexShrink: 0
+                                }}
+                              >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                  <polyline points="7 10 12 15 17 10" />
+                                  <line x1="12" y1="15" x2="12" y2="3" />
+                                </svg>
+                              </button>
+                              <span style={{ fontFamily: 'JetBrains Mono', fontSize: 12, fontWeight: 600 }}>RBI_NPCI_AUDIT_TRAIL.json</span>
+                            </div>
+                          </td>
+                          <td>JSON (Immutable)</td>
+                          <td><Badge type="VALIDATED" label="Cryptographically Signed" /></td>
+                          <td>{audit.length} Events</td>
+                          <td>
+                            <button
+                              className="btn btn-secondary"
+                              style={{ padding: '3px 9px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                              onClick={downloadAuditLogs}
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                                 <polyline points="7 10 12 15 17 10" />
                                 <line x1="12" y1="15" x2="12" y2="3" />
                               </svg>
+                              Download
                             </button>
-                            <span style={{ fontFamily: 'JetBrains Mono', fontSize: 12, fontWeight: 600 }}>{f.name}</span>
-                          </div>
-                        </td>
-                        <td>{f.size_kb} KB</td>
-                        <td>{fmtDate(f.modified)}</td>
-                        <td><Badge type="VALIDATED" label="Ready for Recon" /></td>
-                        <td>
-                          <button
-                            className="btn btn-secondary"
-                            style={{ padding: '3px 9px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                            onClick={() => downloadStagingFile(f.name)}
-                          >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                              <polyline points="7 10 12 15 17 10" />
-                              <line x1="12" y1="15" x2="12" y2="3" />
-                            </svg>
-                            Download
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {!staging.length && <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-faint)', padding: 24 }}>No files in staging vault yet</td></tr>}
-                  </tbody>
-                </table>
-                <Pagination totalItems={staging.length} pageSize={PAGE_SIZE} currentPage={stagingPage} onPageChange={setStagingPage} />
-              </div>
-              <div style={{ marginTop: 16, padding: 14, background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0', fontSize: 12.5, color: '#166534' }}>
-                <b>Stage 2 Handoff:</b> Validated batches in this vault are immediately consumed by the <b>4-Way Multi-Rail Recon Engine</b>.
-              </div>
-            </div>
-          </>}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <button
+                                onClick={downloadAuditPack}
+                                title="Download Regulatory Audit Pack"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: 6,
+                                  border: '1.5px solid #cbd5e1',
+                                  background: '#ffffff',
+                                  color: '#0f172a',
+                                  cursor: 'pointer',
+                                  flexShrink: 0
+                                }}
+                              >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                  <polyline points="7 10 12 15 17 10" />
+                                  <line x1="12" y1="15" x2="12" y2="3" />
+                                </svg>
+                              </button>
+                              <span style={{ fontFamily: 'JetBrains Mono', fontSize: 12, fontWeight: 600 }}>RBI_DPSS_MERKLE_AUDIT_PACK.json</span>
+                            </div>
+                          </td>
+                          <td>JSON (Merkle Tree)</td>
+                          <td><Badge type="VALIDATED" label="SHA-256 Merkle Root" /></td>
+                          <td>100% RBI DPSS SLA</td>
+                          <td>
+                            <button
+                              className="btn btn-secondary"
+                              style={{ padding: '3px 9px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                              onClick={downloadAuditPack}
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                              </svg>
+                              Download
+                            </button>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <button
+                                onClick={downloadEvidenceDossiers}
+                                title="Download AI Root Cause Evidence Dossiers"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: 6,
+                                  border: '1.5px solid #cbd5e1',
+                                  background: '#ffffff',
+                                  color: '#0f172a',
+                                  cursor: 'pointer',
+                                  flexShrink: 0
+                                }}
+                              >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                  <polyline points="7 10 12 15 17 10" />
+                                  <line x1="12" y1="15" x2="12" y2="3" />
+                                </svg>
+                              </button>
+                              <span style={{ fontFamily: 'JetBrains Mono', fontSize: 12, fontWeight: 600 }}>AI_EVIDENCE_DOSSIERS_SUMMARY.csv</span>
+                            </div>
+                          </td>
+                          <td>CSV (Audit Evidence)</td>
+                          <td><Badge type="VALIDATED" label="4-Way Verified" /></td>
+                          <td>{dossierList.length || 2750} Dossiers</td>
+                          <td>
+                            <button
+                              className="btn btn-secondary"
+                              style={{ padding: '3px 9px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                              onClick={downloadEvidenceDossiers}
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                              </svg>
+                              Download
+                            </button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
 
-          {/* === AUDIT LOG === */}
-          {activeNav === 'audit' && <>
-            <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-              <div>
-                <div className="page-title">Tamper-Proof Audit Trail &amp; Evidence Files</div>
-                <div className="page-sub">Immutable security &amp; event ledger &mdash; RBI IT compliance and ISO 27001 audit ready</div>
-              </div>
-              <button
-                className="btn btn-secondary"
-                style={{ padding: '7px 14px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 8, borderColor: '#ea580c', color: '#ea580c', background: '#fff7ed' }}
-                onClick={downloadAuditLogs}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                Download Audit Trail (JSON)
-              </button>
-            </div>
-
-            {/* Official Compliance Evidence Files */}
-            <div className="card" style={{ marginBottom: 16 }}>
-              <div className="card-title">
-                <div className="card-title-left"><div className="card-title-dot" /><span>Compliance Evidence Files &amp; Sealed Packages</span></div>
-              </div>
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr><th>Evidence File</th><th>Format</th><th>Status</th><th>Record Count</th><th>Download</th></tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <button
-                            onClick={downloadAuditLogs}
-                            title="Download RBI NPCI Audit Trail JSON"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              width: 28,
-                              height: 28,
-                              borderRadius: 6,
-                              border: '1.5px solid #cbd5e1',
-                              background: '#ffffff',
-                              color: '#0f172a',
-                              cursor: 'pointer',
-                              flexShrink: 0
-                            }}
-                          >
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                              <polyline points="7 10 12 15 17 10" />
-                              <line x1="12" y1="15" x2="12" y2="3" />
-                            </svg>
-                          </button>
-                          <span style={{ fontFamily: 'JetBrains Mono', fontSize: 12, fontWeight: 600 }}>RBI_NPCI_AUDIT_TRAIL.json</span>
-                        </div>
-                      </td>
-                      <td>JSON (Immutable)</td>
-                      <td><Badge type="VALIDATED" label="Cryptographically Signed" /></td>
-                      <td>{audit.length} Events</td>
-                      <td>
-                        <button
-                          className="btn btn-secondary"
-                          style={{ padding: '3px 9px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                          onClick={downloadAuditLogs}
-                        >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="7 10 12 15 17 10" />
-                            <line x1="12" y1="15" x2="12" y2="3" />
-                          </svg>
-                          Download
-                        </button>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <button
-                            onClick={downloadAuditPack}
-                            title="Download Regulatory Audit Pack"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              width: 28,
-                              height: 28,
-                              borderRadius: 6,
-                              border: '1.5px solid #cbd5e1',
-                              background: '#ffffff',
-                              color: '#0f172a',
-                              cursor: 'pointer',
-                              flexShrink: 0
-                            }}
-                          >
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                              <polyline points="7 10 12 15 17 10" />
-                              <line x1="12" y1="15" x2="12" y2="3" />
-                            </svg>
-                          </button>
-                          <span style={{ fontFamily: 'JetBrains Mono', fontSize: 12, fontWeight: 600 }}>RBI_DPSS_MERKLE_AUDIT_PACK.json</span>
-                        </div>
-                      </td>
-                      <td>JSON (Merkle Tree)</td>
-                      <td><Badge type="VALIDATED" label="SHA-256 Merkle Root" /></td>
-                      <td>100% RBI DPSS SLA</td>
-                      <td>
-                        <button
-                          className="btn btn-secondary"
-                          style={{ padding: '3px 9px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                          onClick={downloadAuditPack}
-                        >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="7 10 12 15 17 10" />
-                            <line x1="12" y1="15" x2="12" y2="3" />
-                          </svg>
-                          Download
-                        </button>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <button
-                            onClick={downloadEvidenceDossiers}
-                            title="Download AI Root Cause Evidence Dossiers"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              width: 28,
-                              height: 28,
-                              borderRadius: 6,
-                              border: '1.5px solid #cbd5e1',
-                              background: '#ffffff',
-                              color: '#0f172a',
-                              cursor: 'pointer',
-                              flexShrink: 0
-                            }}
-                          >
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                              <polyline points="7 10 12 15 17 10" />
-                              <line x1="12" y1="15" x2="12" y2="3" />
-                            </svg>
-                          </button>
-                          <span style={{ fontFamily: 'JetBrains Mono', fontSize: 12, fontWeight: 600 }}>AI_EVIDENCE_DOSSIERS_SUMMARY.csv</span>
-                        </div>
-                      </td>
-                      <td>CSV (Audit Evidence)</td>
-                      <td><Badge type="VALIDATED" label="4-Way Verified" /></td>
-                      <td>{dossierList.length || 2750} Dossiers</td>
-                      <td>
-                        <button
-                          className="btn btn-secondary"
-                          style={{ padding: '3px 9px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                          onClick={downloadEvidenceDossiers}
-                        >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="7 10 12 15 17 10" />
-                            <line x1="12" y1="15" x2="12" y2="3" />
-                          </svg>
-                          Download
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="card">
-              <div className="card-title">
-                <div className="card-title-left"><div className="card-title-dot" /><span>Cryptographic Audit Log</span></div>
-              </div>
-              <AuditLog logs={audit} onDownloadFile={downloadRegistryFile} />
-              {audit.length === 0 && <div style={{ color: 'var(--text-faint)', fontSize: 13, padding: '12px 0' }}>Upload files to generate audit trail.</div>}
-            </div>
-          </>}
+                <div className="card">
+                  <div className="card-title">
+                    <div className="card-title-left"><div className="card-title-dot" /><span>Cryptographic Audit Log</span></div>
+                  </div>
+                  <AuditLog logs={audit} onDownloadFile={downloadRegistryFile} />
+                  {audit.length === 0 && <div style={{ color: 'var(--text-faint)', fontSize: 13, padding: '12px 0' }}>Upload files to generate audit trail.</div>}
+                </div>
+              </>}
 
             </div>
           </ErrorBoundary>
         </div>
       </div>
+
+      {selectedIsoTx && (
+        <IsoXmlModal
+          transaction={selectedIsoTx}
+          onClose={() => setSelectedIsoTx(null)}
+        />
+      )}
     </div>
   )
 }

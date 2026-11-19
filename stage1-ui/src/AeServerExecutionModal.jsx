@@ -1,30 +1,137 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 export default function AeServerExecutionModal({
   isOpen,
   onClose,
   currentStep = 0, // 0: Idle, 1: SFTP Courier, 2: Cryptkeeper, 3: 4-Way Recon, 4: AI Diagnostic, 5: Finacle Poster, 6: Audit Crypt-Seal, 7: All Complete
   executionStatus = 'RUNNING', // 'RUNNING' | 'COMPLETED' | 'DUPLICATE_HALTED' | 'REJECTED_HALTED'
-  fileName = 'NPCI_UPI_Settlement_TestData_50K.csv',
-  totalRecords = 50000,
+  activeRail = 'UPI',
+  haltReason = null, // 'UNSUBSCRIBED' | 'DUPLICATE' | 'SCHEMA_ERROR'
+  onSubscribeAndRun = null,
+  fileName = 'NPCI_Unified_Settlement_Master.csv',
+  totalRecords = 2500,
   serverUrl = 'https://t4.automationedge.com/#/requests/list',
   username = 'abhishek.malwatkar@valuedx.com',
   workflowName = 'NPCI Demo UPI Reconn',
-  completionMessage = 'Message : UPI Recon Completed',
+  completionMessage = 'Message : Reconciliation Completed',
   reconData = null,
-  recoverySummary = null
+  recoverySummary = null,
+  logs = []
 }) {
+  const [showAllLogs, setShowAllLogs] = useState(false)
   if (!isOpen) return null
 
-  const isDuplicateHalted = executionStatus === 'DUPLICATE_HALTED'
-  const isRejectedHalted = executionStatus === 'REJECTED_HALTED'
-  const isHalted = isDuplicateHalted || isRejectedHalted
+  const isDuplicateHalted = executionStatus === 'DUPLICATE_HALTED' || haltReason === 'DUPLICATE'
+  const isUnsubscribedHalted = executionStatus === 'REJECTED_HALTED' && (haltReason === 'UNSUBSCRIBED' || (!isDuplicateHalted && haltReason !== 'SCHEMA_ERROR'))
+  const isSchemaHalted = executionStatus === 'REJECTED_HALTED' && haltReason === 'SCHEMA_ERROR'
+  const isHalted = isDuplicateHalted || isUnsubscribedHalted || isSchemaHalted
 
   const isAllComplete = !isHalted && currentStep >= 7
   const completedCount = isHalted ? 1 : (isAllComplete ? 6 : Math.max(0, currentStep - 1))
-  const progressPercent = isHalted ? 33 : (isAllComplete ? 100 : Math.round((completedCount / 6) * 100))
+  const progressPercent = isHalted ? (isUnsubscribedHalted ? 16 : 33) : (isAllComplete ? 100 : Math.round((completedCount / 6) * 100))
 
-  const workflows = [
+  const railUp = (activeRail || 'UPI').toUpperCase()
+  const isRbiRail = railUp === 'NEFT' || railUp === 'RTGS'
+  const displayWfName = workflowName || (
+    railUp === 'AEPS' ? 'NPCI Demo AePS Recon' :
+    railUp === 'NETC' ? 'NPCI DEMO NETC Recon' :
+    railUp === 'IMPS' ? 'NPCI Demo IMPS 4 Way Recon' :
+    railUp === 'NEFT' ? 'RBI Demo NEFT 3-Way Recon & Liquidity' :
+    railUp === 'RTGS' ? 'RBI Demo RTGS Real-Time Gross Settlement' :
+    'NPCI Demo UPI Reconn'
+  )
+
+  const railTarget = railUp === 'AEPS' ? 'NPCI AePS Aadhaar Micro-ATM Clearing' :
+    railUp === 'NETC' ? 'NPCI NETC FASTag Highway Electronic Toll Clearing' :
+    railUp === 'IMPS' ? 'NPCI IMPS 24x7 Real-Time Interbank Settlement' :
+    railUp === 'NEFT' ? 'RBI e-Kuber 24x7 Half-Hourly Net Settlement Enclave' :
+    railUp === 'RTGS' ? 'RBI e-Kuber Real-Time Gross Settlement Enclave' :
+    'NPCI UPI Mobile P2P/P2M Clearing'
+
+  const railGlAccount = railUp === 'AEPS' ? 'GL-9904 BC Agent Float & Aadhaar Suspense' :
+    railUp === 'NETC' ? 'GL-9908 NETC FASTag Concessionaire Pool' :
+    railUp === 'IMPS' ? 'GL-14022 IMPS Outward Suspense' :
+    railUp === 'NEFT' ? 'GL-9901 NEFT Net Settlement & Return Suspense' :
+    railUp === 'RTGS' ? 'GL-11010 RBI Settlement Account & Gross Outward' :
+    'GL-14020 UPI Outward Suspense'
+
+  const workflows = isRbiRail ? [
+    {
+      id: 1,
+      name: 'Inbound RBI SFTP Courier',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+      ),
+      target: 'RBI SFMS / e-Kuber Gateway',
+      desc: railUp === 'NEFT'
+        ? 'Retrieves raw NEFT Batch 30 DNS settlement advices via AE Credential Vault into watch folder.'
+        : 'Streams real-time RTGS gross clearing notifications via SFMS MQ into staging enclave.'
+    },
+    {
+      id: 2,
+      name: 'Staging Cryptkeeper & Gatekeeper',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+      ),
+      target: 'Secure Staging Enclave',
+      desc: 'Enforces wholesale subscription access, ISO 20022 pacs.008 schema validation, and blocks duplicate UTRs.'
+    },
+    {
+      id: 3,
+      name: 'Recon Engine',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      ),
+      target: 'Finacle CBS + SFMS + RBI e-Kuber',
+      desc: 'High-speed in-memory continuous reconciliation across CBS ledger, SFMS messages, and e-Kuber statement.'
+    },
+    {
+      id: 4,
+      name: 'AI Liquidity & Deemed Reasoner',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+      ),
+      target: 'AI Cognitive Reasoner',
+      desc: 'Monitors e-Kuber intraday liquidity float, checks gridlock risk, and generates L2 Maker-Checker dossiers.'
+    },
+    {
+      id: 5,
+      name: 'Finacle CBS & e-Kuber Settlement Bot',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" y1="1" x2="12" y2="23" />
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+        </svg>
+      ),
+      target: 'Core Banking System (CBS)',
+      desc: railUp === 'NEFT'
+        ? 'Executes automated pacs.004 returns within 2-hr TAT and knocks off GL-9901 sundry settlement balances.'
+        : 'Auto-prioritizes RTGS outward queue and executes intraday collateral transfers via RPA automation.'
+    },
+    {
+      id: 6,
+      name: 'Regulatory Audit Crypt-Seal',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+      ),
+      target: 'RBI DPSS Compliance Register',
+      desc: 'Cryptographically signs execution trail with Merkle root digest for central bank regulatory audit.'
+    }
+  ] : [
     {
       id: 1,
       name: 'Inbound SFTP Courier',
@@ -48,18 +155,18 @@ export default function AeServerExecutionModal({
         </svg>
       ),
       target: 'Secure Staging Enclave',
-      desc: 'Computes cryptographic SHA-256 fingerprint, enforces 32-column schema, and blocks duplicates.'
+      desc: 'Enforces rail subscription access, SHA-256 fingerprinting, schema validation, and blocks duplicates.'
     },
     {
       id: 3,
-      name: '4-Way Multi-Rail Recon Engine',
+      name: 'Recon Engine',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
         </svg>
       ),
       target: 'NPCI + CBS + Switch + GL',
-      desc: 'High-speed in-memory 4-way matrix reconciliation across all records. Segregates STP matches & breaks.'
+      desc: 'High-speed in-memory matrix reconciliation across all records. Segregates STP matches & breaks.'
     },
     {
       id: 4,
@@ -98,7 +205,6 @@ export default function AeServerExecutionModal({
     }
   ]
 
-  // Flow line helper component with flowing glowing laser animation
   const FlowConnector = ({ isActive, isCompleted }) => {
     const strokeColor = isCompleted ? '#16a34a' : (isActive ? '#ea580c' : '#cbd5e1')
     const glowColor = isCompleted ? 'rgba(22, 163, 74, 0.5)' : (isActive ? 'rgba(234, 88, 12, 0.8)' : 'none')
@@ -113,10 +219,7 @@ export default function AeServerExecutionModal({
         position: 'relative'
       }}>
         <svg width="36" height="16" viewBox="0 0 36 16" style={{ overflow: 'visible' }}>
-          {/* Base background line */}
           <line x1="2" y1="8" x2="34" y2="8" stroke="#e2e8f0" strokeWidth="2" strokeLinecap="round" />
-          
-          {/* Active / completed glowing flowing beam */}
           {(isActive || isCompleted) && (
             <>
               <line
@@ -145,7 +248,6 @@ export default function AeServerExecutionModal({
     )
   }
 
-  // S-Curve Turnaround connector from Row 1 (Step 3 on right) to Row 2 (Step 4 on left)
   const TurnaroundConnector = ({ isActive, isCompleted }) => {
     const strokeColor = isCompleted ? '#16a34a' : (isActive ? '#ea580c' : '#cbd5e1')
     const glowColor = isCompleted ? 'rgba(22, 163, 74, 0.5)' : (isActive ? 'rgba(234, 88, 12, 0.8)' : 'none')
@@ -166,20 +268,8 @@ export default function AeServerExecutionModal({
           preserveAspectRatio="none"
           style={{ overflow: 'visible', display: 'block' }}
         >
-          {/* Base background track connecting Step 3 to Step 4 */}
-          <path
-            d={pathD}
-            fill="none"
-            stroke="#e2e8f0"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          />
-          <polygon
-            points="150,29 155,38 160,29"
-            fill="#cbd5e1"
-          />
-
-          {/* Active / Completed Glowing Laser Beam */}
+          <path d={pathD} fill="none" stroke="#e2e8f0" strokeWidth="2.5" strokeLinecap="round" />
+          <polygon points="150,29 155,38 160,29" fill="#cbd5e1" />
           {(isActive || isCompleted) && (
             <>
               <path
@@ -222,7 +312,7 @@ export default function AeServerExecutionModal({
           minWidth: 0,
           background: isStepBlocked ? '#f8fafc' : '#ffffff',
           border: isStep2Halted
-            ? '2px solid #ef4444'
+            ? (isUnsubscribedHalted ? '2px solid #f59e0b' : '2px solid #ef4444')
             : (isRunning
                 ? '2px solid #ea580c'
                 : (isDone || isStep1Done ? '1.5px solid #22c55e' : '1px solid #e2e8f0')),
@@ -233,17 +323,16 @@ export default function AeServerExecutionModal({
           justifyContent: 'space-between',
           position: 'relative',
           boxShadow: isStep2Halted
-            ? '0 0 0 3px rgba(239, 68, 68, 0.2), 0 8px 24px rgba(239, 68, 68, 0.25)'
+            ? (isUnsubscribedHalted ? '0 0 0 3px rgba(245, 158, 11, 0.2), 0 8px 20px rgba(245, 158, 11, 0.15)' : '0 0 0 3px rgba(239, 68, 68, 0.2), 0 8px 24px rgba(239, 68, 68, 0.25)')
             : (isRunning
                 ? '0 0 0 3px rgba(249, 115, 22, 0.25), 0 0 22px rgba(234, 88, 12, 0.5), 0 8px 24px rgba(234, 88, 12, 0.18)'
                 : (isDone || isStep1Done ? '0 4px 14px rgba(34, 197, 94, 0.12)' : '0 2px 6px rgba(0, 0, 0, 0.04)')),
           animation: isRunning ? 'executingBoxGlow 1.6s ease-in-out infinite' : 'none',
-          opacity: isStepBlocked ? 0.6 : 1,
+          opacity: isStepBlocked ? 0.65 : 1,
           transition: 'all 0.3s ease',
           overflow: 'hidden'
         }}
       >
-        {/* Glowing Orange Laser Accent Bar on Top of Executing Box */}
         {isRunning && (
           <div style={{
             position: 'absolute',
@@ -257,7 +346,6 @@ export default function AeServerExecutionModal({
           }} />
         )}
 
-        {/* Red Accent Bar on Top of Halted Box 2 */}
         {isStep2Halted && (
           <div style={{
             position: 'absolute',
@@ -265,29 +353,30 @@ export default function AeServerExecutionModal({
             left: 0,
             right: 0,
             height: 4,
-            background: '#ef4444',
-            boxShadow: '0 0 10px #ef4444'
+            background: isUnsubscribedHalted ? '#f59e0b' : '#ef4444',
+            boxShadow: isUnsubscribedHalted ? '0 0 10px #f59e0b' : '0 0 10px #ef4444'
           }} />
         )}
 
         <div>
-          {/* Card Top: Icon & Live Status */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <div style={{
               width: 38,
               height: 38,
               borderRadius: 9,
               background: isStep2Halted
-                ? '#ef4444'
+                ? (isUnsubscribedHalted ? '#fef3c7' : '#ef4444')
                 : (isRunning
                     ? 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)'
                     : (isDone || isStep1Done ? '#16a34a' : '#f1f5f9')),
-              color: isStep2Halted || isRunning || isDone || isStep1Done ? '#ffffff' : '#64748b',
+              color: isStep2Halted
+                ? (isUnsubscribedHalted ? '#b45309' : '#ffffff')
+                : (isRunning || isDone || isStep1Done ? '#ffffff' : '#64748b'),
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: isStep2Halted
-                ? '0 0 14px rgba(239, 68, 68, 0.5)'
+                ? (isUnsubscribedHalted ? '0 0 10px rgba(245, 158, 11, 0.4)' : '0 0 14px rgba(239, 68, 68, 0.5)')
                 : (isRunning
                     ? '0 0 14px rgba(234, 88, 12, 0.65)'
                     : (isDone || isStep1Done ? '0 2px 8px rgba(22, 163, 74, 0.35)' : 'none')),
@@ -296,12 +385,11 @@ export default function AeServerExecutionModal({
               {wf.icon}
             </div>
 
-            {/* Status Indicator */}
             {isStep2Halted && (
               <span style={{
-                background: '#fef2f2',
-                border: '1.5px solid #ef4444',
-                color: '#b91c1c',
+                background: isUnsubscribedHalted ? '#fffbeb' : '#fef2f2',
+                border: isUnsubscribedHalted ? '1.5px solid #f59e0b' : '1.5px solid #ef4444',
+                color: isUnsubscribedHalted ? '#b45309' : '#b91c1c',
                 fontSize: 10,
                 fontWeight: 800,
                 padding: '3.5px 9px',
@@ -311,7 +399,9 @@ export default function AeServerExecutionModal({
                 alignItems: 'center',
                 gap: 4
               }}>
-                {isDuplicateHalted ? 'DUPLICATE DETECTED' : 'VALIDATION REJECTED'}
+                {isUnsubscribedHalted
+                  ? '🛡️ GOVERNANCE HELD'
+                  : (isDuplicateHalted ? 'DUPLICATE DETECTED' : 'VALIDATION REJECTED')}
               </span>
             )}
             {isStepBlocked && (
@@ -324,7 +414,7 @@ export default function AeServerExecutionModal({
                 padding: '3px 8px',
                 borderRadius: 99
               }}>
-                CANCELLED
+                {isUnsubscribedHalted ? 'HELD' : 'CANCELLED'}
               </span>
             )}
             {(isDone || isStep1Done) && (
@@ -385,18 +475,16 @@ export default function AeServerExecutionModal({
             )}
           </div>
 
-          {/* Workflow Name */}
           <div style={{
             fontSize: 13.5,
             fontWeight: 800,
-            color: isStep2Halted ? '#b91c1c' : (isRunning ? '#0f172a' : (isDone || isStep1Done ? '#0f172a' : '#475569')),
+            color: isStep2Halted ? (isUnsubscribedHalted ? '#92400e' : '#b91c1c') : (isRunning ? '#0f172a' : (isDone || isStep1Done ? '#0f172a' : '#475569')),
             marginBottom: 6,
             lineHeight: 1.3
           }}>
             {wf.name}
           </div>
 
-          {/* Description */}
           <div style={{
             fontSize: 11,
             color: isRunning ? '#334155' : (isDone || isStep1Done ? '#475569' : '#64748b'),
@@ -406,28 +494,28 @@ export default function AeServerExecutionModal({
             {wf.desc}
           </div>
 
-          {/* Quarantined Banner inside Step 2 */}
           {isStep2Halted && (
             <div style={{
               marginTop: 6,
               marginBottom: 8,
               padding: '6px 9px',
-              background: '#fef2f2',
-              border: '1px solid #fecaca',
+              background: isUnsubscribedHalted ? '#fffbeb' : '#fef2f2',
+              border: isUnsubscribedHalted ? '1px solid #fde68a' : '1px solid #fecaca',
               borderRadius: 6,
               fontSize: 10.5,
-              color: '#991b1b',
+              color: isUnsubscribedHalted ? '#92400e' : '#991b1b',
               fontWeight: 600,
               lineHeight: 1.4
             }}>
-              {isDuplicateHalted
-                ? 'Identical SHA-256 hash detected in duplicate registry. File quarantined to /rejected/. Downstream workflows halted.'
-                : 'Mandatory columns missing or schema rejected. File quarantined to /rejected/.'}
+              {isUnsubscribedHalted
+                ? `Rail '${railUp}' is TRIAL AVAILABLE in the UI Catalog. Automated ${isRbiRail ? '3-way' : '4-way'} recon & AE workflows are held per subscription rule.`
+                : (isDuplicateHalted
+                    ? 'Identical SHA-256 hash detected in duplicate registry. File quarantined to /rejected/. Downstream workflows halted.'
+                    : 'Mandatory columns missing or schema rejected. File quarantined to /rejected/.')}
             </div>
           )}
         </div>
 
-        {/* Footer: Target System */}
         <div style={{
           borderTop: '1px solid #f1f5f9',
           paddingTop: 8,
@@ -438,7 +526,7 @@ export default function AeServerExecutionModal({
           color: '#64748b'
         }}>
           <span style={{ fontWeight: 600 }}>Target:</span>
-          <b style={{ color: isStep2Halted ? '#b91c1c' : (isRunning ? '#ea580c' : (isDone || isStep1Done ? '#16a34a' : '#475569')) }}>
+          <b style={{ color: isStep2Halted ? (isUnsubscribedHalted ? '#92400e' : '#b91c1c') : (isRunning ? '#ea580c' : (isDone || isStep1Done ? '#16a34a' : '#475569')) }}>
             {wf.target}
           </b>
         </div>
@@ -477,14 +565,13 @@ export default function AeServerExecutionModal({
         }
       `}</style>
 
-      {/* Main White Modal Dialog */}
       <div style={{
         background: '#ffffff',
         border: '1px solid #e2e8f0',
         borderRadius: 18,
         boxShadow: '0 25px 70px -15px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.05)',
         width: '100%',
-        maxWidth: 1040,
+        maxWidth: 1060,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -520,24 +607,30 @@ export default function AeServerExecutionModal({
                   AutomationEdge Server &bull; RPA Workflow Orchestration Engine
                 </span>
                 <span style={{
-                  background: isHalted ? '#fef2f2' : (isAllComplete ? '#dcfce7' : '#ffedd5'),
-                  border: isHalted ? '1.5px solid #ef4444' : (isAllComplete ? '1px solid #86efac' : '1.5px solid #ea580c'),
-                  color: isHalted ? '#b91c1c' : (isAllComplete ? '#15803d' : '#c2410c'),
+                  background: isHalted
+                    ? (isUnsubscribedHalted ? '#fffbeb' : '#fef2f2')
+                    : (isAllComplete ? '#dcfce7' : '#ffedd5'),
+                  border: isHalted
+                    ? (isUnsubscribedHalted ? '1.5px solid #f59e0b' : '1.5px solid #ef4444')
+                    : (isAllComplete ? '1px solid #86efac' : '1.5px solid #ea580c'),
+                  color: isHalted
+                    ? (isUnsubscribedHalted ? '#b45309' : '#b91c1c')
+                    : (isAllComplete ? '#15803d' : '#c2410c'),
                   fontSize: 10.5,
                   fontWeight: 800,
                   padding: '3px 10px',
                   borderRadius: 99,
                   textTransform: 'uppercase',
                   letterSpacing: '0.4px',
-                  boxShadow: isHalted ? '0 0 8px rgba(239, 68, 68, 0.25)' : (isAllComplete ? 'none' : '0 0 8px rgba(234, 88, 12, 0.25)')
+                  boxShadow: isHalted ? '0 0 8px rgba(234, 88, 12, 0.25)' : (isAllComplete ? 'none' : '0 0 8px rgba(234, 88, 12, 0.25)')
                 }}>
                   {isHalted
-                    ? `● PIPELINE HALTED — ${isDuplicateHalted ? 'DUPLICATE FILE DETECTED' : 'VALIDATION FAILED'}`
+                    ? (isUnsubscribedHalted ? `● GOVERNANCE GATE — RAIL '${railUp}' NOT SUBSCRIBED` : `● PIPELINE HALTED — ${isDuplicateHalted ? 'DUPLICATE FILE' : 'VALIDATION FAILED'}`)
                     : (isAllComplete ? '● All Workflows Executed' : '● Live Execution Active')}
                 </span>
               </div>
               <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2 }}>
-                AE Server: <a href={serverUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#ea580c', fontWeight: 700, textDecoration: 'none' }}>{serverUrl}</a> &bull; User: <b style={{ color: '#0f172a' }}>{username}</b> &bull; WF: <b style={{ color: '#0f172a' }}>{workflowName}</b>
+                AE Server: <a href={serverUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#ea580c', fontWeight: 700, textDecoration: 'none' }}>{serverUrl}</a> &bull; User: <b style={{ color: '#0f172a' }}>{username}</b> &bull; WF: <b style={{ color: '#ea580c', fontWeight: 800 }}>{displayWfName}</b> &bull; Rail: <b style={{ color: '#0f172a' }}>{railUp}</b>
               </div>
             </div>
           </div>
@@ -572,17 +665,17 @@ export default function AeServerExecutionModal({
             width: `${progressPercent}%`,
             height: '100%',
             background: isHalted
-              ? '#ef4444'
+              ? (isUnsubscribedHalted ? '#f59e0b' : '#ef4444')
               : (isAllComplete
                   ? 'linear-gradient(90deg, #16a34a, #22c55e)'
                   : 'linear-gradient(90deg, #ea580c, #f97316, #fb923c)'),
-            boxShadow: isHalted ? '0 0 10px rgba(239, 68, 68, 0.7)' : '0 0 10px rgba(249, 115, 22, 0.7)',
+            boxShadow: isHalted ? '0 0 10px rgba(245, 158, 11, 0.7)' : '0 0 10px rgba(249, 115, 22, 0.7)',
             transition: 'width 0.4s ease'
           }} />
         </div>
 
-        {/* Modal Main Body: Flow Diagram with Animated Glowing Lines */}
-        <div style={{ padding: '26px 30px', display: 'flex', flexDirection: 'column', gap: 10, background: '#f8fafc' }}>
+        {/* Modal Main Body */}
+        <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 10, background: '#f8fafc' }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -592,24 +685,92 @@ export default function AeServerExecutionModal({
             color: '#64748b',
             textTransform: 'uppercase',
             letterSpacing: '0.8px',
-            marginBottom: 6
+            marginBottom: 4
           }}>
             <span>Automated End-to-End RPA Execution Flow</span>
-            <span style={{ color: isHalted ? '#dc2626' : (isAllComplete ? '#16a34a' : '#ea580c'), fontWeight: 900 }}>
+            <span style={{ color: isHalted ? (isUnsubscribedHalted ? '#d97706' : '#dc2626') : (isAllComplete ? '#16a34a' : '#ea580c'), fontWeight: 900 }}>
               {isHalted
-                ? 'PIPELINE HALTED AT STEP 2 (DUPLICATE DETECTED — WORKFLOW CANCELLED)'
+                ? (isUnsubscribedHalted
+                    ? `PIPELINE HELD: RAIL '${railUp}' IS TRIAL AVAILABLE IN CATALOG`
+                    : `PIPELINE HALTED AT STEP 2 (${isDuplicateHalted ? 'DUPLICATE DETECTED' : 'VALIDATION FAILED'})`)
                 : `Pipeline Progress: ${progressPercent}% (${completedCount} of 6 Workflows Completed)`}
             </span>
           </div>
 
-          {/* AutomationEdge Server Message Banner & Post-Recon Next Steps */}
+          {/* UNSUBSCRIBED GOVERNANCE ALERT BANNER WITH 1-CLICK SUBSCRIBE & RUN */}
+          {isUnsubscribedHalted && (
+            <div style={{
+              background: '#fffbeb',
+              border: '1.5px solid #f59e0b',
+              borderRadius: 12,
+              padding: '14px 18px',
+              marginBottom: 8,
+              boxShadow: '0 4px 14px rgba(245, 158, 11, 0.12)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 12
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 260, flex: 1 }}>
+                <div style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 10,
+                  background: '#fef3c7',
+                  border: '1px solid #fde68a',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 20,
+                  flexShrink: 0
+                }}>
+                  🛡️
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#92400e' }}>
+                    Governance Gate Active: Rail '{railUp}' is Currently Unsubscribed
+                  </div>
+                  <div style={{ fontSize: 11.5, color: '#78350f', marginTop: 2, lineHeight: 1.4 }}>
+                    Inbound feed arrived in <code>Input files</code>, but reconciliation is blocked per governance policy because <b>{railUp}</b> is marked as <i>TRIAL AVAILABLE</i>.
+                  </div>
+                </div>
+              </div>
+
+              {onSubscribeAndRun && (
+                <button
+                  type="button"
+                  onClick={() => onSubscribeAndRun(railUp)}
+                  style={{
+                    background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+                    border: '1px solid #9a3412',
+                    color: '#ffffff',
+                    fontWeight: 800,
+                    fontSize: 12.5,
+                    padding: '9px 18px',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(234, 88, 12, 0.35)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  ⚡ Subscribe '{railUp}' &amp; Run Now &rarr;
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* ALL COMPLETE BANNER */}
           {isAllComplete && (
             <div style={{
               background: '#ffffff',
               border: '1.5px solid #86efac',
               borderRadius: 12,
               padding: '14px 16px',
-              marginBottom: 10,
+              marginBottom: 8,
               boxShadow: '0 4px 14px rgba(22, 163, 74, 0.08)'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
@@ -627,11 +788,11 @@ export default function AeServerExecutionModal({
                     {completionMessage}
                   </span>
                   <span style={{ fontSize: 12, fontWeight: 700, color: '#0f172a' }}>
-                    Workflow "{workflowName}" executed on AE Server
+                    Workflow "{displayWfName}" executed on AE Server
                   </span>
                 </div>
                 <span style={{ fontSize: 11, color: '#64748b' }}>
-                  Target: <b style={{ color: '#0f172a' }}>NPCI UPI Multi-Rail Settlement</b>
+                  Target: <b style={{ color: '#0f172a' }}>{railTarget}</b>
                 </span>
               </div>
 
@@ -652,7 +813,7 @@ export default function AeServerExecutionModal({
                     </span>
                   </div>
                   <div style={{ fontSize: 11, color: '#14532d', lineHeight: 1.45 }}>
-                    Posted zero-delta GL knock-off voucher between <b>GL-14020 UPI Outward Suspense</b> and <b>GL-11010 RBI Settlement Reserve</b> (Delta: ₹0.00). Settlement cycle closed straight-through.
+                    Posted zero-delta GL knock-off voucher between <b>{railGlAccount}</b> and <b>GL-11010 RBI Settlement Reserve</b> (Delta: ₹0.00). Settlement cycle closed straight-through.
                   </div>
                 </div>
 
@@ -688,7 +849,6 @@ export default function AeServerExecutionModal({
             {renderCard(workflows[2])}
           </div>
 
-          {/* Turnaround flow connector between Row 1 and Row 2 */}
           <TurnaroundConnector isActive={currentStep === 3 && !isHalted} isCompleted={currentStep > 3 && !isHalted} />
 
           {/* Row 2: Steps 4, 5, 6 */}
@@ -699,6 +859,43 @@ export default function AeServerExecutionModal({
             <FlowConnector isActive={currentStep === 5 && !isHalted} isCompleted={currentStep > 5 && !isHalted} />
             {renderCard(workflows[5])}
           </div>
+
+          {/* Real-time AutomationEdge Execution Logs Console */}
+          {logs && logs.length > 0 && (
+            <div style={{
+              marginTop: 6,
+              background: '#0f172a',
+              borderRadius: 10,
+              padding: '10px 14px',
+              fontFamily: 'monospace',
+              fontSize: 11,
+              color: '#38bdf8',
+              border: '1px solid #1e293b',
+              boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.4)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                  AutomationEdge Server Live Terminal Stream &bull; {logs.length} Events
+                </span>
+                {logs.length > 3 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllLogs(prev => !prev)}
+                    style={{ background: 'transparent', border: 'none', color: '#f97316', fontSize: 10, cursor: 'pointer', fontWeight: 700 }}
+                  >
+                    {showAllLogs ? '▲ Collapse' : '▼ View All'}
+                  </button>
+                )}
+              </div>
+              <div style={{ maxHeight: showAllLogs ? 160 : 70, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {(showAllLogs ? logs : logs.slice(-3)).map((line, idx) => (
+                  <div key={idx} style={{ color: line.includes('🚀') ? '#4ade80' : line.includes('SUPPRESSED') || line.includes('HALTED') || line.includes('WARN') ? '#fbbf24' : '#e2e8f0', lineHeight: 1.35 }}>
+                    {line}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -712,15 +909,54 @@ export default function AeServerExecutionModal({
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: '#64748b' }}>
             <span style={{ fontWeight: 600 }}>Role of AutomationEdge Server:</span>
-            <b style={{ color: isHalted ? '#dc2626' : '#16a34a' }}>
+            <b style={{ color: isHalted ? (isUnsubscribedHalted ? '#d97706' : '#dc2626') : '#16a34a' }}>
               {isHalted
-                ? 'Automated Gatekeeper Protection • Duplicate Blocked • Zero Ledger Pollution'
-                : 'Autonomous 4-Way In-Memory Recon • Direct Core Banking API Reversals • Immutable Audit Sealing'}
+                ? (isUnsubscribedHalted ? `Subscription Policy Enforced • Rail '${railUp}' Held in Catalog • Zero Ledger Pollution` : 'Automated Gatekeeper Protection • Duplicate Blocked • Zero Ledger Pollution')
+                : (isRbiRail
+                    ? 'Autonomous 3-Way Triangulation (CBS vs SFMS vs e-Kuber) • Intraday Liquidity Optimization • Regulatory Crypt-Seal'
+                    : 'Autonomous 4-Way In-Memory Recon • Direct Core Banking API Reversals • Immutable Audit Sealing')}
             </b>
           </div>
 
           <div style={{ display: 'flex', gap: 10 }}>
-            {isHalted ? (
+            {isUnsubscribedHalted ? (
+              <>
+                <button
+                  onClick={onClose}
+                  className="btn btn-secondary"
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    color: '#334155',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    padding: '8px 18px',
+                    borderRadius: 8,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Close &amp; Check Catalog
+                </button>
+                {onSubscribeAndRun && (
+                  <button
+                    onClick={() => onSubscribeAndRun(railUp)}
+                    style={{
+                      background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+                      border: '1px solid #9a3412',
+                      color: '#ffffff',
+                      fontWeight: 800,
+                      fontSize: 12.5,
+                      padding: '8px 20px',
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 8px rgba(234, 88, 12, 0.35)'
+                    }}
+                  >
+                    ⚡ Subscribe '{railUp}' &amp; Run Now &rarr;
+                  </button>
+                )}
+              </>
+            ) : isDuplicateHalted || isSchemaHalted ? (
               <button
                 onClick={onClose}
                 className="btn btn-primary"

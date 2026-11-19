@@ -51,7 +51,8 @@ Write-Host "   AUTOMATIONEDGE | NPCI OPERATIONS WORKBENCH" -ForegroundColor Cyan
 Write-Host "======================================================================" -ForegroundColor Cyan
 Write-Host ""
 if ($tunnelUrl) {
-    Write-Host "   >>> YOUR LIVE CLOUDFLARE URL:" -ForegroundColor Yellow
+    Set-Clipboard -Value $tunnelUrl -ErrorAction SilentlyContinue
+    Write-Host "   >>> YOUR LIVE CLOUDFLARE URL (COPIED TO CLIPBOARD):" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "       $tunnelUrl" -ForegroundColor Green
     Write-Host ""

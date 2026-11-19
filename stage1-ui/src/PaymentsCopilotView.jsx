@@ -69,12 +69,12 @@ function PaymentInvestigationCard({ record, onNavigateWorkbench, isTeams }) {
   const statusLabel = isMatched
     ? 'SETTLED (3-WAY MATCH STP)'
     : record.recon_status === 'BREAK_SWITCH_TIMEOUT'
-    ? 'BREAK: SFMS NETWORK TIMEOUT'
-    : record.recon_status === 'BREAK_BENEFICIARY_REJECT'
-    ? 'BREAK: BENEFICIARY ACCOUNT CLOSED'
-    : record.recon_status === 'PRE_SUBMISSION_CHECK_PASS'
-    ? 'HELD: L2 CHECKER APPROVAL REQUIRED'
-    : (record.recon_status || 'EXCEPTION BREAK')
+      ? 'BREAK: SFMS NETWORK TIMEOUT'
+      : record.recon_status === 'BREAK_BENEFICIARY_REJECT'
+        ? 'BREAK: BENEFICIARY ACCOUNT CLOSED'
+        : record.recon_status === 'PRE_SUBMISSION_CHECK_PASS'
+          ? 'HELD: L2 CHECKER APPROVAL REQUIRED'
+          : (record.recon_status || 'EXCEPTION BREAK')
 
   return (
     <div style={{
@@ -361,9 +361,10 @@ function PaymentInvestigationCard({ record, onNavigateWorkbench, isTeams }) {
 function RecordListTable({ records, type, onSelectUtr, onNavigateWorkbench }) {
   if (!records || !records.length) return null
   const isMatched = type === 'MATCHED_LIST'
-  const headerBg = isMatched ? '#ecfdf5' : '#fef2f2'
-  const headerColor = isMatched ? '#047857' : '#b91c1c'
-  const headerBorder = isMatched ? '#a7f3d0' : '#fecaca'
+  const isAutoRefund = type === 'AUTO_REFUND_LIST'
+  const headerBg = isMatched ? '#ecfdf5' : isAutoRefund ? '#f0fdfa' : '#fef2f2'
+  const headerColor = isMatched ? '#047857' : isAutoRefund ? '#0f766e' : '#b91c1c'
+  const headerBorder = isMatched ? '#a7f3d0' : isAutoRefund ? '#99f6e4' : '#fecaca'
 
   return (
     <div style={{
@@ -388,10 +389,10 @@ function RecordListTable({ records, type, onSelectUtr, onNavigateWorkbench }) {
             fontWeight: 800,
             padding: '2px 8px',
             borderRadius: 4,
-            background: isMatched ? '#047857' : '#b91c1c',
+            background: isMatched ? '#047857' : isAutoRefund ? '#0f766e' : '#b91c1c',
             color: '#ffffff'
           }}>
-            {isMatched ? 'MATCHED (STP)' : 'EXCEPTIONS & BREAKS'}
+            {isMatched ? 'MATCHED (STP)' : isAutoRefund ? 'AUTO-REFUNDED & REVERSED' : 'EXCEPTIONS & BREAKS'}
           </span>
           <span style={{ fontSize: 12, fontWeight: 700, color: headerColor }}>
             {records.length} Record{records.length === 1 ? '' : 's'}
@@ -464,10 +465,10 @@ function RecordListTable({ records, type, onSelectUtr, onNavigateWorkbench }) {
                     fontWeight: 700,
                     padding: '2px 6px',
                     borderRadius: 4,
-                    background: r.recon_status === 'MATCHED_STP' ? '#ecfdf5' : '#fef2f2',
-                    color: r.recon_status === 'MATCHED_STP' ? '#047857' : '#b91c1c'
+                    background: r.recon_status === 'MATCHED_STP' ? '#ecfdf5' : isAutoRefund || r.recon_status?.includes('AUTO') || r.recon_status?.includes('REVERSE') ? '#f0fdfa' : '#fef2f2',
+                    color: r.recon_status === 'MATCHED_STP' ? '#047857' : isAutoRefund || r.recon_status?.includes('AUTO') || r.recon_status?.includes('REVERSE') ? '#0f766e' : '#b91c1c'
                   }}>
-                    {r.recon_status === 'MATCHED_STP' ? 'STP SETTLED' : (r.priority || 'BREAK')}
+                    {r.recon_status === 'MATCHED_STP' ? 'STP SETTLED' : isAutoRefund || r.recon_status?.includes('AUTO') || r.recon_status?.includes('REVERSE') ? 'AUTO REFUNDED' : (r.priority || 'BREAK')}
                   </span>
                 </td>
                 <td style={{ padding: '8px 10px', textAlign: 'center' }}>
@@ -501,24 +502,54 @@ function RecordListTable({ records, type, onSelectUtr, onNavigateWorkbench }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 //  MAIN COMPONENT: PaymentsCopilotView (UC7)
 // ═══════════════════════════════════════════════════════════════════════════════
+const STORAGE_KEY = 'npci_copilot_chat_history_v1'
+
+const INITIAL_WELCOME_MESSAGE = {
+  sender: 'bot',
+  timestamp: '11:47 AM',
+  text: "Hello! I am the **Payments Copilot (UC7)** for NEFT & RTGS.\n\nI provide instant 3-way status triangulation across **Finacle CBS**, **SFMS Switch**, and **RBI e-Kuber**. Ask me about any UTR, in-flight queue depth, or settlement account liquidity.",
+  record: null
+}
+
 export default function PaymentsCopilotView({ apiBase = 'http://localhost:8000', onNavigateWorkbench }) {
   const [channelMode, setChannelMode] = useState('teams') // 'teams' | 'portal'
   const [inputQuery, setInputQuery] = useState('')
   const [loading, setLoading] = useState(false)
-  const [chatHistory, setChatHistory] = useState([
-    {
-      sender: 'bot',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      text: "Hello! I am the **Payments Copilot (UC7)** for NEFT & RTGS.\n\nI provide instant 3-way status triangulation across **Finacle CBS**, **SFMS Switch**, and **RBI e-Kuber**. Ask me about any UTR, in-flight queue depth, or settlement account liquidity.",
-      record: null
+
+  const [chatHistory, setChatHistory] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch (e) {
+      console.warn('Failed to parse saved chat history from localStorage', e)
     }
-  ])
+    return [INITIAL_WELCOME_MESSAGE]
+  })
 
   const chatEndRef = useRef(null)
+
+  // Persist chat history across tab navigation and browser refreshes
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(chatHistory))
+    } catch (e) {
+      console.warn('Failed to save chat history to localStorage', e)
+    }
+  }, [chatHistory])
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatHistory, loading])
+
+  const handleClearHistory = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+    } catch (e) { }
+    setChatHistory([INITIAL_WELCOME_MESSAGE])
+  }
 
   const handleSend = async (queryText) => {
     const q = queryText || inputQuery
@@ -534,18 +565,33 @@ export default function PaymentsCopilotView({ apiBase = 'http://localhost:8000',
     if (!queryText) setInputQuery('')
     setLoading(true)
 
+    // Robust backend endpoint resolution with fallback
+    const baseUrl = apiBase || (typeof window !== 'undefined' && window.location.port === '5173' ? 'http://localhost:8000' : '')
+    const targetUrl = `${baseUrl}/api/copilot/chat`
+
+    // AbortController with 10-second timeout to prevent indefinite hanging
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     try {
-      const res = await fetch(`${apiBase}/api/copilot/chat`, {
+      const res = await fetch(targetUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: q, channel: channelMode })
+        body: JSON.stringify({ query: q, channel: channelMode }),
+        signal: controller.signal
       })
+      clearTimeout(timeoutId)
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText || 'Backend server returned an error'}`)
+      }
+
       const data = await res.json()
 
       const botMsg = {
         sender: 'bot',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        text: data.summary,
+        text: data.summary || data.message || 'Information retrieved successfully.',
         adaptiveCard: data.adaptive_card || null,
         record: data.record || null,
         recordsList: data.records_list || null,
@@ -553,12 +599,16 @@ export default function PaymentsCopilotView({ apiBase = 'http://localhost:8000',
       }
       setChatHistory(prev => [...prev, botMsg])
     } catch (e) {
+      clearTimeout(timeoutId)
+      const isTimeout = e.name === 'AbortError'
       setChatHistory(prev => [
         ...prev,
         {
           sender: 'bot',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          text: `Error contacting Payments Copilot service: ${e.message}. Ensure backend is running.`
+          text: isTimeout
+            ? "⚠️ Request timed out after 10 seconds. The banking backend service may be restarting. Please retry your inquiry."
+            : `⚠️ Error contacting Payments Copilot: ${e.message}. Ensure backend is running.`
         }
       ])
     } finally {
@@ -568,6 +618,7 @@ export default function PaymentsCopilotView({ apiBase = 'http://localhost:8000',
 
   const quickPrompts = [
     { label: "List Matched Records", query: "Give list of matched records" },
+    { label: "Auto-Refunded Records", query: "Give list of auto refunded" },
     { label: "Show Open Breaks", query: "Give list of unmatched records" },
     { label: "Recon Summary", query: "What is the recon status" },
     { label: "Instant RTGS Settlement", query: "Status of UTR RBIR20261113000101" },
@@ -579,31 +630,41 @@ export default function PaymentsCopilotView({ apiBase = 'http://localhost:8000',
 
   const isTeams = channelMode === 'teams'
 
+  const containerStyle = {
+    width: '100%',
+    height: 'calc(100vh - 65px)',
+    padding: '10px 14px',
+    boxSizing: 'border-box',
+    display: 'flex',
+    flexDirection: 'column',
+    fontFamily: 'Inter, system-ui, sans-serif'
+  }
+
   return (
-    <div style={{ padding: '24px 32px', maxWidth: 1400, margin: '0 auto', fontFamily: 'Inter, system-ui, sans-serif' }}>
-      
+    <div style={containerStyle}>
+
       {/* ── Top Header & Channel Mode Selector ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexShrink: 0 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: 0 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: 0 }}>
               Payments Copilot Agent (UC7)
             </h2>
-            <span style={{ fontSize: 11, background: '#f1f5f9', color: '#475569', padding: '3px 8px', borderRadius: 4, fontWeight: 700, border: '1px solid #cbd5e1' }}>
+            <span style={{ fontSize: 10.5, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 700, border: '1px solid #cbd5e1' }}>
               AUTONOMY: L3 READ-ONLY
             </span>
           </div>
-          <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: 13 }}>
+          <p style={{ margin: '2px 0 0', color: '#64748b', fontSize: 12 }}>
             Natural language conversational assistant for branch &amp; operations staff. Real-time 3-way triangulation across CBS, SFMS, and RBI e-Kuber.
           </p>
         </div>
 
         {/* View Toggle */}
-        <div style={{ display: 'flex', alignItems: 'center', background: '#f1f5f9', padding: 4, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', background: '#f1f5f9', padding: 3, borderRadius: 8, border: '1px solid #e2e8f0' }}>
           <button
             onClick={() => setChannelMode('teams')}
             style={{
-              padding: '6px 14px',
+              padding: '5px 12px',
               borderRadius: 6,
               border: 'none',
               fontSize: 12,
@@ -619,7 +680,7 @@ export default function PaymentsCopilotView({ apiBase = 'http://localhost:8000',
           <button
             onClick={() => setChannelMode('portal')}
             style={{
-              padding: '6px 14px',
+              padding: '5px 12px',
               borderRadius: 6,
               border: 'none',
               fontSize: 12,
@@ -635,201 +696,476 @@ export default function PaymentsCopilotView({ apiBase = 'http://localhost:8000',
         </div>
       </div>
 
-      {/* ── Quick Demo Prompt Chips ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 11.5, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
-          Sample Queries:
-        </span>
-        {quickPrompts.map((p, idx) => (
-          <button
-            key={idx}
-            onClick={() => handleSend(p.query)}
-            style={{
-              background: '#ffffff',
-              border: '1px solid #cbd5e1',
-              borderRadius: 99,
-              padding: '5px 12px',
-              fontSize: 12,
-              color: '#334155',
-              cursor: 'pointer',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = isTeams ? '#464775' : '#ea580c'; e.currentTarget.style.color = isTeams ? '#464775' : '#ea580c' }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.color = '#334155' }}
-          >
-            <span>{p.label}</span>
-            <span style={{ fontSize: 10, color: '#94a3b8' }}>&rarr;</span>
-          </button>
-        ))}
-      </div>
-
       {/* ── Main Chat Interface Frame ── */}
       <div style={{
         background: isTeams ? '#f5f5f5' : '#ffffff',
-        borderRadius: 12,
+        borderRadius: 10,
         border: isTeams ? '2px solid #464775' : '1px solid #e2e8f0',
         boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
         overflow: 'hidden',
         display: 'flex',
-        minHeight: 640
+        flex: 1,
+        minHeight: 0,
+        height: '100%'
       }}>
 
-        {/* Teams Left Sidebar (Simulated Channel List) */}
+        {/* Teams Left Sidebar — Authentic Microsoft Teams Layout */}
         {isTeams && (
-          <div style={{ width: 260, background: '#ebebeb', borderRight: '1px solid #e0e0e0', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '16px 14px', background: '#464775', color: '#fff' }}>
-              <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '0.5px', textTransform: 'uppercase' }}>Microsoft Teams</div>
-              <div style={{ fontSize: 11, opacity: 0.85 }}>ABC Bank India Treasury</div>
+          <div style={{ display: 'flex', flexDirection: 'row', height: '100%', minHeight: 0, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+
+            {/* ── Narrow Icon Rail (48px) — Teams nav icons ── */}
+            <div style={{
+              width: 48,
+              background: '#292643',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              paddingTop: 6,
+              gap: 2,
+              flexShrink: 0
+            }}>
+              {/* Teams logo pill */}
+              <div style={{ width: 36, height: 36, background: '#5558af', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M12.5 2.5a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM6 7h8a1 1 0 0 1 1 1v5a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V8a1 1 0 0 1 1-1z" fill="#fff"/>
+                </svg>
+              </div>
+              {/* Activity icon */}
+              {[
+                /* Activity bell */
+                <svg key="act" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2a6 6 0 0 0-6 6v2.5L2.5 12H17.5l-1.5-1.5V8a6 6 0 0 0-6-6zm0 16a2 2 0 0 0 2-2H8a2 2 0 0 0 2 2z" fill="currentColor"/></svg>,
+                /* Chat bubbles */
+                <svg key="chat" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H7l-4 3V4z" fill="currentColor"/></svg>,
+                /* Teams grid */
+                <svg key="teams" width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="11" y="2" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="2" y="11" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="11" y="11" width="7" height="7" rx="1.5" fill="currentColor"/></svg>,
+                /* Calendar */
+                <svg key="cal" width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="14" rx="2" stroke="currentColor" strokeWidth="1.5"/><path d="M2 8h16M6 2v4M14 2v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+                /* Files */
+                <svg key="files" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 3h7l5 5v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" stroke="currentColor" strokeWidth="1.5"/><path d="M11 3v5h5" stroke="currentColor" strokeWidth="1.5"/></svg>
+              ].map((icon, idx) => (
+                <div key={idx} title={['Activity','Chat','Teams','Calendar','Files'][idx]} style={{
+                  width: 36, height: 36,
+                  borderRadius: 8,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: idx === 1 ? '#fff' : 'rgba(255,255,255,0.55)',
+                  background: idx === 1 ? 'rgba(255,255,255,0.15)' : 'transparent',
+                  cursor: 'pointer',
+                  transition: 'background 0.12s ease'
+                }}>{icon}</div>
+              ))}
+              {/* Avatar at bottom */}
+              <div style={{ marginTop: 'auto', marginBottom: 10, width: 32, height: 32, borderRadius: '50%', background: '#6264a7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'pointer', border: '2px solid rgba(255,255,255,0.3)' }}>
+                AM
+              </div>
             </div>
-            <div style={{ padding: '12px 14px', fontSize: 11, fontWeight: 700, color: '#616161', textTransform: 'uppercase' }}>
-              Recent Bot Chats
-            </div>
-            <div style={{ padding: '10px 14px', background: '#ffffff', borderLeft: '4px solid #464775', cursor: 'pointer' }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#242424' }}>Payments-Ops-Copilot</div>
-              <div style={{ fontSize: 11, color: '#616161' }}>Bot • RBI 3-Way Triangulation</div>
-            </div>
-            <div style={{ padding: '10px 14px', cursor: 'pointer', opacity: 0.7 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#242424' }}># Settlement-Liquidity-Alerts</div>
-              <div style={{ fontSize: 11, color: '#616161' }}>Channel • Automated e-Kuber watch</div>
-            </div>
-            <div style={{ padding: '10px 14px', cursor: 'pointer', opacity: 0.7 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#242424' }}># Exception-Approvals-L2</div>
-              <div style={{ fontSize: 11, color: '#616161' }}>Channel • Maker-checker queue</div>
-            </div>
-            <div style={{ marginTop: 'auto', padding: 14, borderTop: '1px solid #e0e0e0', background: '#f5f5f5', fontSize: 11, color: '#616161' }}>
-              Signed in as: <b>abhishek.malwadkar</b> (Checker)
+
+            {/* ── Chat List Panel (260px) ── */}
+            <div style={{ width: 260, background: '#fff', borderRight: '1px solid #e0e0e0', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+              {/* Panel header */}
+              <div style={{ padding: '14px 14px 8px', borderBottom: '1px solid #edebe9' }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#201f1e', marginBottom: 8 }}>Chat</div>
+                {/* Search box */}
+                <div style={{ display: 'flex', alignItems: 'center', background: '#f3f2f1', borderRadius: 4, padding: '6px 10px', gap: 6 }}>
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="#605e5c" strokeWidth="1.5"/><path d="M10.5 10.5l3.5 3.5" stroke="#605e5c" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  <span style={{ fontSize: 12, color: '#605e5c' }}>Search</span>
+                </div>
+              </div>
+
+              {/* Chat list items */}
+              <div style={{ flex: 1, overflowY: 'auto' }}>
+                {/* Active item — Payments Copilot bot */}
+                <div
+                  onClick={handleClearHistory}
+                  title="New chat with Payments Copilot"
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#edebe9', cursor: 'pointer', borderLeft: '3px solid #6264a7' }}
+                >
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#6264a7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 }}>PC</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#201f1e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Payments-Ops-Copilot</span>
+                      <span style={{ fontSize: 10, color: '#605e5c', flexShrink: 0 }}>Now</span>
+                    </div>
+                    <div style={{ fontSize: 11.5, color: '#605e5c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Bot • RBI 3-Way Triangulation</div>
+                  </div>
+                </div>
+
+                {/* Channel item — Settlement Liquidity */}
+                <div
+                  onClick={() => handleSend("Check RBI e-Kuber balance and liquidity threshold")}
+                  title="Check e-Kuber liquidity"
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', borderLeft: '3px solid transparent', transition: 'background 0.12s' }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#f3f2f1'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                >
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#0078d4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0 }}>#</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#201f1e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Settlement-Liquidity-Alerts</span>
+                      <span style={{ fontSize: 10, color: '#605e5c', flexShrink: 0 }}>10:30</span>
+                    </div>
+                    <div style={{ fontSize: 11.5, color: '#605e5c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Channel • Automated e-Kuber watch</div>
+                  </div>
+                </div>
+
+                {/* Channel item — Exception Approvals */}
+                <div
+                  onClick={() => handleSend("Give list of unmatched records")}
+                  title="View open reconciliation breaks"
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', borderLeft: '3px solid transparent', transition: 'background 0.12s' }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#f3f2f1'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                >
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#c43e1c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0 }}>#</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#201f1e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Exception-Approvals-L2</span>
+                      <span style={{ fontSize: 10, color: '#605e5c', flexShrink: 0 }}>09:15</span>
+                    </div>
+                    <div style={{ fontSize: 11.5, color: '#605e5c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Channel • Maker-checker queue</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer — signed in user */}
+              <div style={{ padding: '10px 14px', borderTop: '1px solid #edebe9', display: 'flex', alignItems: 'center', gap: 8, background: '#faf9f8' }}>
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#6264a7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#fff', flexShrink: 0 }}>AM</div>
+                <div>
+                  <div style={{ fontSize: 11.5, fontWeight: 600, color: '#201f1e' }}>abhishek.malwadkar</div>
+                  <div style={{ fontSize: 10, color: '#605e5c' }}>Checker</div>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {/* Chat Feed */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: isTeams ? '#f5f5f5' : '#ffffff' }}>
-          
-          {/* Channel Header Banner */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden', background: isTeams ? '#f5f5f5' : '#ffffff', fontFamily: isTeams ? "'Segoe UI', system-ui, sans-serif" : 'inherit' }}>
+
+          {/* Channel Header Banner — Teams style with avatar */}
           <div style={{
-            padding: '14px 20px',
-            borderBottom: '1px solid #e2e8f0',
-            background: isTeams ? '#ffffff' : '#fff7ed',
+            padding: '10px 20px',
+            borderBottom: isTeams ? '1px solid #edebe9' : '1px solid #e2e8f0',
+            background: '#ffffff',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center'
           }}>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: isTeams ? '#242424' : '#9a3412' }}>
-                {isTeams ? 'Payments-Ops-Copilot (AutomationEdge Bot)' : 'Wholesale Payments Operations Copilot'}
-              </div>
-              <div style={{ fontSize: 11.5, color: '#64748b' }}>
-                Governed by AutomationEdge Security Gate • PII Redacted • Immutable Audit Trail
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {isTeams && (
+                <div style={{ position: 'relative' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#6264a7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff' }}>PC</div>
+                  <div style={{ position: 'absolute', bottom: 1, right: 1, width: 9, height: 9, borderRadius: '50%', background: '#6bb700', border: '2px solid #fff' }} />
+                </div>
+              )}
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: isTeams ? '#201f1e' : '#9a3412', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {isTeams ? 'Payments Copilot' : 'Wholesale Payments Operations Copilot'}
+                  {isTeams && <span style={{ fontSize: 10, background: '#ebe8f8', color: '#6264a7', borderRadius: 3, padding: '1px 5px', fontWeight: 600 }}>Bot</span>}
+                </div>
+                <div style={{ fontSize: 11, color: isTeams ? '#605e5c' : '#64748b' }}>
+                  {isTeams ? 'Governed by AutomationEdge Security Gate • PII Redacted' : 'Governed by AutomationEdge Security Gate • PII Redacted • Immutable Audit Trail'}
+                </div>
               </div>
             </div>
-            <span style={{ fontSize: 11, background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '3px 8px', borderRadius: 12, fontWeight: 700 }}>
-              ONLINE • CONNECTED TO RBI e-KUBER
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {isTeams && (
+                <>
+                  {/* Teams action icons — decorative */}
+                  {[
+                    <svg key="v" width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M3 6a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6zm11 1.5 3-2v9l-3-2V7.5z" fill="#605e5c"/></svg>,
+                    <svg key="ph" width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M5 3h2.5l1.5 4-1.5 1.5a9 9 0 0 0 4 4L13 11l4 1.5V15a2 2 0 0 1-2 2C7.163 17 3 12.837 3 7a2 2 0 0 1 2-2v-2z" fill="#605e5c"/></svg>,
+                    <svg key="more" width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="4" cy="10" r="1.5" fill="#605e5c"/><circle cx="10" cy="10" r="1.5" fill="#605e5c"/><circle cx="16" cy="10" r="1.5" fill="#605e5c"/></svg>
+                  ].map((icon, idx) => (
+                    <div key={idx} style={{ width: 32, height: 32, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background 0.12s' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#edebe9'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >{icon}</div>
+                  ))}
+                </>
+              )}
+              <button
+                onClick={handleClearHistory}
+                title="Start a new chat session"
+                style={{
+                  padding: '5px 12px',
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  borderRadius: 4,
+                  border: isTeams ? '1px solid #6264a7' : '1px solid #ea580c',
+                  background: isTeams ? '#6264a7' : '#ea580c',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  transition: 'opacity 0.15s ease'
+                }}
+              >
+                <span>+</span> New Chat
+              </button>
+              <span style={{ fontSize: 11, background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '3px 8px', borderRadius: 12, fontWeight: 700 }}>
+                ONLINE • CONNECTED TO RBI e-KUBER
+              </span>
+            </div>
           </div>
 
           {/* Messages Scroll Area */}
-          <div style={{ flex: 1, padding: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ flex: 1, padding: '16px 20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {/* Today date separator */}
+            {isTeams && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '8px 0 12px' }}>
+                <div style={{ flex: 1, height: 1, background: '#edebe9' }} />
+                <span style={{ fontSize: 11, color: '#605e5c', fontWeight: 600, whiteSpace: 'nowrap' }}>Today</span>
+                <div style={{ flex: 1, height: 1, background: '#edebe9' }} />
+              </div>
+            )}
             {chatHistory.map((msg, i) => (
               <div
                 key={i}
                 style={{
                   display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                  maxWidth: '100%'
+                  flexDirection: isTeams ? 'row' : 'column',
+                  alignItems: isTeams ? 'flex-start' : (msg.sender === 'user' ? 'flex-end' : 'flex-start'),
+                  justifyContent: (!isTeams && msg.sender === 'user') ? 'flex-end' : 'flex-start',
+                  gap: isTeams ? 10 : 0,
+                  maxWidth: '100%',
+                  marginBottom: isTeams ? 6 : 16,
+                  flexDirection: (!isTeams && msg.sender === 'user') ? 'column' : (isTeams ? 'row' : 'column')
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: 11.5, fontWeight: 700, color: msg.sender === 'user' ? '#0f172a' : (isTeams ? '#464775' : '#ea580c') }}>
-                    {msg.sender === 'user' ? 'Operations Officer (You)' : (isTeams ? 'Payments Copilot BOT' : 'Payments Copilot Agent')}
-                  </span>
-                  <span style={{ fontSize: 11, color: '#94a3b8' }}>{msg.timestamp}</span>
-                </div>
-
-                {/* If this is a UTR Record, render the clean PaymentInvestigationCard */}
-                {msg.record && msg.record.utr ? (
-                  <PaymentInvestigationCard
-                    record={msg.record}
-                    onNavigateWorkbench={onNavigateWorkbench}
-                    isTeams={isTeams}
-                  />
-                ) : (
-                  /* Formatted Text Message for non-UTR replies (Welcome, Liquidity, Queues, Help, Lists) */
-                  <div style={{
-                    maxWidth: 780,
-                    width: '100%',
-                    padding: '14px 18px',
-                    borderRadius: msg.sender === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
-                    background: msg.sender === 'user'
-                      ? (isTeams ? '#464775' : '#ea580c')
-                      : (isTeams ? '#ffffff' : '#f8fafc'),
-                    color: msg.sender === 'user' ? '#ffffff' : '#1e293b',
-                    border: msg.sender === 'user' ? 'none' : '1px solid #e2e8f0',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
-                  }}>
-                    <FormattedMessage text={msg.text} />
-
-                    {msg.recordsList && msg.recordsList.length > 0 && (
-                      <RecordListTable
-                        records={msg.recordsList}
-                        type={msg.recordType}
-                        onSelectUtr={(utr) => handleSend(`Status of UTR ${utr}`)}
-                        onNavigateWorkbench={onNavigateWorkbench}
-                      />
-                    )}
+                {/* Teams-style: avatar on the left for all messages */}
+                {isTeams && (
+                  <div style={{ flexShrink: 0, width: 32, height: 32, borderRadius: '50%', background: msg.sender === 'user' ? '#6264a7' : '#5558af', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', marginTop: 2 }}>
+                    {msg.sender === 'user' ? 'AM' : 'PC'}
                   </div>
                 )}
+
+                <div style={{ flex: 1, minWidth: 0, maxWidth: isTeams ? 'calc(100% - 42px)' : '100%' }}>
+                  {/* Sender name + timestamp row */}
+                  {isTeams ? (
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#201f1e' }}>
+                        {msg.sender === 'user' ? 'Operations Officer' : 'Payments Copilot'}
+                      </span>
+                      <span style={{ fontSize: 11, color: '#605e5c' }}>{msg.timestamp}</span>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: 11.5, fontWeight: 700, color: msg.sender === 'user' ? '#0f172a' : '#ea580c' }}>
+                        {msg.sender === 'user' ? 'Operations Officer (You)' : 'Payments Copilot Agent'}
+                      </span>
+                      <span style={{ fontSize: 11, color: '#94a3b8' }}>{msg.timestamp}</span>
+                    </div>
+                  )}
+
+                  {/* If this is a UTR Record, render the clean PaymentInvestigationCard */}
+                  {msg.record && msg.record.utr ? (
+                    <PaymentInvestigationCard
+                      record={msg.record}
+                      onNavigateWorkbench={onNavigateWorkbench}
+                      isTeams={isTeams}
+                    />
+                  ) : (
+                    /* Formatted Text Message for non-UTR replies */
+                    <div style={{
+                      maxWidth: isTeams ? '100%' : 780,
+                      width: isTeams ? '100%' : '100%',
+                      padding: isTeams ? '10px 14px' : '14px 18px',
+                      borderRadius: isTeams ? 4 : (msg.sender === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px'),
+                      background: isTeams
+                        ? (msg.sender === 'user' ? '#e8e8f0' : '#ffffff')
+                        : (msg.sender === 'user' ? '#ea580c' : '#f8fafc'),
+                      color: isTeams ? '#201f1e' : (msg.sender === 'user' ? '#ffffff' : '#1e293b'),
+                      border: isTeams ? 'none' : (msg.sender === 'user' ? 'none' : '1px solid #e2e8f0'),
+                      boxShadow: isTeams ? 'none' : '0 1px 3px rgba(0,0,0,0.06)',
+                      display: 'inline-block',
+                      alignSelf: (!isTeams && msg.sender === 'user') ? 'flex-end' : 'flex-start'
+                    }}>
+                      <FormattedMessage text={msg.text} />
+
+                      {/* Quick Sample Queries (Visible inside the chat on Welcome / New Chat) */}
+                      {i === 0 && (
+                        <div style={{
+                          marginTop: 14,
+                          paddingTop: 12,
+                          borderTop: isTeams ? '1px solid #edebe9' : '1px solid #fed7aa'
+                        }}>
+                          <div style={{
+                            fontSize: 11,
+                            fontWeight: 800,
+                            color: isTeams ? '#6264a7' : '#ea580c',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            marginBottom: 8
+                          }}>
+                            Sample Queries (Click any prompt to ask):
+                          </div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                            {quickPrompts.map((p, pIdx) => (
+                              <button
+                                key={pIdx}
+                                onClick={() => handleSend(p.query)}
+                                style={{
+                                  background: isTeams ? '#f3f2f1' : '#fff7ed',
+                                  border: isTeams ? '1px solid #d2d0ce' : '1px solid #fed7aa',
+                                  borderRadius: isTeams ? 4 : 99,
+                                  padding: '4px 11px',
+                                  fontSize: 11.5,
+                                  color: isTeams ? '#201f1e' : '#9a3412',
+                                  cursor: 'pointer',
+                                  fontWeight: 600,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 5,
+                                  transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.borderColor = isTeams ? '#6264a7' : '#ea580c'
+                                  e.currentTarget.style.color = isTeams ? '#6264a7' : '#ea580c'
+                                  e.currentTarget.style.background = isTeams ? '#ebe8f8' : '#ffedd5'
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.borderColor = isTeams ? '#d2d0ce' : '#fed7aa'
+                                  e.currentTarget.style.color = isTeams ? '#201f1e' : '#9a3412'
+                                  e.currentTarget.style.background = isTeams ? '#f3f2f1' : '#fff7ed'
+                                }}
+                              >
+                                <span>{p.label}</span>
+                                <span style={{ fontSize: 10, opacity: 0.6 }}>&rarr;</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {msg.recordsList && msg.recordsList.length > 0 && (
+                        <RecordListTable
+                          records={msg.recordsList}
+                          type={msg.recordType}
+                          onSelectUtr={(utr) => handleSend(`Status of UTR ${utr}`)}
+                          onNavigateWorkbench={onNavigateWorkbench}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
 
             {loading && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#64748b', fontSize: 12, fontStyle: 'italic' }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: isTeams ? '#464775' : '#ea580c', animation: 'pulse 1s infinite' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#605e5c', fontSize: 12, fontStyle: 'italic', marginLeft: isTeams ? 42 : 0 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: isTeams ? '#6264a7' : '#ea580c', animation: 'pulse 1s infinite' }} />
                 Payments Copilot is querying CBS, SFMS Switch, and RBI e-Kuber statement logs...
               </div>
             )}
             <div ref={chatEndRef} />
           </div>
 
-          {/* Input Box */}
-          <div style={{ padding: '16px 20px', background: '#ffffff', borderTop: '1px solid #e2e8f0', display: 'flex', gap: 10 }}>
-            <input
-              type="text"
-              value={inputQuery}
-              onChange={(e) => setInputQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Ask by UTR, Account number, or natural question (e.g. 'Status of UTR RBIR20261113000104')..."
-              style={{
-                flex: 1,
-                padding: '10px 14px',
-                borderRadius: 8,
-                border: '1px solid #cbd5e1',
-                fontSize: 13,
-                outline: 'none',
-                fontFamily: 'inherit'
-              }}
-            />
-            <button
-              onClick={() => handleSend()}
-              disabled={loading || !inputQuery.trim()}
-              style={{
-                padding: '10px 20px',
-                borderRadius: 8,
-                border: 'none',
-                background: isTeams ? '#464775' : '#ea580c',
-                color: '#ffffff',
-                fontWeight: 700,
-                fontSize: 13,
-                cursor: loading || !inputQuery.trim() ? 'not-allowed' : 'pointer',
-                opacity: loading || !inputQuery.trim() ? 0.6 : 1
-              }}
-            >
-              Send
-            </button>
-          </div>
+          {/* Compose Box — Teams style */}
+          {isTeams ? (
+            <div style={{ background: '#fff', borderTop: '1px solid #edebe9', padding: '8px 16px 12px' }}>
+              {/* Formatting toolbar row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 2, marginBottom: 6 }}>
+                {[
+                  { label: 'B', style: { fontWeight: 900, fontSize: 13 } },
+                  { label: 'I', style: { fontStyle: 'italic', fontSize: 13 } },
+                  { label: 'U', style: { textDecoration: 'underline', fontSize: 13 } }
+                ].map(({ label, style }) => (
+                  <div key={label} title={label} style={{ width: 28, height: 26, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#605e5c', cursor: 'pointer', fontSize: 12, ...style, transition: 'background 0.12s' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f3f2f1'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >{label}</div>
+                ))}
+                <div style={{ width: 1, height: 18, background: '#edebe9', margin: '0 4px' }} />
+                {/* emoji, attach, gif icons */}
+                {[
+                  <svg key="em" width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="#605e5c" strokeWidth="1.5"/><path d="M7 13c.7 1 1.5 1.5 3 1.5s2.3-.5 3-1.5" stroke="#605e5c" strokeWidth="1.5" strokeLinecap="round"/><circle cx="7.5" cy="8.5" r="1" fill="#605e5c"/><circle cx="12.5" cy="8.5" r="1" fill="#605e5c"/></svg>,
+                  <svg key="att" width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M17 10l-7 7a5 5 0 0 1-7-7l7-7a3 3 0 0 1 4 4l-7 7a1 1 0 0 1-1-1l5-5" stroke="#605e5c" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+                  <svg key="gif" width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="10" rx="2" stroke="#605e5c" strokeWidth="1.5"/><text x="5" y="14" fontSize="7" fontWeight="800" fill="#605e5c">GIF</text></svg>
+                ].map((icon, idx) => (
+                  <div key={idx} style={{ width: 28, height: 26, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background 0.12s' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f3f2f1'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >{icon}</div>
+                ))}
+              </div>
+              {/* Input row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f3f2f1', borderRadius: 4, padding: '6px 10px' }}>
+                <input
+                  type="text"
+                  value={inputQuery}
+                  onChange={(e) => setInputQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                  placeholder="Type a new message"
+                  style={{
+                    flex: 1,
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    fontSize: 13,
+                    color: '#201f1e',
+                    fontFamily: "'Segoe UI', system-ui, sans-serif"
+                  }}
+                />
+                {/* Like / Send */}
+                <button
+                  onClick={() => handleSend()}
+                  disabled={loading || !inputQuery.trim()}
+                  title="Send"
+                  style={{
+                    width: 32, height: 32,
+                    borderRadius: 4,
+                    border: 'none',
+                    background: loading || !inputQuery.trim() ? 'transparent' : '#6264a7',
+                    color: loading || !inputQuery.trim() ? '#c8c6c4' : '#fff',
+                    cursor: loading || !inputQuery.trim() ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.15s ease',
+                    flexShrink: 0
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M2 10l16-8-8 16v-8H2z" fill="currentColor"/></svg>
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Portal compose box */
+            <div style={{ padding: '16px 20px', background: '#ffffff', borderTop: '1px solid #e2e8f0', display: 'flex', gap: 10 }}>
+              <input
+                type="text"
+                value={inputQuery}
+                onChange={(e) => setInputQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                placeholder="Ask by UTR, Account number, or natural question (e.g. 'Status of UTR RBIR20261113000104')..."
+                style={{
+                  flex: 1,
+                  padding: '10px 14px',
+                  borderRadius: 8,
+                  border: '1px solid #cbd5e1',
+                  fontSize: 13,
+                  outline: 'none',
+                  fontFamily: 'inherit'
+                }}
+              />
+              <button
+                onClick={() => handleSend()}
+                disabled={loading || !inputQuery.trim()}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: '#ea580c',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: loading || !inputQuery.trim() ? 'not-allowed' : 'pointer',
+                  opacity: loading || !inputQuery.trim() ? 0.6 : 1
+                }}
+              >
+                Send
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
